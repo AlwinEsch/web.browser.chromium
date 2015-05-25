@@ -1,0 +1,2 @@
+This app is part of the Google Chromium sandbox handling which becomes
+called from CEF to handle processes on different app threads.
