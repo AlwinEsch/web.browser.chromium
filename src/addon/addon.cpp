@@ -173,7 +173,7 @@ WEB_ADDON_ERROR GetVariousTypes(const WEB_ADDON_VARIOUS_TYPE *prevType, WEB_ADDO
 
 WEB_ADDON_ERROR CreateControl(const WEB_ADDON_GUI_PROPS &props, unsigned int webType, ADDON_HANDLE handle)
 {
-  return true;
+  return WEB_ADDON_ERROR_NO_ERROR;
 }
 
 bool DestroyControl(const ADDON_HANDLE handle)
