@@ -19,4 +19,4 @@ source code of CEF. Also contains this folder the needed patch for it.
 ### License of CEF
 - Copyright (c) 2008-2014 Marshall A. Greenblatt. Portions Copyright (c)
 - 2006-2009 Google Inc. All rights reserved.
-[New BSD License](https://github.com/AlwinEsch/web.KODIChromiumBrowser/blob/master/CEFParts/LICENSE-Chromium.txt)
+- [New BSD License](https://github.com/AlwinEsch/web.KODIChromiumBrowser/blob/master/CEFParts/LICENSE-Chromium.txt)
