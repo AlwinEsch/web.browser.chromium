@@ -8,7 +8,11 @@ Here is a small reworked version of the [automate-git.py script](https://bitbuck
 source code of CEF. Also contains this folder the needed patch for it.
 
 -------------
-### License of original
+### License of kodi add-on
+- [GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007](https://github.com/kodi-adsp/adsp.freesurround/blob/master/LICENSE.md)
+
+-------------
+### License of CEF
 - Copyright (c) 2008-2014 Marshall A. Greenblatt. Portions Copyright (c)
 - 2006-2009 Google Inc. All rights reserved.
 [New BSD License](https://github.com/AlwinEsch/web.KODIChromiumBrowser/blob/master/CEFParts/LICENSE-Chromium.txt)
