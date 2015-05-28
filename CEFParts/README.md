@@ -15,7 +15,7 @@ General description of CEF can be found here on [wikipedia](http://en.wikipedia.
 
 -------------
 ### License of kodi add-on
-- [GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007](https://github.com/kodi-adsp/adsp.freesurround/blob/master/LICENSE.md)
+- [GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007](https://github.com/AlwinEsch/web.KODIChromiumBrowser/blob/master/LICENSE)
 
 -------------
 ### License of CEF
