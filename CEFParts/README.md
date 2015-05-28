@@ -1,10 +1,9 @@
 ### *<p align="center">Kodi's add-on related CEF parts</p>*
 *<p align="center">![alt tag](http://upload.wikimedia.org/wikipedia/en/a/aa/Chromium_Embedded_Framework_logo.png)</p>*
--------------
-*<p align="center">https://bitbucket.org/chromiumembedded/cef/overview</p>*
--------------
+#### *<p align="center">https://bitbucket.org/chromiumembedded/cef/overview</p>*
 
 -------------
+### Description
 The folder contains all for Chromium Embedded needed parts which are complete required for the add-on.
 Normally are own already created binaries from web used to give it as lib and to create add-on with them, this are different
 from the normal ones to match Kodi's directory style and few changes on CEF are required.
