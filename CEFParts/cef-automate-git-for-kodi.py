@@ -256,10 +256,13 @@ def apply_deps_patch():
     # needs to be removed otherwise `gclient sync` will fail.
     deps_path = os.path.join(chromium_src_dir, deps_file)
     remove_deps_entry(deps_path, "'src'")
+
   if options.kodipatch != '':
     # Apply Kodi related changes to code
     if not os.path.exists(options.kodipatch):
       raise Exception("Kodi patch file %s does not exist" % (options.kodipatch))
+    else:
+      msg("Using Kodi support changes patch: %s" % (options.kodipatch))
     patch_tool = os.path.join(cef_dir, 'tools', 'patcher.py')
     run('%s %s --patch-file "%s" --patch-dir "%s"' %
             (python_exe, patch_tool, options.kodipatch, chromium_src_dir),
@@ -748,7 +751,7 @@ else:
 # Delete the existing src/cef directory. It will be re-copied from the download
 # directory later.
 if cef_checkout_changed and os.path.exists(cef_src_dir):
-  delete_directory(cef_src_dir)  
+  delete_directory(cef_src_dir)
 
 # Delete the existing src/out directory if requested.
 if options.forceclean and os.path.exists(out_src_dir):
