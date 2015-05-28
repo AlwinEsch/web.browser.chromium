@@ -11,9 +11,11 @@ from the normal ones to match Kodi's directory style and few changes on CEF are 
 Here is a small reworked version of the [automate-git.py script](https://bitbucket.org/chromiumembedded/cef/raw/master/tools/automate/automate-git.py) included which enable the Kodi related changes in the
 source code of CEF. Also contains this folder the needed patch for it.
 
+General description of CEF can be found here on [wikipedia](http://en.wikipedia.org/wiki/Chromium_Embedded_Framework).
+
 -------------
 ### License of kodi add-on
-- [GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007](https://github.com/kodi-adsp/adsp.freesurround/blob/master/LICENSE.md)
+- [GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007](https://github.com/AlwinEsch/web.KODIChromiumBrowser/blob/master/LICENSE)
 
 -------------
 ### License of CEF
