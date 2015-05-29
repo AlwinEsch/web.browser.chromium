@@ -30,6 +30,10 @@ if(CEF_COMPLETE)
   if(CEF_NO_RELEASE_BUILD)
     list(APPEND CEF_BUILD_VAL "--no-release-build ")
   endif()
+  if(CEF_BUILD_LOG_FILE)
+    message(STATUS "CEF log files build enabled which becomes stored at ${BoldWhite}${CMAKE_CURRENT_BINARY_DIR}/CEFComplete${ColourReset}")
+    list(APPEND CEF_BUILD_VAL "--build-log-file ")
+  endif()
 
   set(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/CEFComplete/chromium/src/cef/binary_distrib/cef_binary_3.${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE})
 
@@ -41,7 +45,7 @@ if(CEF_COMPLETE)
                             --download-dir=${CMAKE_CURRENT_BINARY_DIR}/CEFComplete
                             --branch=${CEF_BRANCH_VERSION}
                             --add-kodi-patch=${PROJECT_SOURCE_DIR}/CEFParts/${CEF_KODI_CHANGE_PATCH}
-                            --build-log-file ${CEF_BUILD_VAL}
+                            ${CEF_BUILD_VAL}
     UPDATE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE} ${CMAKE_CURRENT_BINARY_DIR}/cef-binary/src/cef-binary
     INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE}.zip ${CMAKE_CURRENT_BINARY_DIR}
   )
