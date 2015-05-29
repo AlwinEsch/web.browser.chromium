@@ -1,28 +1,36 @@
-# Compiled Object files
-*.slo
-*.lo
+.build
+.cproject
+.deps
+.libs
+.project
+
+.dummy
+.dummy.in
+
 *.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-
-# Compiled Static libraries
-*.lai
-*.la
 *.a
-*.lib
+*.P
+*.lo
+*.la
+*.pvr
+*.zip
+*.patch
+*.orig
+*.diff
 
-# Executables
-*.exe
-*.out
-*.app
+*.idb
+*.tlog
+*.lastbuildstate
+
+# Windows specific generated files
+*.exp
+*.lib
+*.pdb
+*.ilk
+*.suo
+*.sdf
+*.opensdf
+*.vcxproj.user
+
+build/
+VS2013Kodi_AddonProject/
