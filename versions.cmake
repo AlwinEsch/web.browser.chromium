@@ -8,19 +8,16 @@
 #   ..
 # endif()
 
-set(CEF_COMPLETE_VERSION 2357.1274.g7b49af6)
+set(CEF_COMPLETE_VERSION "2357.1275.gd2d36ca")
+set(CEF_OWN_CHANGES_VERSION "0.0.2")
 if(CEF_COMPLETE)
-  set(CEF_OWN_CHANGES_VERSION "0.0.2")
   set(CEF_BRANCH_VERSION 2357)
-  set(CEF_KODI_CHANGE_PATCH "CEF-${CEF_COMPLETE_VERSION}-Add-Kodi-related-changes-Version-${CEF_OWN_CHANGES_VERSION}.patch")
-
-  # CEF_OS_NAME and BITSIZE are defined by CMakeLists.txt
-  add_revision(cef-binary
-  )
+  set(CEF_BRANCH_URL https://bitbucket.org/EsMaSol/cef.git)
+  add_revision(cef-binary)
 else()
   # CEF_OS_NAME and BITSIZE are defined by CMakeLists.txt
   add_revision(cef-binary
-    URL http://esmasol.de/data/documents/cef_binary_3_${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE}-${CEF_OWN_CHANGES_VERSION}.zip
-    URL_MD5 130e29b59186b52b66e89543f260cd09
+    URL http://esmasol.de/data/documents/kodi-web-${CEF_OWN_CHANGES_VERSION}_cef_binary_3_${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE}.zip
+    URL_MD5 1570985420a5b6beb285b13f66facd14
   )
 endif()

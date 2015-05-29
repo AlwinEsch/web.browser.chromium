@@ -41,17 +41,18 @@ if(CEF_COMPLETE)
 
   add_external_project(cef-binary
     SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cef-binary/src/cef-binary
-    DOWNLOAD_COMMAND python ${PROJECT_SOURCE_DIR}/CEFParts/cef-automate-git-for-kodi.py
+    DOWNLOAD_COMMAND python ${PROJECT_SOURCE_DIR}/CEFParts/automate-git.py
                             --download-dir=${CMAKE_CURRENT_BINARY_DIR}/CEFComplete
+                            --url=${CEF_BRANCH_URL}
                             --branch=${CEF_BRANCH_VERSION}
-                            --add-kodi-patch=${PROJECT_SOURCE_DIR}/CEFParts/${CEF_KODI_CHANGE_PATCH}
                             ${CEF_BUILD_VAL}
     UPDATE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE} ${CMAKE_CURRENT_BINARY_DIR}/cef-binary/src/cef-binary
     INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE}.zip ${CMAKE_CURRENT_BINARY_DIR}
   )
 
   add_custom_command(TARGET cef-binary
-    COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_CURRENT_BINARY_DIR}/${SOURCE}.zip ${CMAKE_CURRENT_BINARY_DIR}/${SOURCE}-${CEF_OWN_CHANGES_VERSION}.zip
+    COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_CURRENT_BINARY_DIR}/cef_binary_3.${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE}.zip
+                                       kodi-web-${CEF_OWN_CHANGES_VERSION}_cef_binary_3.${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE}.zip
   )
 else()
   add_external_project(cef-binary)

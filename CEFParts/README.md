@@ -8,8 +8,8 @@ The folder contains all for Chromium Embedded needed parts which are complete re
 Normally are own already created binaries from web used to give it as lib and to create add-on with them, this are different
 from the normal ones to match Kodi's directory style and few changes on CEF are required.
 
-Here is a small reworked version of the [automate-git.py script](https://bitbucket.org/chromiumembedded/cef/raw/master/tools/automate/automate-git.py) included which enable the Kodi related changes in the
-source code of CEF. Also contains this folder the needed patch for it.
+Here is a small reworked version of CEF becomes used from https://bitbucket.org/EsMaSol/cef which use the Kodi related changes in the
+source code of CEF. Also contains this a needed patch for Google Chromium.
 
 General description of CEF can be found here on [wikipedia](http://en.wikipedia.org/wiki/Chromium_Embedded_Framework).
 
