@@ -188,7 +188,6 @@ include_directories(${INCLUDES}
                     ${PROJECT_SOURCE_DIR}/src/addon/utils/)
 
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
-                                 src/addon/WebBrowserManager.cpp
                                  src/addon/settings/SettingsMain.cpp
                                  src/addon/utils/Utils.cpp)
 
