@@ -1,27 +1,13 @@
-From 2606c0a8fc86fb0decbbb1b9786ec0339d7ccfe0 Mon Sep 17 00:00:00 2001
+From be7f74652c581047fe3a1f8b3987cd166558f5b9 Mon Sep 17 00:00:00 2001
 From: AlwinEsch <alwin.esch@web.de>
-Date: Wed, 27 May 2015 21:41:30 +0200
-Subject: [PATCH 1/1] CEF-2357 - Add Kodi related changes, Version 0.0.1
+Date: Thu, 28 May 2015 17:26:56 +0200
+Subject: [PATCH] CEF-2357 - Add Kodi related changes, Version 0.0.1
 
----
- base/base_paths.cc                        |  8 +++++++
- base/base_paths.h                         |  4 ++++
- base/base_paths_android.cc                |  7 ++++++
- base/base_paths_posix.cc                  |  9 +++++++
- base/base_paths_win.cc                    |  7 ++++++
- base/i18n/icu_util.cc                     |  6 +++--
- base/path_service.cc                      | 39 +++++++++++++++++++++++++++++++
- base/path_service.h                       | 11 +++++++++
- base/path_service_unittest.cc             |  2 +-
- chrome/browser/shell_integration_linux.cc |  4 ++++
- chrome/common/chrome_paths.cc             |  9 ++++---
- gin/isolate_holder.cc                     |  8 ++++---
- 12 files changed, 105 insertions(+), 9 deletions(-)
 
-diff --git a/base/base_paths.cc b/base/base_paths.cc
+diff --git base/base_paths.cc base/base_paths.cc
 index 7076ec3..7eec473 100644
---- a/base/base_paths.cc
-+++ b/base/base_paths.cc
+--- base/base_paths.cc
++++ base/base_paths.cc
 @@ -14,10 +14,18 @@ bool PathProvider(int key, FilePath* result) {
    // NOTE: DIR_CURRENT is a special case in PathService::Get
  
@@ -41,10 +27,10 @@ index 7076ec3..7eec473 100644
      case DIR_MODULE:
        PathService::Get(FILE_MODULE, result);
        *result = result->DirName();
-diff --git a/base/base_paths.h b/base/base_paths.h
+diff --git base/base_paths.h base/base_paths.h
 index 26b2fd4..00a551a 100644
---- a/base/base_paths.h
-+++ b/base/base_paths.h
+--- base/base_paths.h
++++ base/base_paths.h
 @@ -5,6 +5,8 @@
  #ifndef BASE_BASE_PATHS_H_
  #define BASE_BASE_PATHS_H_
@@ -63,10 +49,10 @@ index 26b2fd4..00a551a 100644
  
    DIR_TEST_DATA,     // Used only for testing.
  
-diff --git a/base/base_paths_android.cc b/base/base_paths_android.cc
+diff --git base/base_paths_android.cc base/base_paths_android.cc
 index 56c6cc70..72c611e 100644
---- a/base/base_paths_android.cc
-+++ b/base/base_paths_android.cc
+--- base/base_paths_android.cc
++++ base/base_paths_android.cc
 @@ -19,6 +19,12 @@ namespace base {
  
  bool PathProviderAndroid(int key, FilePath* result) {
@@ -88,10 +74,10 @@ index 56c6cc70..72c611e 100644
      case base::FILE_MODULE:
        // dladdr didn't work in Android as only the file name was returned.
        NOTIMPLEMENTED();
-diff --git a/base/base_paths_posix.cc b/base/base_paths_posix.cc
+diff --git base/base_paths_posix.cc base/base_paths_posix.cc
 index 048434f..cbc02d0 100644
---- a/base/base_paths_posix.cc
-+++ b/base/base_paths_posix.cc
+--- base/base_paths_posix.cc
++++ base/base_paths_posix.cc
 @@ -32,6 +32,14 @@ namespace base {
  bool PathProviderPosix(int key, FilePath* result) {
    FilePath path;
@@ -115,10 +101,10 @@ index 048434f..cbc02d0 100644
      case base::DIR_SOURCE_ROOT: {
        // Allow passing this in the environment, for more flexibility in build
        // tree configurations (sub-project builds, gyp --output_dir, etc.)
-diff --git a/base/base_paths_win.cc b/base/base_paths_win.cc
+diff --git base/base_paths_win.cc base/base_paths_win.cc
 index 4ecb59d..45b7dcc 100644
---- a/base/base_paths_win.cc
-+++ b/base/base_paths_win.cc
+--- base/base_paths_win.cc
++++ base/base_paths_win.cc
 @@ -31,10 +31,17 @@ bool PathProviderWin(int key, FilePath* result) {
  
    FilePath cur;
@@ -137,10 +123,10 @@ index 4ecb59d..45b7dcc 100644
      case base::FILE_MODULE: {
        // the resource containing module is assumed to be the one that
        // this code lives in, whether that's a dll or exe
-diff --git a/base/i18n/icu_util.cc b/base/i18n/icu_util.cc
+diff --git base/i18n/icu_util.cc base/i18n/icu_util.cc
 index 8bbbc04..2bd9c94 100644
---- a/base/i18n/icu_util.cc
-+++ b/base/i18n/icu_util.cc
+--- base/i18n/icu_util.cc
++++ base/i18n/icu_util.cc
 @@ -125,9 +125,11 @@ bool InitializeICU() {
    // be released.
    CR_DEFINE_STATIC_LOCAL(base::MemoryMappedFile, mapped_file, ());
@@ -155,10 +141,10 @@ index 8bbbc04..2bd9c94 100644
      // The data file will be in the same directory as the current module.
      bool path_ok = PathService::Get(base::DIR_MODULE, &data_path);
  #elif defined(OS_ANDROID)
-diff --git a/base/path_service.cc b/base/path_service.cc
+diff --git base/path_service.cc base/path_service.cc
 index 3c437ee..f0c2589 100644
---- a/base/path_service.cc
-+++ b/base/path_service.cc
+--- base/path_service.cc
++++ base/path_service.cc
 @@ -10,6 +10,11 @@
  #include <shlobj.h>
  #endif
@@ -212,10 +198,10 @@ index 3c437ee..f0c2589 100644
  // TODO(brettw): this function does not handle long paths (filename > MAX_PATH)
  // characters). This isn't supported very well by Windows right now, so it is
  // moot, but we should keep this in mind for the future.
-diff --git a/base/path_service.h b/base/path_service.h
+diff --git base/path_service.h base/path_service.h
 index 025550f..30a06d3 100644
---- a/base/path_service.h
-+++ b/base/path_service.h
+--- base/path_service.h
++++ base/path_service.h
 @@ -12,6 +12,8 @@
  #include "base/gtest_prod_util.h"
  #include "build/build_config.h"
@@ -248,10 +234,10 @@ index 025550f..30a06d3 100644
  };
  
  #endif  // BASE_PATH_SERVICE_H_
-diff --git a/base/path_service_unittest.cc b/base/path_service_unittest.cc
+diff --git base/path_service_unittest.cc base/path_service_unittest.cc
 index 7551d67..81b7181 100644
---- a/base/path_service_unittest.cc
-+++ b/base/path_service_unittest.cc
+--- base/path_service_unittest.cc
++++ base/path_service_unittest.cc
 @@ -48,7 +48,7 @@ bool ReturnsValidPath(int dir_type) {
        check_path_exists = false;
    }
@@ -261,10 +247,10 @@ index 7551d67..81b7181 100644
    if (dir_type != base::DIR_EXE && dir_type != base::DIR_MODULE &&
        dir_type != base::FILE_EXE && dir_type != base::FILE_MODULE) {
      if (path.ReferencesParent())
-diff --git a/chrome/browser/shell_integration_linux.cc b/chrome/browser/shell_integration_linux.cc
+diff --git chrome/browser/shell_integration_linux.cc chrome/browser/shell_integration_linux.cc
 index 4e1c305..2707bcd 100644
---- a/chrome/browser/shell_integration_linux.cc
-+++ b/chrome/browser/shell_integration_linux.cc
+--- chrome/browser/shell_integration_linux.cc
++++ chrome/browser/shell_integration_linux.cc
 @@ -330,7 +330,11 @@ bool GetChromeVersionOfScript(const std::string& script,
                                std::string* chrome_version) {
    // Get the path to the Chrome version.
@@ -277,10 +263,10 @@ index 4e1c305..2707bcd 100644
      return false;
  
    base::FilePath chrome_version_path = chrome_dir.Append(script);
-diff --git a/chrome/common/chrome_paths.cc b/chrome/common/chrome_paths.cc
+diff --git chrome/common/chrome_paths.cc chrome/common/chrome_paths.cc
 index 3cee502..36c92d8 100644
---- a/chrome/common/chrome_paths.cc
-+++ b/chrome/common/chrome_paths.cc
+--- chrome/common/chrome_paths.cc
++++ chrome/common/chrome_paths.cc
 @@ -146,7 +146,10 @@ bool PathProvider(int key, base::FilePath* result) {
        return PathService::Get(chrome::DIR_USER_DATA, result);
  #else
@@ -311,10 +297,10 @@ index 3cee502..36c92d8 100644
        // PNaCl really belongs in the InternalPluginsDirectory but actually
        // copying it there would result in the files also being shipped, which
        // we don't want yet. So for now, just find them in the directory where
-diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
+diff --git gin/isolate_holder.cc gin/isolate_holder.cc
 index 317b582..c690d6d 100644
---- a/gin/isolate_holder.cc
-+++ b/gin/isolate_holder.cc
+--- gin/isolate_holder.cc
++++ gin/isolate_holder.cc
 @@ -117,9 +117,11 @@ extern const unsigned char g_natives_fingerprint[];
  extern const unsigned char g_snapshot_fingerprint[];
  #endif  // V8_VERIFY_EXTERNAL_STARTUP_DATA
@@ -338,6 +324,3 @@ index 317b582..c690d6d 100644
    base::FilePath data_path;
    PathService::Get(kV8SnapshotBasePathKey, &data_path);
    DCHECK(!data_path.empty());
--- 
-2.1.0
-

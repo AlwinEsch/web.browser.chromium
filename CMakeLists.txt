@@ -36,7 +36,7 @@ find_package(kodiplatform REQUIRED)
 find_package(platform REQUIRED)
 
 include(color-defaults)
-include(ExternalProject)
+include(KitModules)
 
 add_definitions(-DUSE_DEMUX)
 
@@ -62,13 +62,38 @@ endif()
 
 message(STATUS "${BoldWhite}==================================================================${ColourReset} --")
 message(STATUS "${BoldWhite}**                                                              **${ColourReset} --")
-message(STATUS "${BoldWhite}**      KODI's Google Chromium Embedded Framework browser       **${ColourReset} --")
+message(STATUS "${BoldWhite}**          KODI's Chromium Embedded Framework browser          **${ColourReset} --")
 message(STATUS "${BoldWhite}**                       creation started                       **${ColourReset} --")
 message(STATUS "${BoldWhite}**                                                              **${ColourReset} --")
 message(STATUS "${BoldWhite}==================================================================${ColourReset} --")
-message(STATUS "${BoldWhite}| Help:                                                          |${ColourReset} --")
-message(STATUS "${BoldWhite}|${ColourReset} ${Green}-DDEBUG=1${ColourReset}\t< if set debug function parts becomes enabled       |${ColourReset} --")
+message(STATUS "${BoldWhite}|               |                               |                ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|               |  CMake build command options  |                ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|               *_______________________________*                ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|                                                                ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset} ${Green} -DCMAKE_INSTALL_PREFIX:PATH=<path>                            ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset}\t\t\t< path to define install directory          ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset} ${Green} -DDEBUG=1${ColourReset}\t\t< if set debug function parts becomes       ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset}\t\t\t  enabled                                   ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset} ${Green} -DCEF_COMPLETE=1${ColourReset}\t< if set the add-on use own builded new CEF ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset}\t\t\t  binary which can be used to check newer   ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset}\t\t\t  versions and from devs to have updated    ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset}\t\t\t  zip file for download url                 ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset}\t\t${Red}WARNING:  ${ColourReset}${Yellow}Complete build takes a very long time!    ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset} ${Green} -DCEF_NO_DEBUG_BUILD=1${ColourReset}                                        ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset}\t\t\t< used if CEF_COMPLETE=1, then no debug CEF ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset}\t\t\t  becomes build                             ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset} ${Green} -DCEF_NO_RELEASE_BUILD=1                                      ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset}\t\t\t< used if CEF_COMPLETE=1, then no release   ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|${ColourReset}\t\t\t  CEF becomes build                         ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|                                                                ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}| cmake <path_to_source_dir> <options...>                        ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|                                                                ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}| Note: Best way to build is to create a './build' folder inside ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}| code dir, this can be easily deleted after performed work      ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}| without a problem on it.                                       ${BoldWhite}|${ColourReset} --")
+message(STATUS "${BoldWhite}|                                                                ${BoldWhite}|${ColourReset} --")
 message(STATUS "${BoldWhite}==================================================================${ColourReset} --")
+
 # Determine the platform.
 if(${CORE_SYSTEM_NAME} STREQUAL windows)
   set(CEF_OS_NAME "windows")
@@ -91,7 +116,17 @@ elseif(${CORE_SYSTEM_NAME} STREQUAL android)
   message(FATAL_ERROR "${BoldWhite}OS ${BoldRed}${CORE_SYSTEM_NAME} ${BoldWhite}currently not supported !!!${ColourReset}")
 endif()
 
-message(STATUS "${CEF_OS_NAME} ${BITSIZE}bit ${CMAKE_BUILD_TYPE} build")
+if(CEF_COMPLETE)
+  message(STATUS "${BoldWhite}${CEF_OS_NAME} ${BITSIZE}bit ${CMAKE_BUILD_TYPE} build${ColourReset} - ${Yellow}Complete CEF build!${ColourReset}")
+  if(CEF_NO_DEBUG_BUILD)
+    message(STATUS "${BoldWhite}Debug on complete CEF build disabled${ColourReset}")
+  endif()
+  if(CEF_NO_RELEASE_BUILD)
+    message(STATUS "${BoldWhite}Release on complete CEF build disabled${ColourReset}")
+  endif()
+else()
+  message(STATUS "${BoldWhite}${CEF_OS_NAME} ${BITSIZE}bit ${CMAKE_BUILD_TYPE} build${ColourReset} - ${Green} Fixed CEF loaded from web.${ColourReset}")
+endif()
 
 if(NOT WIN32)
   find_package(OpenGL)
@@ -126,26 +161,41 @@ else()
   endif()
 endif()
 
-# Include all source file directories to include headers without folders
-include_directories(${CMAKE_CURRENT_BINARY_DIR}
+include (${CMAKE_CURRENT_SOURCE_DIR}/versions.cmake)
+
+add_project(cef-binary REQUIRED)
+get_include_dir(cef-binary TEMP)
+list(APPEND INCLUDES ${TEMP})
+
+link_directories(${CMAKE_CURRENT_BINARY_DIR}/cef
+                 ${CMAKE_CURRENT_BINARY_DIR})
+
+include_directories(${INCLUDES}
+                    ${kodiplatform_INCLUDE_DIRS}
+                    ${platform_INCLUDE_DIRS}
+                    ${KODI_INCLUDE_DIR}
                     ${PROJECT_SOURCE_DIR}/src/addon/
                     ${PROJECT_SOURCE_DIR}/src/addon/utils/)
 
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/utils/Utils.cpp)
 
-list(APPEND DEPLIBS ${platform_LIBRARIES} ${kodiplatform_LIBRARIES})
+list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main.cpp)
+
+list(APPEND DEPLIBS ${platform_LIBRARIES}
+                    ${kodiplatform_LIBRARIES}
+                    cef
+                    cef_dll_wrapper)
 if(WIN32)
   list(APPEND DEPLIBS ws2_32)
 endif()
 
-include_directories(${INCLUDES}
-                    ${kodiplatform_INCLUDE_DIRS}
-                    ${platform_INCLUDE_DIRS}
-                    ${KODI_INCLUDE_DIR})
+add_executable(kodichromium ${KODICHROMIUM_BIN_SOURCES})
+target_link_libraries(kodichromium ${DEPLIBS})
 
 build_addon(web.KODIChromiumBrowser KODICHROMIUM DEPLIBS)
 
 add_definitions(-DKODICHROMIUM_VERSION="${KODICHROMIUM_VERSION}")
+add_dependencies(web.KODIChromiumBrowser cef-binary)
 
 include(CPack)

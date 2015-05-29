@@ -257,15 +257,18 @@ def apply_deps_patch():
     deps_path = os.path.join(chromium_src_dir, deps_file)
     remove_deps_entry(deps_path, "'src'")
 
+def apply_kodi_patch():
+  """ Patch the Chromium file with Kodi changes. """
   if options.kodipatch != '':
     # Apply Kodi related changes to code
-    if not os.path.exists(options.kodipatch):
+    patch_file = os.path.join(options.kodipatch)
+    if not os.path.exists(patch_file):
       raise Exception("Kodi patch file %s does not exist" % (options.kodipatch))
     else:
       msg("Using Kodi support changes patch: %s" % (options.kodipatch))
     patch_tool = os.path.join(cef_dir, 'tools', 'patcher.py')
     run('%s %s --patch-file "%s" --patch-dir "%s"' %
-            (python_exe, patch_tool, options.kodipatch, chromium_src_dir),
+            (python_exe, patch_tool, patch_file, chromium_src_dir),
         chromium_src_dir, depot_tools_dir)
 
 def onerror(func, path, exc_info):
@@ -306,6 +309,9 @@ distribution of CEF.
 parser = OptionParser(description=disc)
 
 # Setup options.
+parser.add_option('--add-kodi-patch', dest='kodipatch', metavar='FILE',
+                  help='Apply the Kodi related changes based on the given '+\
+                       'patch to the code',)
 parser.add_option('--download-dir', dest='downloaddir', metavar='DIR',
                   help='Download directory with no spaces [required].')
 parser.add_option('--depot-tools-dir', dest='depottoolsdir', metavar='DIR',
@@ -423,13 +429,12 @@ parser.add_option('--clean-artifacts',
                   action='store_true', dest='cleanartifacts', default=False,
                   help='Clean the artifacts output directory.')
 
-# KODI options.
-parser.add_option('--add-kodi-patch', dest='kodipatch',
-                  help='Apply the Kodi related changes based on the given '+\
-                       'patch to the code',
-                  default='')
-
 (options, args) = parser.parse_args()
+
+if options.kodipatch is None:
+  print "The --add-kodi-patch option is required for this version."
+  parser.print_help(sys.stderr)
+  sys.exit()
 
 if options.downloaddir is None:
   print "The --download-dir option is required."
@@ -820,6 +825,8 @@ elif not out_src_dir_exists:
 # Write the config file for identifying the branch.
 write_branch_config_file(out_src_dir, cef_branch)
 
+# Apply Kodi's needed changes
+apply_kodi_patch()
 
 ##
 # Build CEF.

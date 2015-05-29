@@ -112,6 +112,11 @@ function(add_external_project name)
   cmake_parse_arguments(arg "USE_AUTOCONF" "" "" ${ARGN})
   list(REMOVE_ITEM ARGN "USE_AUTOCONF")
 
+  # Override install command if needed
+  if(${name}_NO_INSTALL)
+    set(NO_INSTALL_CMD "INSTALL_COMMAND")
+  endif()
+
   set (cmake_params)
   foreach (flag CMAKE_BUILD_TYPE
                 CMAKE_C_FLAGS_DEBUG
@@ -131,6 +136,7 @@ function(add_external_project name)
     PREFIX ${name}
     DOWNLOAD_DIR ${download_location}
     INSTALL_DIR ${install_location}
+    ${NO_INSTALL_CMD} ""
 
     # add url/mdf/git-repo etc. specified in versions.cmake
     ${${name}_revision}
@@ -149,8 +155,6 @@ function(add_external_project name)
 
   ExternalProject_Get_Property(${name} install_dir)
   set_include_dir(${name} ${install_dir}/include)
-
-
 endfunction()
 
 function(add_revision name)
