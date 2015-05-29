@@ -20,6 +20,6 @@ else()
   # CEF_OS_NAME and BITSIZE are defined by CMakeLists.txt
   add_revision(cef-binary
     URL http://esmasol.de/data/documents/cef_binary_3_${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE}.zip
-    URL_MD5 a4bd865ad8f3093ece22176c4accfcdd
+    URL_MD5 130e29b59186b52b66e89543f260cd09
   )
 endif()
