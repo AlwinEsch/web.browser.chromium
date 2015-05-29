@@ -339,7 +339,7 @@ index 6d34863..fcee49e 100644
  #include "include/base/cef_build.h"
  #include "include/internal/cef_string.h"
  #include "include/internal/cef_string_list.h"
-@@ -408,6 +410,11 @@ typedef struct _cef_settings_t {
+@@ -407,6 +409,11 @@ typedef struct _cef_settings_t {
    // CefRequestContextSettings.accept_language_list value.
    ///
    cef_string_t accept_language_list;
@@ -351,7 +351,7 @@ index 6d34863..fcee49e 100644
  } cef_settings_t;
  
  ///
-@@ -849,6 +856,16 @@ typedef enum {
+@@ -847,6 +854,16 @@ typedef enum {
    // and "~/Library/Application Support" directory on Mac OS X.
    ///
    PK_USER_DATA,
@@ -406,7 +406,7 @@ diff --git cef/libcef/browser/content_browser_client.cc cef/libcef/browser/conte
 index 9654357..354b0b8 100644
 --- cef/libcef/browser/content_browser_client.cc
 +++ cef/libcef/browser/content_browser_client.cc
-@@ -619,6 +619,9 @@ void CefContentBrowserClient::AppendExtraCommandLineSwitches(
+@@ -618,6 +618,9 @@ void CefContentBrowserClient::AppendExtraCommandLineSwitches(
        switches::kProductVersion,
        switches::kResourcesDirPath,
        switches::kUserAgent,
