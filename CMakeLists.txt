@@ -177,9 +177,12 @@ include_directories(${INCLUDES}
                     ${platform_INCLUDE_DIRS}
                     ${KODI_INCLUDE_DIR}
                     ${PROJECT_SOURCE_DIR}/src/addon/
+                    ${PROJECT_SOURCE_DIR}/src/addon/settings/
                     ${PROJECT_SOURCE_DIR}/src/addon/utils/)
 
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
+                                 src/addon/WebBrowserManager.cpp
+                                 src/addon/settings/SettingsMain.cpp
                                  src/addon/utils/Utils.cpp)
 
 list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main.cpp)

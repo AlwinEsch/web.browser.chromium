@@ -1,0 +1,530 @@
+From aa1fa0246b78ab697737e79fb52b947444a4f4a4 Mon Sep 17 00:00:00 2001
+From: AlwinEsch <alwin.esch@web.de>
+Date: Fri, 29 May 2015 10:25:21 +0200
+Subject: [PATCH] CEF branch 2357.1274.g7b49af6 - Add Kodi related changes, Version 0.0.2
+
+
+
+
+diff --git base/base_paths.cc base/base_paths.cc
+index 7076ec3..7eec473 100644
+--- base/base_paths.cc
++++ base/base_paths.cc
+@@ -14,10 +14,18 @@ bool PathProvider(int key, FilePath* result) {
+   // NOTE: DIR_CURRENT is a special case in PathService::Get
+ 
+   switch (key) {
++#if defined(KODI_ADDON)
++    case DIR_KODI_ADDON:
++    case DIR_EXE: //! NOTE: Hack way, force exe directory to kodi if needed.
++      PathService::GetKodiAddonPath(result);
++      *result = result->DirName();
++      return true;
++#else
+     case DIR_EXE:
+       PathService::Get(FILE_EXE, result);
+       *result = result->DirName();
+       return true;
++#endif
+     case DIR_MODULE:
+       PathService::Get(FILE_MODULE, result);
+       *result = result->DirName();
+diff --git base/base_paths.h base/base_paths.h
+index 26b2fd4..00a551a 100644
+--- base/base_paths.h
++++ base/base_paths.h
+@@ -5,6 +5,8 @@
+ #ifndef BASE_BASE_PATHS_H_
+ #define BASE_BASE_PATHS_H_
+ 
++#define KODI_ADDON 1
++
+ // This file declares path keys for the base module.  These can be used with
+ // the PathService to access various special directories and files.
+ 
+@@ -44,6 +46,8 @@ enum BasePathKey {
+                      // for tests that need to locate various resources. It
+                      // should not be used outside of test code.
+   DIR_USER_DESKTOP,  // The current user's Desktop.
++  DIR_KODI_ADDON,    // Alternate DIR_EXE used for KODI web browser addon
++  FILE_KODI_ADDON,   // Alternate FILE_EXE used for KODI web browser addon
+ 
+   DIR_TEST_DATA,     // Used only for testing.
+ 
+diff --git base/base_paths_android.cc base/base_paths_android.cc
+index 56c6cc70..72c611e 100644
+--- base/base_paths_android.cc
++++ base/base_paths_android.cc
+@@ -19,6 +19,12 @@ namespace base {
+ 
+ bool PathProviderAndroid(int key, FilePath* result) {
+   switch (key) {
++#if defined(KODI_ADDON)
++    case base::FILE_KODI_ADDON:
++    case base::FILE_EXE:
++      PathService::GetKodiAddonPath(result);
++      break;
++#else
+     case base::FILE_EXE: {
+       char bin_dir[PATH_MAX + 1];
+       int bin_dir_size = readlink(kProcSelfExe, bin_dir, PATH_MAX);
+@@ -30,6 +36,7 @@ bool PathProviderAndroid(int key, FilePath* result) {
+       *result = FilePath(bin_dir);
+       return true;
+     }
++#endif
+     case base::FILE_MODULE:
+       // dladdr didn't work in Android as only the file name was returned.
+       NOTIMPLEMENTED();
+diff --git base/base_paths_posix.cc base/base_paths_posix.cc
+index 048434f..cbc02d0 100644
+--- base/base_paths_posix.cc
++++ base/base_paths_posix.cc
+@@ -32,6 +32,14 @@ namespace base {
+ bool PathProviderPosix(int key, FilePath* result) {
+   FilePath path;
+   switch (key) {
++#if defined(KODI_ADDON)
++    case base::FILE_KODI_ADDON:
++    case base::FILE_EXE:
++    case base::FILE_MODULE:
++      PathService::GetKodiAddonPath(&path);
++      *result = path;
++      break;
++#else
+     case base::FILE_EXE:
+     case base::FILE_MODULE: {  // TODO(evanm): is this correct?
+ #if defined(OS_LINUX)
+@@ -73,6 +81,7 @@ bool PathProviderPosix(int key, FilePath* result) {
+       return true;
+ #endif
+     }
++#endif
+     case base::DIR_SOURCE_ROOT: {
+       // Allow passing this in the environment, for more flexibility in build
+       // tree configurations (sub-project builds, gyp --output_dir, etc.)
+diff --git base/base_paths_win.cc base/base_paths_win.cc
+index 4ecb59d..45b7dcc 100644
+--- base/base_paths_win.cc
++++ base/base_paths_win.cc
+@@ -31,10 +31,17 @@ bool PathProviderWin(int key, FilePath* result) {
+ 
+   FilePath cur;
+   switch (key) {
++#if defined(KODI_ADDON)
++    case base::FILE_KODI_ADDON:
++    case base::FILE_EXE:
++      PathService::GetKodiAddonPath(cur);
++      break;
++#else
+     case base::FILE_EXE:
+       GetModuleFileName(NULL, system_buffer, MAX_PATH);
+       cur = FilePath(system_buffer);
+       break;
++#endif
+     case base::FILE_MODULE: {
+       // the resource containing module is assumed to be the one that
+       // this code lives in, whether that's a dll or exe
+diff --git base/i18n/icu_util.cc base/i18n/icu_util.cc
+index 8bbbc04..2bd9c94 100644
+--- base/i18n/icu_util.cc
++++ base/i18n/icu_util.cc
+@@ -125,9 +125,11 @@ bool InitializeICU() {
+   // be released.
+   CR_DEFINE_STATIC_LOCAL(base::MemoryMappedFile, mapped_file, ());
+   if (!mapped_file.IsValid()) {
+-#if !defined(OS_MACOSX)
++#if !defined(OS_MACOSX) || defined(KODI_ADDON)
+     FilePath data_path;
+-#if defined(OS_WIN)
++#if defined(KODI_ADDON)
++    bool path_ok = PathService::Get(base::DIR_KODI_ADDON, &data_path);
++#elif defined(OS_WIN)
+     // The data file will be in the same directory as the current module.
+     bool path_ok = PathService::Get(base::DIR_MODULE, &data_path);
+ #elif defined(OS_ANDROID)
+diff --git base/path_service.cc base/path_service.cc
+index 3c437ee..f0c2589 100644
+--- base/path_service.cc
++++ base/path_service.cc
+@@ -10,6 +10,11 @@
+ #include <shlobj.h>
+ #endif
+ 
++#if defined(KODI_ADDON)
++#include "base/base_switches.h"
++#include "base/command_line.h"
++#endif
++
+ #include "base/containers/hash_tables.h"
+ #include "base/files/file_path.h"
+ #include "base/files/file_util.h"
+@@ -175,6 +180,40 @@ bool LockedGetFromOverrides(int key, PathData* path_data, FilePath* result) {
+ 
+ }  // namespace
+ 
++#if defined(KODI_ADDON)
++/*!
++ * Here is the for Kodi add-on reworked path handling, was needed to have on all
++ * opened sandbox app parts the right folder about Kodi add-on.
++ *
++ * Normally CEF use the base folder, but this is on kodi.bin itself and not
++ * match add-on folder point. The "kodi-addon-dir-path" string is hardcoded here
++ * to prevent include libcef part to this base.
++ *
++ * This is for me not the best way but it works.
++ */
++char PathService::g_kodi_addon_path[1024];
++bool PathService::m_bKodiAddonIsSet = false;
++
++bool PathService::GetKodiAddonPath(FilePath* result) {
++  if (!m_bKodiAddonIsSet) {
++    const base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
++    if (command_line->HasSwitch("kodi-addon-dir-path")) {
++      base::FilePath file_path = command_line->GetSwitchValuePath("kodi-addon-dir-path");
++      PathService::SetKodiAddonPath(&file_path);
++    }
++  }
++  *result = FilePath(g_kodi_addon_path);
++  return false;
++}
++
++void PathService::SetKodiAddonPath(base::FilePath *path) {
++  if (!m_bKodiAddonIsSet) {
++    strncpy(g_kodi_addon_path, path->value().c_str(), sizeof(g_kodi_addon_path));
++    m_bKodiAddonIsSet = true;
++  }
++}
++#endif
++
+ // TODO(brettw): this function does not handle long paths (filename > MAX_PATH)
+ // characters). This isn't supported very well by Windows right now, so it is
+ // moot, but we should keep this in mind for the future.
+diff --git base/path_service.h base/path_service.h
+index 025550f..30a06d3 100644
+--- base/path_service.h
++++ base/path_service.h
+@@ -12,6 +12,8 @@
+ #include "base/gtest_prod_util.h"
+ #include "build/build_config.h"
+ 
++#define KODI_ADDON 1
++
+ namespace base {
+ class FilePath;
+ class ScopedPathOverride;
+@@ -22,6 +24,11 @@ class ScopedPathOverride;
+ //
+ class BASE_EXPORT PathService {
+  public:
++#if defined(KODI_ADDON)
++  static bool GetKodiAddonPath(base::FilePath* result);
++  static void SetKodiAddonPath(base::FilePath* path);
++#endif
++
+   // Retrieves a path to a special directory or file and places it into the
+   // string pointed to by 'path'. If you ask for a directory it is guaranteed
+   // to NOT have a path separator at the end. For example, "c:\windows\temp"
+@@ -87,6 +94,10 @@ class BASE_EXPORT PathService {
+   // was an override to remove or false if none was present.
+   // NOTE: This function is intended to be used by tests only!
+   static bool RemoveOverride(int key);
++#if defined(KODI_ADDON)
++  static char g_kodi_addon_path[1024];
++  static bool m_bKodiAddonIsSet;
++#endif
+ };
+ 
+ #endif  // BASE_PATH_SERVICE_H_
+diff --git base/path_service_unittest.cc base/path_service_unittest.cc
+index 7551d67..81b7181 100644
+--- base/path_service_unittest.cc
++++ base/path_service_unittest.cc
+@@ -48,7 +48,7 @@ bool ReturnsValidPath(int dir_type) {
+       check_path_exists = false;
+   }
+ #endif
+-#if defined(OS_MACOSX)
++#if defined(OS_MACOSX) && !defined(KODI_ADDON)
+   if (dir_type != base::DIR_EXE && dir_type != base::DIR_MODULE &&
+       dir_type != base::FILE_EXE && dir_type != base::FILE_MODULE) {
+     if (path.ReferencesParent())
+diff --git chrome/browser/shell_integration_linux.cc chrome/browser/shell_integration_linux.cc
+index 4e1c305..2707bcd 100644
+--- chrome/browser/shell_integration_linux.cc
++++ chrome/browser/shell_integration_linux.cc
+@@ -330,7 +330,11 @@ bool GetChromeVersionOfScript(const std::string& script,
+                               std::string* chrome_version) {
+   // Get the path to the Chrome version.
+   base::FilePath chrome_dir;
++#if defined(KODI_ADDON)
++  if (!PathService::Get(base::DIR_KODI_ADDON, &chrome_dir))
++#else
+   if (!PathService::Get(base::DIR_EXE, &chrome_dir))
++#endif
+     return false;
+ 
+   base::FilePath chrome_version_path = chrome_dir.Append(script);
+diff --git chrome/common/chrome_paths.cc chrome/common/chrome_paths.cc
+index 3cee502..36c92d8 100644
+--- chrome/common/chrome_paths.cc
++++ chrome/common/chrome_paths.cc
+@@ -146,7 +146,10 @@ bool PathProvider(int key, base::FilePath* result) {
+       return PathService::Get(chrome::DIR_USER_DATA, result);
+ #else
+       // Debug builds write next to the binary (in the build tree)
+-#if defined(OS_MACOSX)
++#if defined(KODI_ADDON)
++      if (!PathService::Get(base::DIR_KODI_ADDON, result))
++        return false;
++#elif defined(OS_MACOSX)
+       if (!PathService::Get(base::DIR_EXE, result))
+         return false;
+       if (base::mac::AmIBundled()) {
+@@ -264,7 +267,7 @@ bool PathProvider(int key, base::FilePath* result) {
+       cur = cur.Append(FILE_PATH_LITERAL("inspector"));
+       break;
+     case chrome::DIR_APP_DICTIONARIES:
+-#if defined(OS_POSIX)
++#if defined(OS_POSIX) || defined(KODI_ADDON)
+       // We can't write into the EXE dir on Linux, so keep dictionaries
+       // alongside the safe browsing database in the user data dir.
+       // And we don't want to write into the bundle on the Mac, so push
+@@ -353,7 +356,7 @@ bool PathProvider(int key, base::FilePath* result) {
+     // was shipped along with chrome.  The value can be overridden
+     // if it is installed via component updater.
+     case chrome::DIR_PNACL_COMPONENT:
+-#if defined(OS_MACOSX)
++#if defined(OS_MACOSX) && !defined(KODI_ADDON)
+       // PNaCl really belongs in the InternalPluginsDirectory but actually
+       // copying it there would result in the files also being shipped, which
+       // we don't want yet. So for now, just find them in the directory where
+diff --git gin/isolate_holder.cc gin/isolate_holder.cc
+index 317b582..c690d6d 100644
+--- gin/isolate_holder.cc
++++ gin/isolate_holder.cc
+@@ -117,9 +117,11 @@ extern const unsigned char g_natives_fingerprint[];
+ extern const unsigned char g_snapshot_fingerprint[];
+ #endif  // V8_VERIFY_EXTERNAL_STARTUP_DATA
+ 
+-#if !defined(OS_MACOSX)
++#if !defined(OS_MACOSX) || defined(KODI_ADDON)
+ const int IsolateHolder::kV8SnapshotBasePathKey =
+-#if defined(OS_ANDROID)
++#if defined(KODI_ADDON)
++    base::DIR_KODI_ADDON;
++#elif defined(OS_ANDROID)
+     base::DIR_ANDROID_APP_DATA;
+ #elif defined(OS_POSIX)
+     base::DIR_EXE;
+@@ -136,7 +138,7 @@ bool IsolateHolder::LoadV8Snapshot() {
+   if (g_mapped_natives && g_mapped_snapshot)
+     return true;
+ 
+-#if !defined(OS_MACOSX)
++#if !defined(OS_MACOSX) || defined(KODI_ADDON)
+   base::FilePath data_path;
+   PathService::Get(kV8SnapshotBasePathKey, &data_path);
+   DCHECK(!data_path.empty());
+diff --git cef/include/internal/cef_types.h cef/include/internal/cef_types.h
+index 6d34863..fcee49e 100644
+--- cef/include/internal/cef_types.h
++++ cef/include/internal/cef_types.h
+@@ -32,6 +32,8 @@
+ #define CEF_INCLUDE_INTERNAL_CEF_TYPES_H_
+ #pragma once
+ 
++#define KODI_ADDON 1
++
+ #include "include/base/cef_build.h"
+ #include "include/internal/cef_string.h"
+ #include "include/internal/cef_string_list.h"
+@@ -408,6 +410,11 @@ typedef struct _cef_settings_t {
+   // CefRequestContextSettings.accept_language_list value.
+   ///
+   cef_string_t accept_language_list;
++
++  ///
++  // The fully qualified path for the KODI addon executable files.
++  ///
++  cef_string_t kodi_addon_dir_path;
+ } cef_settings_t;
+ 
+ ///
+@@ -849,6 +856,16 @@ typedef enum {
+   // and "~/Library/Application Support" directory on Mac OS X.
+   ///
+   PK_USER_DATA,
++
++  ///
++  // Directory containing PK_FILE_KODI_ADDON.
++  ///
++  PK_DIR_KODI_ADDON,
++
++  ///
++  // Path and filename of the current KODI add-on.
++  ///
++  PK_FILE_KODI_ADDON,
+ } cef_path_key_t;
+ 
+ ///
+diff --git cef/include/internal/cef_types_wrappers.h cef/include/internal/cef_types_wrappers.h
+index d120463..4a7f915 100644
+--- cef/include/internal/cef_types_wrappers.h
++++ cef/include/internal/cef_types_wrappers.h
+@@ -31,6 +31,8 @@
+ #define CEF_INCLUDE_INTERNAL_CEF_TYPES_WRAPPERS_H_
+ #pragma once
+ 
++#define KODI_ADDON 1
++
+ #include "include/internal/cef_string.h"
+ #include "include/internal/cef_string_list.h"
+ #include "include/internal/cef_types.h"
+@@ -427,6 +429,9 @@ struct CefSettingsTraits {
+     cef_string_clear(&s->resources_dir_path);
+     cef_string_clear(&s->locales_dir_path);
+     cef_string_clear(&s->accept_language_list);
++#if defined(KODI_ADDON)
++    cef_string_clear(&s->kodi_addon_dir_path);
++#endif
+   }
+ 
+   static inline void set(const struct_type* src, struct_type* target,
+@@ -462,6 +467,10 @@ struct CefSettingsTraits {
+         &target->resources_dir_path, copy);
+     cef_string_set(src->locales_dir_path.str, src->locales_dir_path.length,
+         &target->locales_dir_path, copy);
++#if defined(KODI_ADDON)
++    cef_string_set(src->kodi_addon_dir_path.str, src->kodi_addon_dir_path.length,
++        &target->kodi_addon_dir_path, copy);
++#endif
+     target->pack_loading_disabled = src->pack_loading_disabled;
+     target->remote_debugging_port = src->remote_debugging_port;
+     target->uncaught_exception_stack_size = src->uncaught_exception_stack_size;
+diff --git cef/libcef/browser/content_browser_client.cc cef/libcef/browser/content_browser_client.cc
+index 9654357..354b0b8 100644
+--- cef/libcef/browser/content_browser_client.cc
++++ cef/libcef/browser/content_browser_client.cc
+@@ -619,6 +619,9 @@ void CefContentBrowserClient::AppendExtraCommandLineSwitches(
+       switches::kProductVersion,
+       switches::kResourcesDirPath,
+       switches::kUserAgent,
++#if defined(KODI_ADDON)
++      switches::kKodiAddonDirPath,
++#endif
+     };
+     command_line->CopySwitchesFrom(*browser_cmd, kSwitchNames,
+                                    arraysize(kSwitchNames));
+diff --git cef/libcef/browser/path_util_impl.cc cef/libcef/browser/path_util_impl.cc
+index 6a75930..95e2118 100644
+--- cef/libcef/browser/path_util_impl.cc
++++ cef/libcef/browser/path_util_impl.cc
+@@ -15,18 +15,32 @@ bool CefGetPath(PathKey key, CefString& path) {
+     case PK_DIR_CURRENT:
+       pref_key = base::DIR_CURRENT;
+       break;
++#if defined(KODI_ADDON)
++    case PK_DIR_KODI_ADDON:
++    case PK_DIR_EXE: //! NOTE: Hack way, force exe directory to kodi if needed.
++      pref_key = base::DIR_KODI_ADDON;
++      break;
++#else
+     case PK_DIR_EXE:
+       pref_key = base::DIR_EXE;
+       break;
++#endif
+     case PK_DIR_MODULE:
+       pref_key = base::DIR_MODULE;
+       break;
+     case PK_DIR_TEMP:
+       pref_key = base::DIR_TEMP;
+       break;
++#if defined(KODI_ADDON)
++    case PK_FILE_KODI_ADDON:
++    case PK_FILE_EXE: //! NOTE: Hack way, force exe directory to kodi if needed.
++      pref_key = base::FILE_KODI_ADDON;
++      break;
++#else
+     case PK_FILE_EXE:
+       pref_key = base::FILE_EXE;
+       break;
++#endif
+     case PK_FILE_MODULE:
+       pref_key = base::FILE_MODULE;
+       break;
+diff --git cef/libcef/common/cef_switches.cc cef/libcef/common/cef_switches.cc
+index 3240e1a..08626c0 100644
+--- cef/libcef/common/cef_switches.cc
++++ cef/libcef/common/cef_switches.cc
+@@ -100,4 +100,9 @@ const char kEnableSystemFlash[]           = "enable-system-flash";
+ // Disable scroll bounce (rubber-banding) on OS X Lion and newer.
+ const char kDisableScrollBounce[]         = "disable-scroll-bounce";
+ 
++#if defined(KODI_ADDON)
++// Kodi add-on exe directory path.
++const char kKodiAddonDirPath[]            = "kodi-addon-dir-path";
++#endif
++
+ }  // namespace switches
+diff --git cef/libcef/common/cef_switches.h cef/libcef/common/cef_switches.h
+index d9e2cc2..0b73a6a 100644
+--- cef/libcef/common/cef_switches.h
++++ cef/libcef/common/cef_switches.h
+@@ -8,6 +8,8 @@
+ #define CEF_LIBCEF_COMMON_CEF_SWITCHES_H_
+ #pragma once
+ 
++#define KODI_ADDON 1
++
+ namespace switches {
+ 
+ extern const char kLogFile[];
+@@ -43,6 +45,9 @@ extern const char kEnableSpellingService[];
+ extern const char kOverrideSpellCheckLang[];
+ extern const char kEnableSystemFlash[];
+ extern const char kDisableScrollBounce[];
++#if defined(KODI_ADDON)
++extern const char kKodiAddonDirPath[];
++#endif
+ 
+ }  // namespace switches
+ 
+diff --git cef/libcef/common/main_delegate.cc cef/libcef/common/main_delegate.cc
+index 025eb71..b15f887 100644
+--- cef/libcef/common/main_delegate.cc
++++ cef/libcef/common/main_delegate.cc
+@@ -289,6 +289,18 @@ bool CefMainDelegate::BasicStartupComplete(int* exit_code) {
+     // In the browser process. Populate the global command-line object.
+     const CefSettings& settings = CefContext::Get()->settings();
+ 
++#if defined(KODI_ADDON)
++    if (settings.kodi_addon_dir_path.length > 0) {
++      base::FilePath file_path =
++          base::FilePath(CefString(&settings.kodi_addon_dir_path));
++      if (!file_path.empty())
++      {
++        command_line->AppendSwitchPath(switches::kKodiAddonDirPath, file_path);
++        PathService::SetKodiAddonPath(&file_path);
++      }
++    }
++#endif
++
+     if (settings.command_line_args_disabled) {
+       // Remove any existing command-line arguments.
+       base::CommandLine::StringVector argv;
+@@ -474,6 +486,14 @@ void CefMainDelegate::PreSandboxStartup() {
+   const std::string& process_type =
+       command_line->GetSwitchValueASCII(switches::kProcessType);
+ 
++#if defined(KODI_ADDON)
++  if (command_line->HasSwitch(switches::kKodiAddonDirPath))
++  {
++    base::FilePath file_path = command_line->GetSwitchValuePath(switches::kKodiAddonDirPath);
++    PathService::SetKodiAddonPath(&file_path);
++  }
++#endif
++
+   if (command_line->HasSwitch(switches::kEnableCrashReporter)) {
+     crash_reporter::SetCrashReporterClient(g_crash_reporter_client.Pointer());
+ #if defined(OS_MACOSX)

@@ -37,7 +37,7 @@ if(CEF_COMPLETE)
 
   set(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/CEFComplete/chromium/src/cef/binary_distrib/cef_binary_3.${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE})
 
-  message(STATUS "Created CEF binary ${BoldWhite}cef_binary_3.${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE}.zip${ColourReset} becomes stored at ${BoldWhite}${CMAKE_CURRENT_BINARY_DIR}${ColourReset}")
+  message(STATUS "Created CEF binary ${BoldWhite}cef_binary_3.${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE}-${CEF_OWN_CHANGES_VERSION}.zip${ColourReset} becomes stored at ${BoldWhite}${CMAKE_CURRENT_BINARY_DIR}${ColourReset}")
 
   add_external_project(cef-binary
     SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cef-binary/src/cef-binary
@@ -48,6 +48,10 @@ if(CEF_COMPLETE)
                             ${CEF_BUILD_VAL}
     UPDATE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE} ${CMAKE_CURRENT_BINARY_DIR}/cef-binary/src/cef-binary
     INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE}.zip ${CMAKE_CURRENT_BINARY_DIR}
+  )
+
+  add_custom_command(TARGET cef-binary
+    COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_CURRENT_BINARY_DIR}/${SOURCE}.zip ${CMAKE_CURRENT_BINARY_DIR}/${SOURCE}-${CEF_OWN_CHANGES_VERSION}.zip
   )
 else()
   add_external_project(cef-binary)
