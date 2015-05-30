@@ -23,6 +23,7 @@
 #include "platform/util/StdString.h"
 
 #include "addon.h"
+#include "WebBrowserManager.h"
 #include "Utils.h"
 
 using namespace std;
@@ -34,6 +35,7 @@ using namespace ADDON;
  */
 std::string               g_strUserPath       = "";
 std::string               g_strAddonPath      = "";
+CWebBrowserManager       *g_pWebManager       = NULL;
 CHelper_libXBMC_addon    *KODI                = NULL;
 CHelper_libKODI_web      *WEB                 = NULL;
 CHelper_libKODI_guilib   *GUI                 = NULL;
@@ -72,11 +74,20 @@ ADDON_STATUS ADDON_Create(void* hdl, void* props)
     return ADDON_STATUS_PERMANENT_FAILURE;
   }
 
-  LOG_MESSAGE(LOG_DEBUG, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
+  KODI->Log(LOG_DEBUG, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
 
   m_CurStatus     = ADDON_STATUS_UNKNOWN;
   g_strUserPath   = webProps->strUserPath;
   g_strAddonPath  = webProps->strAddonPath;
+  g_pWebManager   = new CWebBrowserManager;
+
+  if (!g_pWebManager->Create())
+  {
+    KODI->Log(LOG_DEBUG, "%s - Creation of web manager failed", __FUNCTION__);
+    return ADDON_STATUS_PERMANENT_FAILURE;
+  }
+
+  g_pWebManager->LoadUserSettings(); //!< @todo
 
   m_CurStatus = ADDON_STATUS_OK;
 
@@ -90,6 +101,11 @@ ADDON_STATUS ADDON_GetStatus()
 
 void ADDON_Destroy()
 {
+  g_pWebManager->SaveUserSettings(); //!< @todo
+
+  g_pWebManager->Destroy();
+
+  SAFE_DELETE(g_pWebManager);
   SAFE_DELETE(WEB);
   SAFE_DELETE(GUI);
   SAFE_DELETE(KODI);
@@ -99,7 +115,7 @@ void ADDON_Destroy()
 
 bool ADDON_HasSettings()
 {
-  return true;
+  return false;
 }
 
 unsigned int ADDON_GetSettings(ADDON_StructSetting ***sSet)
@@ -171,52 +187,70 @@ WEB_ADDON_ERROR GetVariousTypes(const WEB_ADDON_VARIOUS_TYPE *prevType, WEB_ADDO
   return WEB_ADDON_ERROR_REJECTED;
 }
 
+//! @todo add to addon interface
+WEB_ADDON_ERROR LoadUserSettings()
+{
+  if (g_pWebManager->LoadUserSettings())
+    return WEB_ADDON_ERROR_NO_ERROR;
+  return WEB_ADDON_ERROR_FAILED;
+}
+
+//! @todo add to addon interface
+WEB_ADDON_ERROR SaveUserSettings()
+{
+  if (g_pWebManager->SaveUserSettings())
+    return WEB_ADDON_ERROR_NO_ERROR;
+  return WEB_ADDON_ERROR_FAILED;
+}
+
 WEB_ADDON_ERROR CreateControl(const WEB_ADDON_GUI_PROPS &props, unsigned int webType, ADDON_HANDLE handle)
 {
-  return WEB_ADDON_ERROR_NO_ERROR;
+  return g_pWebManager->CreateControl(props, webType, handle);
 }
 
 bool DestroyControl(const ADDON_HANDLE handle)
 {
-  return true;
+  return g_pWebManager->DestroyControl(handle);
 }
 
 bool SetLanguage(const char *language)
 {
-  return true;
+  return g_pWebManager->SetLanguage(language);
 }
 
 void Render(const ADDON_HANDLE handle)
 {
+  g_pWebManager->Render(handle);
 }
 
 bool OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus)
 {
-  return true;
+  return g_pWebManager->OpenWebsite(handle, strURL, single, allowMenus);
 }
 
 void Stop(const ADDON_HANDLE handle)
 {
+  g_pWebManager->Stop(handle);
 }
 
 bool Dirty(const ADDON_HANDLE handle)
 {
-  return false;
+  return g_pWebManager->Dirty(handle);
 }
 
 bool OnInit(const ADDON_HANDLE handle)
 {
-  return true;
+  return g_pWebManager->OnInit(handle);
 }
 
 bool OnAction(const ADDON_HANDLE handle, int actionId, int &nextItem)
 {
-  return false;
+  return g_pWebManager->OnAction(handle, actionId, nextItem);
 }
 
 bool OnMouseEvent(const ADDON_HANDLE handle, int id, double x, double y, double offsetX, double offsetY, int state)
 {
-  return false;
+  return g_pWebManager->OnMouseEvent(handle, id, x, y, offsetX, offsetY, state);
 }
 
 } // extern "C"

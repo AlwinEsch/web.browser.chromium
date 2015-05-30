@@ -17,7 +17,7 @@ if(CEF_COMPLETE)
 else()
   # CEF_OS_NAME and BITSIZE are defined by CMakeLists.txt
   add_revision(cef-binary
-    URL http://esmasol.de/data/documents/kodi-web-${CEF_OWN_CHANGES_VERSION}_cef_binary_3_${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE}.zip
+    URL https://bitbucket.org/EsMaSol/cef/downloads/kodi-web-${CEF_OWN_CHANGES_VERSION}_cef_binary_3_${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE}.zip
     URL_MD5 1570985420a5b6beb285b13f66facd14
   )
 endif()

@@ -17,15 +17,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "kodi/libXBMC_addon.h"
-#include "kodi/libKODI_web.h"
-#include "kodi/libKODI_guilib.h"
-
-class CWebBrowserManager;
-
-extern std::string                   g_strUserPath;
-extern std::string                   g_strAddonPath;
-extern CWebBrowserManager           *g_pWebManager;
-extern ADDON::CHelper_libXBMC_addon *KODI;
-extern CHelper_libKODI_guilib       *GUI;
-extern CHelper_libKODI_web          *WEB;
+#if defined(HAVE_GL)
+#include "WebBrowserClientOpenGL.h"
+typedef CWebBrowserClientOpenGL CWebBrowserClient;
+#elif defined(HAS_DX)
+#include "WebBrowserClientDirectX.h"
+typedef CWebBrowserClientDirectX CWebBrowserClient;
+#error Render system is currently not implemented.
+#elif defined(HAVE_GLES2)
+#include "WebBrowserClientOpenGLES2.h"
+typedef CWebBrowserClientOpenGLES2 CWebBrowserClient;
+#error Render system is currently not implemented.
+#else
+#error Render system is not supported.
+#endif

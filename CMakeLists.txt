@@ -140,17 +140,19 @@ endif()
 if(NOT WIN32)
   find_package(OpenGL)
   if(OPENGL_FOUND)
+    add_definitions(-DHAVE_GL)
+    set(KODICHROMIUM_SOURCES src/addon/WebBrowserClientOpenGL.cpp)
     set(INCLUDES ${OPENGL_INCLUDE_DIR})
     set(DEPLIBS ${OPENGL_LIBRARIES})
-    add_definitions(-DHAVE_GL)
     message(STATUS "Web Browser support enabled via ${BoldGreen}OpenGL${ColourReset}")
   else()
     find_package(OpenGLES2)
     if(OPENGLES2_FOUND)
-      set(KODICHROMIUM_SOURCES src/addon/EGLHelpers/VisGUIShader.cpp
+      add_definitions(-DHAVE_GLES2)
+      set(KODICHROMIUM_SOURCES src/addon/WebBrowserClientOpenGLES2.cpp
+                               src/addon/EGLHelpers/VisGUIShader.cpp
                                src/addon/EGLHelpers/VisMatrixGLES.cpp
                                src/addon/EGLHelpers/VisShader.cpp)
-      add_definitions(-DHAVE_GLES2)
       set(INCLUDES ${OPENGLES2_INCLUDE_DIRS})
       set(DEPLIBS ${OPENGLES2_LIBRARIES})
       message(STATUS "Web Browser support enabled via ${BoldGreen}OpenGLES${ColourReset}")
@@ -161,9 +163,10 @@ if(NOT WIN32)
 else()
   find_package(D3DX9)
   if(D3DX9_FOUND)
+    add_definitions(-DHAS_DX)
+    set(KODICHROMIUM_SOURCES src/addon/WebBrowserClientDirectX.cpp)
     set(INCLUDES ${D3DX9_INCLUDE_DIR})
     set(DEPLIBS ${D3DX9_LIBRARIES})
-    add_definitions(-DHAS_DX)
     message(STATUS "Web Browser support enabled via ${BoldGreen}DirectX${ColourReset}")
   else()
     message(FATAL_ERROR " ${BoldRed}Web Browser support not possible because DirectX wasn't found${ColourReset}")
@@ -188,6 +191,8 @@ include_directories(${INCLUDES}
                     ${PROJECT_SOURCE_DIR}/src/addon/utils/)
 
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
+                                 src/addon/WebBrowserClientBase.cpp
+                                 src/addon/WebBrowserManager.cpp
                                  src/addon/settings/SettingsMain.cpp
                                  src/addon/utils/Utils.cpp)
 
