@@ -57,7 +57,8 @@ CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDO
   m_iGUIItemTop(props->iGUIItemTop),
   m_iGUIItemBottom(props->iGUIItemBottom),
   m_iGUIItemBack(props->iGUIItemBack),
-  m_bTransparentBackground(props->bUseTransparentBackground)
+  m_bTransparentBackground(props->bUseTransparentBackground),
+  m_pControlIdent(props->pControlIdent)
 {
   m_BackgroundColor[3] = float(CefColorGetA(props->iBackgroundColorARGB)) / 255.0f;
   m_BackgroundColor[2] = float(CefColorGetR(props->iBackgroundColorARGB)) / 255.0f;
@@ -103,6 +104,13 @@ bool CWebBrowserClientBase::OpenWebsite(const char* strURL, bool single, bool al
   return true;
 }
 
+void CWebBrowserClientBase::SetAddonHandle(ADDON_HANDLE addonHandle)
+{
+  m_addonHandle.callerAddress = addonHandle->callerAddress;
+  m_addonHandle.dataIdentifier = addonHandle->dataIdentifier;
+  m_addonHandle.dataAddress = m_pControlIdent;
+}
+
 /*!
  * @brief CefClient methods
  *
@@ -130,7 +138,7 @@ void CWebBrowserClientBase::OnBeforeContextMenu(
     CefRefPtr<CefContextMenuParams>       params,
     CefRefPtr<CefMenuModel>               model)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 bool CWebBrowserClientBase::OnContextMenuCommand(
@@ -140,7 +148,7 @@ bool CWebBrowserClientBase::OnContextMenuCommand(
     int                                   command_id,
     EventFlags                            event_flags)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -148,7 +156,7 @@ void CWebBrowserClientBase::OnContextMenuDismissed(
     CefRefPtr<CefBrowser>                 browser,
     CefRefPtr<CefFrame>                   frame)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 //}
 
@@ -161,14 +169,15 @@ void CWebBrowserClientBase::OnAddressChange(
     CefRefPtr<CefFrame>                   frame,
     const CefString&                      url)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s - %s", __FUNCTION__, url.ToString().c_str());
 }
 
 void CWebBrowserClientBase::OnTitleChange(
     CefRefPtr<CefBrowser>                 browser,
     const CefString&                      title)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s - %s", __FUNCTION__, title.ToString().c_str());
+  WEB->Control_SetOpenedTitle(&m_addonHandle, title.ToString().c_str());
 }
 
 void CWebBrowserClientBase::OnFaviconURLChange(
@@ -176,13 +185,14 @@ void CWebBrowserClientBase::OnFaviconURLChange(
     const std::vector<CefString>&         icon_urls)
 {
 
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 bool CWebBrowserClientBase::OnTooltip(
     CefRefPtr<CefBrowser>                 browser,
     CefString&                            text)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s - %s", __FUNCTION__, text.ToString().c_str());
   return false;
 }
 
@@ -190,7 +200,7 @@ void CWebBrowserClientBase::OnStatusMessage(
     CefRefPtr<CefBrowser>                 browser,
     const CefString&                      value)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s - %s", __FUNCTION__, value.ToString().c_str());
 }
 
 bool CWebBrowserClientBase::OnConsoleMessage(
@@ -214,7 +224,7 @@ void CWebBrowserClientBase::OnBeforeDownload(
     const CefString&                      suggested_name,
     CefRefPtr<CefBeforeDownloadCallback>  callback)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 void CWebBrowserClientBase::OnDownloadUpdated(
@@ -222,7 +232,7 @@ void CWebBrowserClientBase::OnDownloadUpdated(
     CefRefPtr<CefDownloadItem>            download_item,
     CefRefPtr<CefDownloadItemCallback>    callback)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 //}
 
@@ -235,7 +245,7 @@ bool CWebBrowserClientBase::OnDragEnter(
     CefRefPtr<CefDragData> dragData,
     CefRenderHandler::DragOperationsMask mask)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 //}
@@ -250,6 +260,7 @@ bool CWebBrowserClientBase::OnRequestGeolocationPermission(
     int                                   request_id,
     CefRefPtr<CefGeolocationCallback>     callback)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -259,7 +270,7 @@ void CWebBrowserClientBase::OnCancelGeolocationPermission(
     const CefString&                      requesting_url,
     int                                   request_id)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 //}
 
@@ -280,11 +291,13 @@ bool CWebBrowserClientBase::OnBeforePopup(
     CefBrowserSettings&                   settings,
     bool*                                 no_javascript_access)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
 void CWebBrowserClientBase::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   if (!m_Browser)
   {
     m_Browser = browser;
@@ -293,17 +306,19 @@ void CWebBrowserClientBase::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 
 bool CWebBrowserClientBase::RunModal(CefRefPtr<CefBrowser> browser)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
 bool CWebBrowserClientBase::DoClose(CefRefPtr<CefBrowser> browser)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
 void CWebBrowserClientBase::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 //}
 
@@ -317,14 +332,14 @@ void CWebBrowserClientBase::OnLoadingStateChange(
     bool                                  canGoBack,
     bool                                  canGoForward)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 void CWebBrowserClientBase::OnLoadStart(
     CefRefPtr<CefBrowser>                 browser,
     CefRefPtr<CefFrame>                   frame)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 void CWebBrowserClientBase::OnLoadEnd(
@@ -332,7 +347,7 @@ void CWebBrowserClientBase::OnLoadEnd(
     CefRefPtr<CefFrame>                   frame,
     int                                   httpStatusCode)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 void CWebBrowserClientBase::OnLoadError(
@@ -342,7 +357,7 @@ void CWebBrowserClientBase::OnLoadError(
     const CefString&                      errorText,
     const CefString&                      failedUrl)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 //}
 
@@ -356,6 +371,7 @@ bool CWebBrowserClientBase::OnPreKeyEvent(
     CefEventHandle                        os_event,
     bool*                                 is_keyboard_shortcut)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -364,6 +380,7 @@ bool CWebBrowserClientBase::OnKeyEvent(
     const CefKeyEvent&                    event,
     CefEventHandle                        os_event)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 //}
@@ -378,6 +395,7 @@ bool CWebBrowserClientBase::OnBeforeBrowse(
     CefRefPtr<CefRequest>                 request,
     bool                                  is_redirect)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -388,6 +406,7 @@ bool CWebBrowserClientBase::OnOpenURLFromTab(
     CefRequestHandler::WindowOpenDisposition target_disposition,
     bool                                  user_gesture)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -406,7 +425,7 @@ void CWebBrowserClientBase::OnResourceRedirect(
     CefRefPtr<CefRequest>                 request,
     CefString&                            new_url)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 bool CWebBrowserClientBase::OnResourceResponse(
@@ -415,6 +434,7 @@ bool CWebBrowserClientBase::OnResourceResponse(
     CefRefPtr<CefRequest>                 request,
     CefRefPtr<CefResponse>                response)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -428,6 +448,7 @@ bool CWebBrowserClientBase::GetAuthCredentials(
     const CefString&                      scheme,
     CefRefPtr<CefAuthCallback>            callback)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -436,6 +457,7 @@ CefRefPtr<CefResourceHandler> CWebBrowserClientBase::GetResourceHandler(
     CefRefPtr<CefFrame>                   frame,
     CefRefPtr<CefRequest>                 request)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return NULL;
 }
 
@@ -445,6 +467,7 @@ bool CWebBrowserClientBase::OnQuotaRequest(
     int64                                 new_size,
     CefRefPtr<CefRequestCallback>         callback)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -453,7 +476,7 @@ void CWebBrowserClientBase::OnProtocolExecution(
     const CefString&                      url,
     bool&                                 allow_os_execution)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 bool CWebBrowserClientBase::OnCertificateError(
@@ -463,6 +486,7 @@ bool CWebBrowserClientBase::OnCertificateError(
     CefRefPtr<CefSSLInfo>                 ssl_info,
     CefRefPtr<CefRequestCallback>         callback)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -472,6 +496,7 @@ bool CWebBrowserClientBase::OnBeforePluginLoad(
     const CefString&                      policy_url,
     CefRefPtr<CefWebPluginInfo>           info)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -479,19 +504,19 @@ void CWebBrowserClientBase::OnPluginCrashed(
     CefRefPtr<CefBrowser>                 browser,
     const CefString&                      plugin_path)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 void CWebBrowserClientBase::OnRenderViewReady(
     CefRefPtr<CefBrowser>                 browser)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 void CWebBrowserClientBase::OnRenderProcessTerminated(
     CefRefPtr<CefBrowser>                 browser,
     TerminationStatus                     status)
 {
-
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 //}

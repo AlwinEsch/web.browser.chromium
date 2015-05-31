@@ -88,6 +88,14 @@ public:
   bool OpenWebsite(const char* strURL, bool single, bool allowMenus);
 
   /*!
+   * @brief Used to give client the add-on handle data for callbacks.
+   * During usage of them must be on dataAddress the m_pControlIdent
+   * inserted.
+   * @param addonHandle The handle
+   */
+  void SetAddonHandle(ADDON_HANDLE addonHandle);
+
+  /*!
    * Kodi add-on render functions
    */
   virtual void Cleanup() = 0;
@@ -571,6 +579,7 @@ protected:
   int          m_iGUIItemBottom;
   int          m_iGUIItemBack;
   bool         m_bTransparentBackground;
+  void        *m_pControlIdent;
 
   float        m_BackgroundColor[4];
 
@@ -578,4 +587,5 @@ private:
   const int    m_iUniqueClientId;  /*!< Unique identification id of this control client */
   time_t       m_inactivateTime;      /*!< Time where client becomes set inactive to handle the timeout */
   CefRefPtr<CefBrowser> m_Browser;
+  ADDON_HANDLE_STRUCT m_addonHandle;
 };

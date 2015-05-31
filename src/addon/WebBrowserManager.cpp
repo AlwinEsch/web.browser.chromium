@@ -195,6 +195,7 @@ void CWebBrowserManager::CreateControl_Main(sMainThreadData *data)
   data->manager->m_BrowserClients[uniqueId]          = pBrowserClient;
   data->data.CreateControl.handle[0]->callerAddress  = pBrowserClient;
   data->data.CreateControl.handle[0]->dataIdentifier = uniqueId;
+  pBrowserClient->SetAddonHandle(data->data.CreateControl.handle[0]);
 
   LOG_MESSAGE(LOG_DEBUG, "%s - Web browser control id '%i' created", __FUNCTION__, uniqueId);
   return;
