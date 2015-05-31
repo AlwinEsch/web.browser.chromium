@@ -149,7 +149,7 @@ if(NOT WIN32)
     find_package(OpenGLES2)
     if(OPENGLES2_FOUND)
       add_definitions(-DHAVE_GLES2)
-      set(KODICHROMIUM_SOURCES src/addon/WebBrowserClientOpenGLES2.cpp
+      set(KODICHROMIUM_SOURCES src/addon/WebBrowserClientOpenGLES.cpp
                                src/addon/EGLHelpers/VisGUIShader.cpp
                                src/addon/EGLHelpers/VisMatrixGLES.cpp
                                src/addon/EGLHelpers/VisShader.cpp)
