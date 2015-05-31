@@ -23,8 +23,7 @@
 #include "WebBrowserClientBase.h"
 
 class CWebBrowserClientOpenGL :
-  public CWebBrowserClientBase,
-  public CefRenderHandler
+  public CWebBrowserClientBase
 {
 public:
   CWebBrowserClientOpenGL(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props);

@@ -34,3 +34,5 @@ do { \
   KODI->Log(loglevel, "KODIChromium - " a); \
 } while(0)
 #endif
+
+void LOG_INTERNAL_MESSAGE(const ADDON::addon_log_t loglevel, const char *format, ...);

@@ -104,6 +104,23 @@ bool CWebBrowserClientBase::OpenWebsite(const char* strURL, bool single, bool al
 }
 
 /*!
+ * @brief CefClient methods
+ *
+ * Implement this interface to provide handler implementations.
+ */
+//{
+bool CWebBrowserClientBase::OnProcessMessageReceived(
+    CefRefPtr<CefBrowser>                 browser,
+    CefProcessId                          source_process,
+    CefRefPtr<CefProcessMessage>          message)
+{
+  CEF_REQUIRE_UI_THREAD();
+
+  return false;
+}
+//}
+
+/*!
  * @brief CefContextMenuHandler methods
  */
 //{
@@ -113,6 +130,7 @@ void CWebBrowserClientBase::OnBeforeContextMenu(
     CefRefPtr<CefContextMenuParams>       params,
     CefRefPtr<CefMenuModel>               model)
 {
+
 }
 
 bool CWebBrowserClientBase::OnContextMenuCommand(
@@ -122,6 +140,7 @@ bool CWebBrowserClientBase::OnContextMenuCommand(
     int                                   command_id,
     EventFlags                            event_flags)
 {
+
   return false;
 }
 
@@ -129,6 +148,7 @@ void CWebBrowserClientBase::OnContextMenuDismissed(
     CefRefPtr<CefBrowser>                 browser,
     CefRefPtr<CefFrame>                   frame)
 {
+
 }
 //}
 
@@ -156,6 +176,7 @@ void CWebBrowserClientBase::OnFaviconURLChange(
     const std::vector<CefString>&         icon_urls)
 {
 
+
 }
 
 bool CWebBrowserClientBase::OnTooltip(
@@ -178,7 +199,8 @@ bool CWebBrowserClientBase::OnConsoleMessage(
     const CefString&                      source,
     int                                   line)
 {
-  return false;
+  LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Message: %s - Source: %s - Line: %i", __FUNCTION__, message.ToString().c_str(), source.ToString().c_str(), line);
+  return true;
 }
 //}
 
@@ -192,6 +214,7 @@ void CWebBrowserClientBase::OnBeforeDownload(
     const CefString&                      suggested_name,
     CefRefPtr<CefBeforeDownloadCallback>  callback)
 {
+
 }
 
 void CWebBrowserClientBase::OnDownloadUpdated(
@@ -199,6 +222,7 @@ void CWebBrowserClientBase::OnDownloadUpdated(
     CefRefPtr<CefDownloadItem>            download_item,
     CefRefPtr<CefDownloadItemCallback>    callback)
 {
+
 }
 //}
 
@@ -209,8 +233,9 @@ void CWebBrowserClientBase::OnDownloadUpdated(
 bool CWebBrowserClientBase::OnDragEnter(
     CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefDragData> dragData,
-    DragOperationsMask mask)
+    CefRenderHandler::DragOperationsMask mask)
 {
+
   return false;
 }
 //}
@@ -278,6 +303,7 @@ bool CWebBrowserClientBase::DoClose(CefRefPtr<CefBrowser> browser)
 
 void CWebBrowserClientBase::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
+
 }
 //}
 
@@ -427,6 +453,7 @@ void CWebBrowserClientBase::OnProtocolExecution(
     const CefString&                      url,
     bool&                                 allow_os_execution)
 {
+
 }
 
 bool CWebBrowserClientBase::OnCertificateError(
@@ -465,5 +492,6 @@ void CWebBrowserClientBase::OnRenderProcessTerminated(
     CefRefPtr<CefBrowser>                 browser,
     TerminationStatus                     status)
 {
+
 }
 //}

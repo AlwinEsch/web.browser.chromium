@@ -34,6 +34,7 @@ class CWebBrowserClientBase :
     public CefDownloadHandler,
     public CefContextMenuHandler,
     public CefLifeSpanHandler,
+    public CefRenderHandler,
     public CefRequestHandler
 {
 public:
@@ -94,6 +95,18 @@ public:
   virtual bool Dirty() = 0;
 
   /*!
+   * @brief CefClient methods
+   *
+   * Implement this interface to provide handler implementations.
+   */
+  //{
+  virtual bool OnProcessMessageReceived(                           ///<-- Called when a new message is received from a different process. Return true
+      CefRefPtr<CefBrowser>                 browser,                  /// if the message was handled or false otherwise. Do not keep a reference to
+      CefProcessId                          source_process,           /// or attempt to access the message outside of this callback.
+      CefRefPtr<CefProcessMessage>          message)                  ///
+                        OVERRIDE;                                     ///
+  //}
+  /*!
    * @brief CefContextMenuHandler methods
    *
    * Implement this interface to handle context menu events. The methods of this
@@ -102,14 +115,14 @@ public:
   //{
   virtual CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() OVERRIDE { return this; }
 
-  virtual void OnBeforeContextMenu(                                   /// Called before a context menu is displayed. |params| provides information
+  virtual void OnBeforeContextMenu(                                ///<-- Called before a context menu is displayed. |params| provides information
       CefRefPtr<CefBrowser>                 browser,                  /// about the context menu state. |model| initially contains the default
       CefRefPtr<CefFrame>                   frame,                    /// context menu. The |model| can be cleared to show no context menu or
       CefRefPtr<CefContextMenuParams>       params,                   /// modified to show a custom menu. Do not keep references to |params| or
       CefRefPtr<CefMenuModel>               model)                    /// |model| outside of this callback.
                         OVERRIDE;                                     ///
 
-  virtual bool OnContextMenuCommand(                                  /// Called to execute a command selected from the context menu. Return true if
+  virtual bool OnContextMenuCommand(                               ///<-- Called to execute a command selected from the context menu. Return true if
       CefRefPtr<CefBrowser>                 browser,                  /// the command was handled or false for the default implementation. See
       CefRefPtr<CefFrame>                   frame,                    /// cef_menu_id_t for the command ids that have default implementations. All
       CefRefPtr<CefContextMenuParams>       params,                   /// user-defined command ids should be between MENU_ID_USER_FIRST and
@@ -117,7 +130,7 @@ public:
       EventFlags                            event_flags)              /// OnBeforeContextMenu(). Do not keep a reference to |params| outside of this
                         OVERRIDE;                                     /// callback.
 
-  virtual void OnContextMenuDismissed(                                /// Called when the context menu is dismissed irregardless of whether the menu
+  virtual void OnContextMenuDismissed(                             ///<-- Called when the context menu is dismissed irregardless of whether the menu
       CefRefPtr<CefBrowser>                 browser,                  /// was empty or a command was selected.
       CefRefPtr<CefFrame>                   frame)                    ///
                         OVERRIDE;                                     ///
@@ -198,7 +211,7 @@ public:
   virtual bool OnDragEnter(                                           /// Called when an external drag event enters the browser window. |dragData|
       CefRefPtr<CefBrowser>                 browser,                  /// contains the drag event data and |mask| represents the type of drag
       CefRefPtr<CefDragData>                dragData,                 /// operation. Return false for default drag handling behavior or true to
-      DragOperationsMask                    mask)                     /// cancel the drag event.
+      CefRenderHandler::DragOperationsMask  mask)                     /// cancel the drag event.
                         OVERRIDE;                                     ///
   //}
   /*!
@@ -368,6 +381,73 @@ public:
                         OVERRIDE;                                     ///
   //}
   /*!
+   * @brief CefRenderHandler methods
+   *
+   * Implement this interface to handle events when window rendering is disabled.
+   * The methods of this class will be called on the UI thread.
+   */
+  //{
+  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE { return this; }
+
+  virtual bool GetRootScreenRect(                                  ///<-- Called to retrieve the root window rectangle in screen coordinates. Return
+      CefRefPtr<CefBrowser>                 browser,                  /// true if the rectangle was provided.
+      CefRect& rect) { return false; }                                ///
+
+  virtual bool GetViewRect(                                        ///<-- Called to retrieve the view rectangle which is relative to screen
+      CefRefPtr<CefBrowser>                 browser,                  /// coordinates. Return true if the rectangle was provided.
+      CefRect&                              rect)=0;                  ///
+
+  virtual bool GetScreenPoint(                                     ///<-- Called to retrieve the translation from view coordinates to actual screen
+      CefRefPtr<CefBrowser>                 browser,                  /// coordinates. Return true if the screen coordinates were provided.
+      int                                   viewX,                    ///
+      int                                   viewY,                    ///
+      int&                                  screenX,                  ///
+      int&                                  screenY) { return false; }///
+
+  virtual bool GetScreenInfo(                                      ///<-- Called to allow the client to fill in the CefScreenInfo object with appropriate values. Return
+      CefRefPtr<CefBrowser>                 browser,                  /// true if the |screen_info| structure has been modified.
+      CefScreenInfo& screen_info) { return false; }                   /// If the screen info rectangle is left empty the rectangle from GetViewRect will be used. If the
+                                                                      /// rectangle is still empty or invalid popups may not be drawn correctly.
+  virtual void OnPopupShow(
+      CefRefPtr<CefBrowser>                 browser,               ///<-- Called when the browser wants to show or hide the popup widget. The popup
+      bool                                  show) {}                  /// should be shown if |show| is true and hidden if |show| is false.
+
+  virtual void OnPopupSize(
+      CefRefPtr<CefBrowser>                 browser,               ///<-- Called when the browser wants to move or resize the popup widget. |rect|
+      const CefRect&                        rect) {}                  /// contains the new location and size in view coordinates.
+
+  virtual void OnPaint(                                            ///<-- Called when an element should be painted. Pixel values passed to this method are scaled relative
+      CefRefPtr<CefBrowser>                 browser,                  /// to view coordinates based on the value of CefScreenInfo.device_scale_factor returned from
+      CefRenderHandler::PaintElementType    type,                     /// GetScreenInfo. |type| indicates whether the element is the view or the popup widget. |buffer|
+      const RectList&                       dirtyRects,               /// contains the pixel data for the whole image. |dirtyRects| contains the set of rectangles in
+      const void*                           buffer,                   /// pixel coordinates that need to be repainted. |buffer| will be |width|*|height|*4 bytes in size
+      int                                   width,                    /// and represents a BGRA image with an upper-left origin.
+      int                                   height) =0;               ///
+
+  virtual void OnCursorChange(                                     ///<-- Called when the browser's cursor has changed. If |type| is CT_CUSTOM then
+      CefRefPtr<CefBrowser>                 browser,                  /// |custom_cursor_info| will be populated with the custom cursor information.
+      CefCursorHandle                       cursor,                   ///
+      CefRenderHandler::CursorType          type,
+      const CefCursorInfo&                  custom_cursor_info) {}    /// Called when the user starts dragging content in the web view. Contextual information about the
+                                                                      /// dragged content is supplied by |drag_data|. (|x|, |y|) is the drag start location in screen
+                                                                      /// coordinates. OS APIs that run a system message loop may be used within the StartDragging call.
+  virtual bool StartDragging(                                      ///<--
+      CefRefPtr<CefBrowser>                 browser,                  /// Return false to abort the drag operation. Don't call any of CefBrowserHost::DragSource*Ended*
+      CefRefPtr<CefDragData>                drag_data,                /// methods after returning false.
+      CefRenderHandler::DragOperationsMask  allowed_ops,              ///
+      int                                   x,                        /// Return true to handle the drag operation. Call CefBrowserHost::DragSourceEndedAt and
+      int                                   y) { return false; }      /// DragSourceSystemDragEnded either synchronously or asynchronously to inform the web view that
+                                                                      /// the drag operation has ended.
+  virtual void UpdateDragCursor(
+      CefRefPtr<CefBrowser>                 browser,               ///<-- Called when the web view wants to update the mouse cursor during a
+      CefRenderHandler::DragOperation       operation) {}             /// drag & drop operation. |operation| describes the allowed operation
+                                                                      /// (none, move, copy, link).
+  virtual void OnScrollOffsetChanged(
+      CefRefPtr<CefBrowser>                 browser,               ///<-- Called when the scroll offset has changed.
+      double                                x,                        ///
+      double                                y) {}                     ///
+  //}
+  /*!
    * @brief CefRequestHandler methods
    *
    * Implement this interface to handle events related to browser requests. The
@@ -376,14 +456,14 @@ public:
   //{
   virtual CefRefPtr<CefRequestHandler> GetRequestHandler() OVERRIDE { return this; }
                                                                       /// Called on the UI thread before browser navigation. Return true to cancel the navigation or
-  virtual bool OnBeforeBrowse(                                        /// false to allow the navigation to proceed. The |request| object cannot be modified in this
+  virtual bool OnBeforeBrowse(                                     ///<-- false to allow the navigation to proceed. The |request| object cannot be modified in this
       CefRefPtr<CefBrowser>                 browser,                  /// callback. CefLoadHandler::OnLoadingStateChange will be called twice in all cases. If the
       CefRefPtr<CefFrame>                   frame,                    /// navigation is allowed CefLoadHandler::OnLoadStart and CefLoadHandler::OnLoadEnd will be
       CefRefPtr<CefRequest>                 request,                  /// called. If the navigation is canceled CefLoadHandler::OnLoadError will be called with an
       bool                                  is_redirect)              /// |errorCode| value of ERR_ABORTED.
                         OVERRIDE;
                                                                       /// Called on the UI thread before OnBeforeBrowse in certain limited cases where navigating a new
-  virtual bool OnOpenURLFromTab(                                      /// or different browser might be desirable. This includes user-initiated navigation that might open
+  virtual bool OnOpenURLFromTab(                                   ///<-- or different browser might be desirable. This includes user-initiated navigation that might open
       CefRefPtr<CefBrowser>                 browser,                  /// in a special way (e.g. links clicked via middle-click or ctrl + left-click) and certain types
       CefRefPtr<CefFrame>                   frame,                    /// of cross-origin navigation initiated from the renderer process (e.g. navigating the top-level
       const CefString&                      target_url,               /// frame to/from a file URL). The |browser| and |frame| values represent the source of the navigation.
@@ -393,32 +473,32 @@ public:
                                                                       /// automatically (e.g. via the DomContentLoaded event). Return true to cancel the navigation or false
   virtual CefRequestHandler::ReturnValue OnBeforeResourceLoad(        /// to allow the navigation to proceed in the source browser's top-level frame.
       CefRefPtr<CefBrowser>                 browser,
-      CefRefPtr<CefFrame>                   frame,                    /// Called on the IO thread before a resource request is loaded. The |request| object may be
+      CefRefPtr<CefFrame>                   frame,                 ///<-- Called on the IO thread before a resource request is loaded. The |request| object may be
       CefRefPtr<CefRequest>                 request,                  /// modified. Return RV_CONTINUE to continue the request immediately. Return RV_CONTINUE_ASYNC and
       CefRefPtr<CefRequestCallback>         callback)                 /// call CefRequestCallback::Continue() at a later time to continue or cancel the request
                         OVERRIDE;                                     /// asynchronously. Return RV_CANCEL to cancel the request immediately.
 
-  virtual CefRefPtr<CefResourceHandler> GetResourceHandler(           /// Called on the IO thread before a resource is loaded. To allow the resource
+  virtual CefRefPtr<CefResourceHandler> GetResourceHandler(        ///<-- Called on the IO thread before a resource is loaded. To allow the resource
       CefRefPtr<CefBrowser>                 browser,                  /// to load normally return NULL. To specify a handler for the resource return
       CefRefPtr<CefFrame>                   frame,                    /// a CefResourceHandler object. The |request| object should not be modified in
       CefRefPtr<CefRequest>                 request)                  /// this callback.
                         OVERRIDE;                                     ///
 
-  virtual void OnResourceRedirect(                                    /// Called on the IO thread when a resource load is redirected. The |request|
+  virtual void OnResourceRedirect(                                 ///<-- Called on the IO thread when a resource load is redirected. The |request|
       CefRefPtr<CefBrowser>                 browser,                  /// parameter will contain the old URL and other request-related information.
       CefRefPtr<CefFrame>                   frame,                    /// The |new_url| parameter will contain the new URL and can be changed if
       CefRefPtr<CefRequest>                 request,                  /// desired. The |request| object cannot be modified in this callback.
       CefString&                            new_url)                  ///
                         OVERRIDE;                                     ///
 
-  virtual bool OnResourceResponse(                                    /// Called on the IO thread when a resource response is received. To allow the
+  virtual bool OnResourceResponse(                                 ///<-- Called on the IO thread when a resource response is received. To allow the
       CefRefPtr<CefBrowser>                 browser,                  /// resource to load normally return false. To redirect or retry the resource
       CefRefPtr<CefFrame>                   frame,                    /// modify |request| (url, headers or post body) and return true. The
       CefRefPtr<CefRequest>                 request,                  /// |response| object cannot be modified in this callback.
       CefRefPtr<CefResponse>                response)                 ///
                         OVERRIDE;                                     ///
 
-  virtual bool GetAuthCredentials(                                    /// Called on the IO thread when the browser needs credentials from the user.
+  virtual bool GetAuthCredentials(                                 ///<-- Called on the IO thread when the browser needs credentials from the user.
       CefRefPtr<CefBrowser>                 browser,                  /// |isProxy| indicates whether the host is a proxy server. |host| contains the
       CefRefPtr<CefFrame>                   frame,                    /// hostname and |port| contains the port number. Return true to continue the
       bool                                  isProxy,                  /// request and call CefAuthCallback::Continue() either in this method or
@@ -429,20 +509,20 @@ public:
       CefRefPtr<CefAuthCallback>            callback)                 ///
                         OVERRIDE;                                     ///
 
-  virtual bool OnQuotaRequest(                                        /// Called on the IO thread when JavaScript requests a specific storage quota
+  virtual bool OnQuotaRequest(                                     ///<-- Called on the IO thread when JavaScript requests a specific storage quota
       CefRefPtr<CefBrowser>                 browser,                  /// size via the webkitStorageInfo.requestQuota function. |origin_url| is the
       const CefString&                      origin_url,               /// origin of the page making the request. |new_size| is the requested quota
       int64                                 new_size,                 /// size in bytes. Return true to continue the request and call
       CefRefPtr<CefRequestCallback>         callback)                 /// CefRequestCallback::Continue() either in this method or at a later time to
                         OVERRIDE;                                     /// grant or deny the request. Return false to cancel the request immediately.
 
-  virtual void OnProtocolExecution(                                   /// Called on the UI thread to handle requests for URLs with an unknown
+  virtual void OnProtocolExecution(                                ///<-- Called on the UI thread to handle requests for URLs with an unknown
       CefRefPtr<CefBrowser>                 browser,                  /// protocol component. Set |allow_os_execution| to true to attempt execution
       const CefString&                      url,                      /// via the registered OS protocol handler, if any.
       bool&                                 allow_os_execution)       /// SECURITY WARNING: YOU SHOULD USE THIS METHOD TO ENFORCE RESTRICTIONS BASED
                         OVERRIDE;                                     /// ON SCHEME, HOST OR OTHER URL ANALYSIS BEFORE ALLOWING OS EXECUTION.
 
-  virtual bool OnCertificateError(                                    /// Called on the UI thread to handle requests for URLs with an invalid
+  virtual bool OnCertificateError(                                 ///<-- Called on the UI thread to handle requests for URLs with an invalid
       CefRefPtr<CefBrowser>                 browser,                  /// SSL certificate. Return true and call CefRequestCallback::Continue() either
       ErrorCode                             cert_error,               /// in this method or at a later time to continue or cancel the request. Return
       const CefString&                      request_url,              /// false to cancel the request immediately. If |callback| is empty the error
@@ -450,23 +530,23 @@ public:
       CefRefPtr<CefRequestCallback>         callback)                 /// If CefSettings.ignore_certificate_errors is set all invalid certificates
                         OVERRIDE;                                     /// will be accepted without calling this method.
 
-  virtual bool OnBeforePluginLoad(                                    /// Called on the browser process IO thread before a plugin is loaded. Return
+  virtual bool OnBeforePluginLoad(                                 ///<-- Called on the browser process IO thread before a plugin is loaded. Return
       CefRefPtr<CefBrowser>                 browser,                  /// true to block loading of the plugin.
       const CefString&                      url,                      ///
       const CefString&                      policy_url,               ///
       CefRefPtr<CefWebPluginInfo>           info)                     ///
                         OVERRIDE;                                     ///
 
-  virtual void OnPluginCrashed(                                       /// Called on the browser process UI thread when a plugin has crashed.
+  virtual void OnPluginCrashed(                                    ///<-- Called on the browser process UI thread when a plugin has crashed.
       CefRefPtr<CefBrowser>                 browser,                  /// |plugin_path| is the path of the plugin that crashed.
       const CefString&                      plugin_path)              ///
                         OVERRIDE;                                     ///
 
-  virtual void OnRenderViewReady(                                     /// Called on the browser process UI thread when the render view associated
+  virtual void OnRenderViewReady(                                  ///<-- Called on the browser process UI thread when the render view associated
       CefRefPtr<CefBrowser>                 browser)                  /// with |browser| is ready to receive/handle IPC messages in the render
                         OVERRIDE;                                     /// process.
 
-  virtual void OnRenderProcessTerminated(                             /// Called on the browser process UI thread when the render process
+  virtual void OnRenderProcessTerminated(                          ///<-- Called on the browser process UI thread when the render process
       CefRefPtr<CefBrowser>                 browser,                  /// terminates unexpectedly. |status| indicates how the process
       TerminationStatus                     status)                   /// terminated.
                         OVERRIDE;                                     ///

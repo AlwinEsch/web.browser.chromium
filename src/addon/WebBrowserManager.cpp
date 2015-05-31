@@ -36,7 +36,7 @@ CWebBrowserManager::~CWebBrowserManager()
 
 bool CWebBrowserManager::Create()
 {
-  LOG_MESSAGE(LOG_DEBUG, "%s - Web browser add-on process creation start", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser add-on process creation start", __FUNCTION__);
 
   SetCEFPaths();
   m_setting.LoadSettings();
@@ -57,7 +57,7 @@ bool CWebBrowserManager::Create()
 
   CreateThread();
 
-  LOG_MESSAGE(LOG_INFO, "%s - Started web browser add-on process", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(LOG_INFO, "%s - Started web browser add-on process", __FUNCTION__);
 
   m_isActive = true;
   return m_isActive;
@@ -69,7 +69,7 @@ void CWebBrowserManager::Destroy()
 
   StopThread();
   m_setting.SaveSettings();
-  LOG_MESSAGE(LOG_INFO, "%s - Stopped web browser add-on process", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(LOG_INFO, "%s - Stopped web browser add-on process", __FUNCTION__);
 }
 
 void *CWebBrowserManager::Process()
@@ -78,7 +78,7 @@ void *CWebBrowserManager::Process()
   CefRefPtr<CefApp> app;
   if (!CefInitialize(args, m_CefSettings, app, NULL))
   {
-    LOG_MESSAGE(LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
+    LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
     return NULL;
   }
 
