@@ -101,7 +101,11 @@ bool CWebBrowserClientOpenGL::Initialize()
 
 bool CWebBrowserClientOpenGL::OpenWebsite(const char* strURL, bool single, bool allowMenus)
 {
-  return CWebBrowserClientBase::OpenWebsite(strURL, single, allowMenus);
+  Cleanup();
+  bool ret = CWebBrowserClientBase::OpenWebsite(strURL, single, allowMenus);
+  m_bInitialized = false;
+
+  return ret;
 }
 
 void CWebBrowserClientOpenGL::Cleanup()

@@ -20,6 +20,8 @@
 #include <string>
 #include "addon.h"
 
+
+#define TEST_BUILD 1
 #ifdef TEST_BUILD
 #define LOG_MESSAGE(loglevel, a...) \
 do { \

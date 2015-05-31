@@ -82,33 +82,45 @@ void *CWebBrowserManager::Process()
     return NULL;
   }
 
-  while (!IsStopped())
-  {
-    /*!
-     * Do Chromium related works, also CefRunMessageLoop() can be used and the
-     * thread is complete moved then there.
-     */
-    CefDoMessageLoopWork();
+  CefRunMessageLoop();
 
-    /*!
-     * Handle currently inactive controls and if timeout is reached delete
-     * them.
-     */
-    {
-      PLATFORM::CLockObject lock(m_Mutex);
-
-      std::map<std::string, CWebBrowserClient*>::iterator itr;
-      for (itr = m_BrowserClientsInactive.begin(); itr != m_BrowserClientsInactive.end(); ++itr)
-      {
-        if (itr->second->CurrentInactiveCountdown() < 0)
-        {
-          LOG_MESSAGE(LOG_INFO, "%s - Web browser control inactive countdown reached end and closed", __FUNCTION__);
-          delete itr->second;
-          m_BrowserClientsInactive.erase(itr);
-        }
-      }
-    }
-  }
+//  while (!IsStopped())
+//  {
+//    /*!
+//     * Do Chromium related works, also CefRunMessageLoop() can be used and the
+//     * thread is complete moved then there.
+//     */
+//    CefDoMessageLoopWork();
+//
+//    /*!
+//     * Handle currently inactive controls and if timeout is reached delete
+//     * them.
+//     */
+//    {
+//      PLATFORM::CLockObject lock(m_Mutex);
+//
+//      m_processQueueMutex.Lock();
+//      while (!m_processQueue.empty())
+//      {
+//        sMainThreadData *queueData = m_processQueue.front();
+//        m_processQueue.pop();
+//        queueData->function(queueData);
+//        queueData->event.Signal();
+//      }
+//      m_processQueueMutex.Unlock();
+//
+//      std::map<std::string, CWebBrowserClient*>::iterator itr;
+//      for (itr = m_BrowserClientsInactive.begin(); itr != m_BrowserClientsInactive.end(); ++itr)
+//      {
+//        if (itr->second->CurrentInactiveCountdown() < 0)
+//        {
+//          LOG_MESSAGE(LOG_INFO, "%s - Web browser control inactive countdown reached end and closed", __FUNCTION__);
+//          delete itr->second;
+//          m_BrowserClientsInactive.erase(itr);
+//        }
+//      }
+//    }
+//  }
   CefShutdown();
   return NULL;
 }
@@ -126,23 +138,40 @@ WEB_ADDON_ERROR CWebBrowserManager::CreateControl(const WEB_ADDON_GUI_PROPS &pro
 
   LOG_MESSAGE(LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
 
-  WEB_ADDON_ERROR err = WEB_ADDON_ERROR_FAILED;
+  sMainThreadData data;
+  data.manager = this;
+  data.handle = &handle;
+  data.function = CreateControl_Main;
+  data.data.CreateControl.props = &props;
+  data.data.CreateControl.webType = webType;
+  data.data.CreateControl.handle = &handle;
+  CreateControl_Main(&data);
+//  m_processQueueMutex.Lock();
+//  m_processQueue.push(&data);
+//  m_processQueueMutex.Unlock();
+//  if (!data.event.Wait(1000))
+//    LOG_MESSAGE(LOG_ERROR, "%s - Event signal not processed!", __FUNCTION__);
+
+  return data.ret.addonError;
+}
+
+void CWebBrowserManager::CreateControl_Main(sMainThreadData *data)
+{
+  data->ret.addonError = WEB_ADDON_ERROR_FAILED;
   CWebBrowserClient *pBrowserClient;
 
-  PLATFORM::CLockObject lock(m_Mutex);
-
-  std::map<std::string, CWebBrowserClient*>::iterator itr = m_BrowserClientsInactive.find(props.strName);
-  if (itr != m_BrowserClientsInactive.end())
+  std::map<std::string, CWebBrowserClient*>::iterator itr = data->manager->m_BrowserClientsInactive.find(data->data.CreateControl.props->strName);
+  if (itr != data->manager->m_BrowserClientsInactive.end())
   {
     LOG_MESSAGE(LOG_INFO, "%s - Found control in inactive mode and setting active", __FUNCTION__);
     pBrowserClient = itr->second;
     pBrowserClient->SetActive();
-    m_BrowserClientsInactive.erase(itr);
-    err = WEB_ADDON_ERROR_NO_ERROR_REOPEN;
+    data->manager->m_BrowserClientsInactive.erase(itr);
+    data->ret.addonError = WEB_ADDON_ERROR_NO_ERROR_REOPEN;
   }
   else
   {
-    pBrowserClient = new CWebBrowserClient(m_iUniqueClientId++, &props);
+    pBrowserClient = new CWebBrowserClient(data->manager->m_iUniqueClientId++, data->data.CreateControl.props);
 
     CefWindowInfo info;
     info.SetAsWindowless(0, true);
@@ -157,18 +186,18 @@ WEB_ADDON_ERROR CWebBrowserManager::CreateControl(const WEB_ADDON_GUI_PROPS &pro
       LOG_MESSAGE(LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);
       if (pBrowserClient)
         delete pBrowserClient;
-      return err;
+      return;
     }
-    err = WEB_ADDON_ERROR_NO_ERROR;
+    data->ret.addonError = WEB_ADDON_ERROR_NO_ERROR;
   }
 
   int uniqueId = pBrowserClient->GetUniqueId();
-  m_BrowserClients[uniqueId] = pBrowserClient;
-  handle->callerAddress      = pBrowserClient;
-  handle->dataIdentifier     = uniqueId;
+  data->manager->m_BrowserClients[uniqueId]          = pBrowserClient;
+  data->data.CreateControl.handle[0]->callerAddress  = pBrowserClient;
+  data->data.CreateControl.handle[0]->dataIdentifier = uniqueId;
 
   LOG_MESSAGE(LOG_DEBUG, "%s - Web browser control id '%i' created", __FUNCTION__, uniqueId);
-  return err;
+  return;
 }
 
 bool CWebBrowserManager::DestroyControl(const ADDON_HANDLE handle)
@@ -180,15 +209,30 @@ bool CWebBrowserManager::DestroyControl(const ADDON_HANDLE handle)
     return false;
   }
 
-  PLATFORM::CLockObject lock(m_Mutex);
+  sMainThreadData data;
+  data.manager = this;
+  data.handle = &handle;
+  data.function = DestroyControl_Main;
+  DestroyControl_Main(&data);
+//  m_processQueueMutex.Lock();
+//  m_processQueue.push(&data);
+//  m_processQueueMutex.Unlock();
+//  if (!data.event.Wait(1000))
+//    LOG_MESSAGE(LOG_ERROR, "%s - Event signal not processed!", __FUNCTION__);
 
+  return data.ret.booleanError;
+}
+
+void CWebBrowserManager::DestroyControl_Main(sMainThreadData *data)
+{
   //! Find wanted control to destroy.
-  int identifier = handle->dataIdentifier;
-  std::map<int, CWebBrowserClient*>::iterator itr = m_BrowserClients.find(identifier);
-  if (itr == m_BrowserClients.end())
+  int identifier = data->handle[0]->dataIdentifier;
+  std::map<int, CWebBrowserClient*>::iterator itr = data->manager->m_BrowserClients.find(identifier);
+  if (itr == data->manager->m_BrowserClients.end())
   {
     LOG_MESSAGE(LOG_ERROR, "%s - Web browser control destroy called for invalid id '%i'", __FUNCTION__, identifier);
-    return false;
+    data->ret.booleanError = false;
+    return;
   }
 
   //! Move to inactive list and remove it from active list
@@ -196,11 +240,12 @@ bool CWebBrowserManager::DestroyControl(const ADDON_HANDLE handle)
   if (client->SetInactive())
     delete client;
   else
-    m_BrowserClientsInactive[client->GetIdName()] = client;
-  m_BrowserClients.erase(itr);
+    data->manager->m_BrowserClientsInactive[client->GetIdName()] = client;
+  data->manager->m_BrowserClients.erase(itr);
 
   LOG_MESSAGE(LOG_DEBUG, "%s - Web browser control id '%i' destroyed", __FUNCTION__, identifier);
-  return true;
+  data->ret.booleanError = true;
+  return;
 }
 
 bool CWebBrowserManager::SetLanguage(const char *language)
@@ -211,7 +256,29 @@ bool CWebBrowserManager::SetLanguage(const char *language)
 
 bool CWebBrowserManager::OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus)
 {
-  return ((CWebBrowserClient*)handle->callerAddress)->OpenWebsite(strURL, single, allowMenus);
+  sMainThreadData data;
+  data.manager = this;
+  data.handle = &handle;
+  data.function = OpenWebsite_Main;
+  data.data.OpenWebsite.strURL = strURL;
+  data.data.OpenWebsite.single = single;
+  data.data.OpenWebsite.allowMenus = allowMenus;
+  OpenWebsite_Main(&data);
+//  m_processQueueMutex.Lock();
+//  m_processQueue.push(&data);
+//  m_processQueueMutex.Unlock();
+//  if (!data.event.Wait(1000))
+//    LOG_MESSAGE(LOG_ERROR, "%s - Event signal not processed!", __FUNCTION__);
+
+  return data.ret.booleanError;
+}
+
+void CWebBrowserManager::OpenWebsite_Main(sMainThreadData *data)
+{
+  LOG_MESSAGE(LOG_DEBUG, "%s - Open URL '%s' called", __FUNCTION__, data->data.OpenWebsite.strURL);
+  data->ret.booleanError = ((CWebBrowserClient*)data->handle[0]->callerAddress)->OpenWebsite(data->data.OpenWebsite.strURL,
+                                                                                             data->data.OpenWebsite.single,
+                                                                                             data->data.OpenWebsite.allowMenus);
 }
 
 void CWebBrowserManager::Render(const ADDON_HANDLE handle)

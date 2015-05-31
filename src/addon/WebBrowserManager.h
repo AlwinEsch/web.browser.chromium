@@ -67,6 +67,42 @@ private:
   std::string       m_strLocalesPath;
   std::string       m_strLibPath;
 
+  struct sMainThreadData;
+  typedef void (*MainThreadFunction)(struct sMainThreadData *data);
+  typedef struct sMainThreadData
+  {
+    CWebBrowserManager *manager;
+    const ADDON_HANDLE *handle;
+    MainThreadFunction  function;
+    union data_t
+    {
+      struct
+      {
+        const WEB_ADDON_GUI_PROPS *props;
+        unsigned int webType;
+        ADDON_HANDLE *handle;
+      } CreateControl;
+      struct
+      {
+        const char* strURL;
+        bool single;
+        bool allowMenus;
+      } OpenWebsite;
+    } data;
+    union ret_t
+    {
+      bool booleanError;
+      WEB_ADDON_ERROR addonError;
+    } ret;
+    PLATFORM::CEvent event;
+  } sMainThreadData;
+
+  static void CreateControl_Main(sMainThreadData *data);
+  static void DestroyControl_Main(sMainThreadData *data);
+  static void OpenWebsite_Main(sMainThreadData *data);
+
+  std::queue <sMainThreadData*> m_processQueue;
+  PLATFORM::CMutex m_processQueueMutex;
   PLATFORM::CMutex  m_Mutex;
   std::map<int, CWebBrowserClient*> m_BrowserClients;
   std::map<std::string, CWebBrowserClient*> m_BrowserClientsInactive;
