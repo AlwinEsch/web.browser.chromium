@@ -23,6 +23,8 @@
 
 class CWebBrowserManager;
 
+extern std::string                   g_strTempPath;
+extern std::string                   g_strLogPath;
 extern std::string                   g_strUserPath;
 extern std::string                   g_strAddonPath;
 extern CWebBrowserManager           *g_pWebManager;

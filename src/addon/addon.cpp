@@ -33,6 +33,8 @@ using namespace ADDON;
  * Default values are defined inside addon.h
  * and exported to the other source files.
  */
+std::string               g_strTempPath       = "";
+std::string               g_strLogPath        = "";
 std::string               g_strUserPath       = "";
 std::string               g_strAddonPath      = "";
 CWebBrowserManager       *g_pWebManager       = NULL;
@@ -77,6 +79,8 @@ ADDON_STATUS ADDON_Create(void* hdl, void* props)
   KODI->Log(LOG_DEBUG, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
 
   m_CurStatus     = ADDON_STATUS_UNKNOWN;
+  g_strTempPath   = webProps->strTempPath;
+  g_strLogPath    = webProps->strLogPath;
   g_strUserPath   = webProps->strUserPath;
   g_strAddonPath  = webProps->strAddonPath;
   g_pWebManager   = new CWebBrowserManager;

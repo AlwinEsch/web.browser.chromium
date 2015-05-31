@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon
 	id="web.KODIChromiumBrowser"
-	version="0.0.1"
+	version="0.0.2"
 	name="KODI Chromium Internet Browser"
 	provider-name="Team KODI">
 	<requires>
 		<c-pluff version="0.1"/>
-		<import addon="kodi.web" version="0.0.1"/>
+		<import addon="kodi.web" version="0.0.2"/>
 	</requires>
 	<extension
 		point="kodi.web"
