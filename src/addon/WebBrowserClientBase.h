@@ -626,4 +626,5 @@ private:
   void HandleMessages();
 
   std::queue <Message*> m_processQueue;
+  PLATFORM::CMutex m_Mutex;
 };
