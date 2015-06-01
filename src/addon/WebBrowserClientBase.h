@@ -22,6 +22,7 @@
 #include "include/cef_app.h"
 #include "include/cef_client.h"
 #include "include/cef_render_handler.h"
+#include "include/wrapper/cef_message_router.h"
 #include "platform/threads/threads.h"
 
 class CWebBrowserClientBase :
@@ -70,6 +71,9 @@ public:
    */
   int CurrentInactiveCountdown();
 
+  bool OnAction(int actionId, int &nextItem);
+  bool OnMouseEvent(int id, double x, double y, double offsetX, double offsetY, int state);
+
   /*!
    * @brief Used to initialize client
    * @return true if successed
@@ -88,6 +92,11 @@ public:
   bool OpenWebsite(const char* strURL, bool single, bool allowMenus);
 
   /*!
+   * @brief Reload current active website
+   */
+  void ReloadWebsite();
+
+  /*!
    * @brief Used to give client the add-on handle data for callbacks.
    * During usage of them must be on dataAddress the m_pControlIdent
    * inserted.
@@ -100,7 +109,7 @@ public:
    */
   virtual void Cleanup() = 0;
   virtual void Render() = 0;
-  virtual bool Dirty() = 0;
+  virtual bool Dirty();
 
   /*!
    * @brief CefClient methods
@@ -587,5 +596,34 @@ private:
   const int    m_iUniqueClientId;  /*!< Unique identification id of this control client */
   time_t       m_inactivateTime;      /*!< Time where client becomes set inactive to handle the timeout */
   CefRefPtr<CefBrowser> m_Browser;
+  CefRefPtr<CefMessageRouterBrowserSide> m_pMessageRouter;
   ADDON_HANDLE_STRUCT m_addonHandle;
+
+  void NotifyAddress(const CefString& url);
+
+  #define TMSG_SET_OPENED_ADDRESS       100
+  #define TMSG_SET_OPENED_TITLE         101
+  #define TMSG_SET_ICON_URL             102
+
+  typedef struct
+  {
+    unsigned int dwMessage;
+    int param1;
+    int param2;
+    std::string strParam;
+    std::vector<std::string> params;
+    std::shared_ptr<PLATFORM::CEvent> waitEvent;
+    void* lpVoid;
+  } Message;
+
+  struct MessageCallback
+  {
+    void (*callback)(void *userptr);
+    void *userptr;
+  };
+
+  void SendMessage(Message& message, bool wait);
+  void HandleMessages();
+
+  std::queue <Message*> m_processQueue;
 };

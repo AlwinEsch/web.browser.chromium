@@ -41,12 +41,14 @@ public:
   bool DestroyControl(const ADDON_HANDLE handle);
   bool SetLanguage(const char *language);
   void Render(const ADDON_HANDLE handle);
-  bool OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus);
   void Stop(const ADDON_HANDLE handle);
   bool Dirty(const ADDON_HANDLE handle);
   bool OnInit(const ADDON_HANDLE handle);
   bool OnAction(const ADDON_HANDLE handle, int actionId, int &nextItem);
   bool OnMouseEvent(const ADDON_HANDLE handle, int id, double x, double y, double offsetX, double offsetY, int state);
+
+  bool OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus);
+  void ReloadWebsite(const ADDON_HANDLE handle);
 
   bool LoadUserSettings(void);
   bool SaveUserSettings(void);

@@ -256,6 +256,8 @@ bool CWebBrowserClientOpenGL::Dirty()
   }
   m_processQueueMutex.Unlock();
 
+  CWebBrowserClientBase::Dirty();
+
   return ret;
 }
 

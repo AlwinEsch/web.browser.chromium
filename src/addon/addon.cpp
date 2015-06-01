@@ -227,11 +227,6 @@ void Render(const ADDON_HANDLE handle)
   g_pWebManager->Render(handle);
 }
 
-bool OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus)
-{
-  return g_pWebManager->OpenWebsite(handle, strURL, single, allowMenus);
-}
-
 void Stop(const ADDON_HANDLE handle)
 {
   g_pWebManager->Stop(handle);
@@ -255,6 +250,16 @@ bool OnAction(const ADDON_HANDLE handle, int actionId, int &nextItem)
 bool OnMouseEvent(const ADDON_HANDLE handle, int id, double x, double y, double offsetX, double offsetY, int state)
 {
   return g_pWebManager->OnMouseEvent(handle, id, x, y, offsetX, offsetY, state);
+}
+
+bool OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus)
+{
+  return g_pWebManager->OpenWebsite(handle, strURL, single, allowMenus);
+}
+
+void ReloadWebsite(const ADDON_HANDLE handle)
+{
+  g_pWebManager->ReloadWebsite(handle);
 }
 
 } // extern "C"

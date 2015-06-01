@@ -37,6 +37,8 @@ void LOG_INTERNAL_MESSAGE(const ADDON::addon_log_t loglevel, const char *format,
 {
   if (logCount == 0)
   {
+    LOG_MESSAGE(LOG_NOTICE, "Own add-on log file becomes stored at '%s'", logFile.c_str());
+
     logFile = g_strLogPath + "kodi-chromium.log";
     if (KODI->FileExists(logFile.c_str(), false))
     {
@@ -67,6 +69,9 @@ void LOG_INTERNAL_MESSAGE(const ADDON::addon_log_t loglevel, const char *format,
   va_list args;
   va_start(args, format);
   std::string logMessage = StringUtils::Format("%s - %05i - %7s: %s\n", time.c_str(), logCount++, levelNames[loglevel], StringUtils::FormatV(format, args).c_str());
+#ifdef TEST_BUILD
+  fprintf(stderr, "%s", logMessage.c_str());
+#endif // TEST_BUILD
   va_end(args);
 
   void* file = KODI->OpenFileForWrite(logFile.c_str(), false);

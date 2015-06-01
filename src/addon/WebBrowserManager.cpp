@@ -82,23 +82,21 @@ void *CWebBrowserManager::Process()
     return NULL;
   }
 
-  CefRunMessageLoop();
+  while (!IsStopped())
+  {
+    /*!
+     * Do Chromium related works, also CefRunMessageLoop() can be used and the
+     * thread is complete moved then there.
+     */
+    CefDoMessageLoopWork();
 
-//  while (!IsStopped())
-//  {
-//    /*!
-//     * Do Chromium related works, also CefRunMessageLoop() can be used and the
-//     * thread is complete moved then there.
-//     */
-//    CefDoMessageLoopWork();
-//
-//    /*!
-//     * Handle currently inactive controls and if timeout is reached delete
-//     * them.
-//     */
-//    {
-//      PLATFORM::CLockObject lock(m_Mutex);
-//
+    /*!
+     * Handle currently inactive controls and if timeout is reached delete
+     * them.
+     */
+    {
+      PLATFORM::CLockObject lock(m_Mutex);
+
 //      m_processQueueMutex.Lock();
 //      while (!m_processQueue.empty())
 //      {
@@ -108,19 +106,19 @@ void *CWebBrowserManager::Process()
 //        queueData->event.Signal();
 //      }
 //      m_processQueueMutex.Unlock();
-//
-//      std::map<std::string, CWebBrowserClient*>::iterator itr;
-//      for (itr = m_BrowserClientsInactive.begin(); itr != m_BrowserClientsInactive.end(); ++itr)
-//      {
-//        if (itr->second->CurrentInactiveCountdown() < 0)
-//        {
-//          LOG_MESSAGE(LOG_INFO, "%s - Web browser control inactive countdown reached end and closed", __FUNCTION__);
-//          delete itr->second;
-//          m_BrowserClientsInactive.erase(itr);
-//        }
-//      }
-//    }
-//  }
+
+      std::map<std::string, CWebBrowserClient*>::iterator itr;
+      for (itr = m_BrowserClientsInactive.begin(); itr != m_BrowserClientsInactive.end(); ++itr)
+      {
+        if (itr->second->CurrentInactiveCountdown() < 0)
+        {
+          LOG_MESSAGE(LOG_INFO, "%s - Web browser control inactive countdown reached end and closed", __FUNCTION__);
+          delete itr->second;
+          m_BrowserClientsInactive.erase(itr);
+        }
+      }
+    }
+  }
   CefShutdown();
   return NULL;
 }
@@ -282,6 +280,11 @@ void CWebBrowserManager::OpenWebsite_Main(sMainThreadData *data)
                                                                                              data->data.OpenWebsite.allowMenus);
 }
 
+void CWebBrowserManager::ReloadWebsite(const ADDON_HANDLE handle)
+{
+  ((CWebBrowserClient*)handle->callerAddress)->ReloadWebsite();
+}
+
 void CWebBrowserManager::Render(const ADDON_HANDLE handle)
 {
   ((CWebBrowserClient*)handle->callerAddress)->Render();
@@ -305,12 +308,12 @@ bool CWebBrowserManager::OnInit(const ADDON_HANDLE handle)
 
 bool CWebBrowserManager::OnAction(const ADDON_HANDLE handle, int actionId, int &nextItem)
 {
-  return false;
+  return ((CWebBrowserClient*)handle->callerAddress)->OnAction(actionId, nextItem);
 }
 
 bool CWebBrowserManager::OnMouseEvent(const ADDON_HANDLE handle, int mouseId, double x, double y, double offsetX, double offsetY, int state)
 {
-  return true;
+  return ((CWebBrowserClient*)handle->callerAddress)->OnMouseEvent(mouseId, x, y, offsetX, offsetY, state);
 }
 
 bool CWebBrowserManager::LoadUserSettings(void)
