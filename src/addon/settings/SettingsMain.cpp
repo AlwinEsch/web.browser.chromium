@@ -28,7 +28,8 @@ using namespace ADDON;
 using namespace PLATFORM;
 
 CSettingsMain::CSettingsMain() :
-  m_startURL("")
+  m_startURL(""),
+  m_AllowGeolocation(false)
 {
   m_baseSettingsFile = GetSettingsFile();
   m_currentUserSettingsFile = GetUserSettingsFile();
@@ -104,11 +105,11 @@ bool CSettingsMain::LoadUserSettings(void)
   }
 
   /* default start url */
-  CStdString strTmp;
-  if (!XMLUtils::GetString(pRootElement, "starturl", strTmp))
-    m_startURL = "";
+  bool bTmp;
+  if (!XMLUtils::GetBoolean(pRootElement, "allowgeolocation", bTmp))
+    m_AllowGeolocation = false;
   else
-    m_startURL = strTmp;
+    m_AllowGeolocation = bTmp;
 }
 
 bool CSettingsMain::SaveUserSettings(void)
@@ -128,7 +129,7 @@ bool CSettingsMain::SaveUserSettings(void)
   if (pRoot == NULL)
     return false;
 
-  XMLUtils::SetString(pRoot, "starturl", m_startURL);
+  XMLUtils::SetBoolean(pRoot, "allowgeolocation", m_AllowGeolocation);
 
   if (!xmlDoc.SaveFile(m_currentUserSettingsFile))
   {

@@ -37,9 +37,8 @@ void LOG_INTERNAL_MESSAGE(const ADDON::addon_log_t loglevel, const char *format,
 {
   if (logCount == 0)
   {
-    LOG_MESSAGE(LOG_NOTICE, "Own add-on log file becomes stored at '%s'", logFile.c_str());
-
     logFile = g_strLogPath + "kodi-chromium.log";
+    LOG_MESSAGE(LOG_NOTICE, "Own add-on log file becomes stored at '%s'", logFile.c_str());
     if (KODI->FileExists(logFile.c_str(), false))
     {
       char buffer[16384];

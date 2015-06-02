@@ -257,9 +257,9 @@ bool OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, boo
   return g_pWebManager->OpenWebsite(handle, strURL, single, allowMenus);
 }
 
-void ReloadWebsite(const ADDON_HANDLE handle)
+void CallSingleCommand(const ADDON_HANDLE handle, WEB_ADDON_SINGLE_COMMANDS command)
 {
-  g_pWebManager->ReloadWebsite(handle);
+  g_pWebManager->CallSingleCommand(handle, command);
 }
 
 } // extern "C"

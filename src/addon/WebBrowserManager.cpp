@@ -97,15 +97,15 @@ void *CWebBrowserManager::Process()
     {
       PLATFORM::CLockObject lock(m_Mutex);
 
-//      m_processQueueMutex.Lock();
-//      while (!m_processQueue.empty())
-//      {
-//        sMainThreadData *queueData = m_processQueue.front();
-//        m_processQueue.pop();
-//        queueData->function(queueData);
-//        queueData->event.Signal();
-//      }
-//      m_processQueueMutex.Unlock();
+      m_processQueueMutex.Lock();
+      while (!m_processQueue.empty())
+      {
+        sMainThreadData *queueData = m_processQueue.front();
+        m_processQueue.pop();
+        queueData->function(queueData);
+        queueData->event.Signal();
+      }
+      m_processQueueMutex.Unlock();
 
       std::map<std::string, CWebBrowserClient*>::iterator itr;
       for (itr = m_BrowserClientsInactive.begin(); itr != m_BrowserClientsInactive.end(); ++itr)
@@ -118,6 +118,7 @@ void *CWebBrowserManager::Process()
         }
       }
     }
+    usleep(100);
   }
   CefShutdown();
   return NULL;
@@ -262,12 +263,12 @@ bool CWebBrowserManager::OpenWebsite(const ADDON_HANDLE handle, const char* strU
   data.data.OpenWebsite.strURL = strURL;
   data.data.OpenWebsite.single = single;
   data.data.OpenWebsite.allowMenus = allowMenus;
-  OpenWebsite_Main(&data);
-//  m_processQueueMutex.Lock();
-//  m_processQueue.push(&data);
-//  m_processQueueMutex.Unlock();
-//  if (!data.event.Wait(1000))
-//    LOG_MESSAGE(LOG_ERROR, "%s - Event signal not processed!", __FUNCTION__);
+//  OpenWebsite_Main(&data);
+  m_processQueueMutex.Lock();
+  m_processQueue.push(&data);
+  m_processQueueMutex.Unlock();
+  if (!data.event.Wait(1000))
+    LOG_MESSAGE(LOG_ERROR, "%s - Event signal not processed!", __FUNCTION__);
 
   return data.ret.booleanError;
 }
@@ -280,9 +281,9 @@ void CWebBrowserManager::OpenWebsite_Main(sMainThreadData *data)
                                                                                              data->data.OpenWebsite.allowMenus);
 }
 
-void CWebBrowserManager::ReloadWebsite(const ADDON_HANDLE handle)
+void CWebBrowserManager::CallSingleCommand(const ADDON_HANDLE handle, WEB_ADDON_SINGLE_COMMANDS command)
 {
-  ((CWebBrowserClient*)handle->callerAddress)->ReloadWebsite();
+  ((CWebBrowserClient*)handle->callerAddress)->CallSingleCommand(command);
 }
 
 void CWebBrowserManager::Render(const ADDON_HANDLE handle)

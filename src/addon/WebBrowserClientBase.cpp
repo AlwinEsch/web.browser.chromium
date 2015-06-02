@@ -36,8 +36,12 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
 
+#include "platform/util/StringUtils.h"
+
 #include "addon.h"
 #include "WebBrowserClientBase.h"
+#include "WebBrowserManager.h"
+#include "URICheckHandler.h"
 #include "Utils.h"
 
 // Reserved 0 - 255
@@ -609,9 +613,9 @@ KeyboardCode ActionIdToKeyboardCode(int actionId)
     case ADDON_ACTION_MOVE_LEFT:        return VKEY_LEFT;
     case ADDON_ACTION_MOVE_RIGHT:       return VKEY_RIGHT;
     case ADDON_ACTION_MOVE_UP:          return VKEY_UP;
-    case ADDON_ACTION_MOVE_DOWN:        return VKEY_NEXT;
-    case ADDON_ACTION_PAGE_UP:          return VKEY_DOWN;
-    case ADDON_ACTION_PAGE_DOWN:        return VKEY_PRIOR;
+    case ADDON_ACTION_MOVE_DOWN:        return VKEY_DOWN;
+    case ADDON_ACTION_PAGE_UP:          return VKEY_PRIOR;
+    case ADDON_ACTION_PAGE_DOWN:        return VKEY_NEXT;
     case ADDON_ACTION_SELECT_ITEM:      return VKEY_RETURN;
     case ADDON_ACTION_HIGHLIGHT_ITEM:
       fprintf(stderr, "ADDON_ACTION_HIGHLIGHT_ITEM\n");;
@@ -1247,22 +1251,105 @@ KeyboardCode ActionIdToKeyboardCode(int actionId)
       fprintf(stderr, "ADDON_ACTION_NOOP\n");
       break;
     case ADDON_ACTION_NONE:
-      fprintf(stderr, "ADDON_ACTION_NONE\n");
     default:
       break;
   }
   return VKEY_UNKNOWN;
 }
 
+//#define ADDON_ACTION_MOUSE_START            100
+//#define ADDON_ACTION_MOUSE_LEFT_CLICK       100
+//#define ADDON_ACTION_MOUSE_RIGHT_CLICK      101
+//#define ADDON_ACTION_MOUSE_MIDDLE_CLICK     102
+//#define ADDON_ACTION_MOUSE_DOUBLE_CLICK     103
+//#define ADDON_ACTION_MOUSE_WHEEL_UP         104
+//#define ADDON_ACTION_MOUSE_WHEEL_DOWN       105
+//#define ADDON_ACTION_MOUSE_DRAG             106
+//#define ADDON_ACTION_MOUSE_MOVE             107
+//#define ADDON_ACTION_MOUSE_LONG_CLICK       108
+//#define ADDON_ACTION_MOUSE_END              109
+
+int GetCefStateModifiers(int actionId)
+{
+  int modifiers = 0;
+  switch (actionId)
+  {
+    case ADDON_ACTION_MOUSE_LEFT_CLICK:
+      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
+      fprintf(stderr, "ADDON_ACTION_MOUSE_LEFT_CLICK\n");
+      break;
+    case ADDON_ACTION_MOUSE_RIGHT_CLICK:
+      modifiers |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
+      fprintf(stderr, "ADDON_ACTION_MOUSE_RIGHT_CLICK\n");
+      break;
+    case ADDON_ACTION_MOUSE_MIDDLE_CLICK:
+      modifiers |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
+      fprintf(stderr, "EVENTFLAG_MIDDLE_MOUSE_BUTTON\n");
+      break;
+    case ADDON_ACTION_MOUSE_DOUBLE_CLICK:
+//      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
+fprintf(stderr, "ADDON_ACTION_MOUSE_DOUBLE_CLICK\n");
+      break;
+    case ADDON_ACTION_MOUSE_WHEEL_UP:
+//      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
+fprintf(stderr, "ADDON_ACTION_MOUSE_WHEEL_UP\n");
+      break;
+    case ADDON_ACTION_MOUSE_WHEEL_DOWN:
+//      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
+fprintf(stderr, "ADDON_ACTION_MOUSE_WHEEL_DOWN\n");
+      break;
+    case ADDON_ACTION_MOUSE_DRAG:
+//      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
+fprintf(stderr, "ADDON_ACTION_MOUSE_DRAG\n");
+      break;
+    case ADDON_ACTION_MOUSE_MOVE:
+//      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
+fprintf(stderr, "ADDON_ACTION_MOUSE_MOVE\n");
+      break;
+    case ADDON_ACTION_MOUSE_LONG_CLICK:
+//      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
+fprintf(stderr, "ADDON_ACTION_MOUSE_LONG_CLICK\n");
+      break;
+    default:
+      break;
+  }
+
+
+
+//  if (state & GDK_SHIFT_MASK)
+////    modifiers |= EVENTFLAG_SHIFT_DOWN;
+////  if (state & GDK_LOCK_MASK)
+////    modifiers |= EVENTFLAG_CAPS_LOCK_ON;
+////  if (state & GDK_CONTROL_MASK)
+////    modifiers |= EVENTFLAG_CONTROL_DOWN;
+////  if (state & GDK_MOD1_MASK)
+////    modifiers |= EVENTFLAG_ALT_DOWN;
+////  if (state & GDK_BUTTON1_MASK)
+////    modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
+////  if (state & GDK_BUTTON2_MASK)
+////    modifiers |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
+////  if (state & GDK_BUTTON3_MASK)
+////    modifiers |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
+  return modifiers;
+}
 
 CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props) :
   m_iUniqueClientId(iUniqueClientId),
+  m_iBrowserCount(0),
+  m_bIsDirty(false),
+  m_bFocusOnEditableField(0),
+  m_iMousePreviousFlags(0),
+  m_iMousePreviousControl(MBT_LEFT),
   m_Browser(NULL),
   m_pDevice(props->pDevice),
   m_iXPos(props->iXPos),
   m_iYPos(props->iYPos),
   m_iWidth(props->iWidth),
   m_iHeight(props->iHeight),
+  m_iSkinXPos(props->iSkinXPos),
+  m_iSkinYPos(props->iSkinYPos),
+  m_iSkinWidth(props->iSkinWidth),
+  m_iSkinHeight(props->iSkinHeight),
   m_fPixelRatio(props->fPixelRatio),
   m_strIdName(props->strName),
   m_iLeaveOpenTime(props->iLeaveOpenTime),
@@ -1278,10 +1365,16 @@ CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDO
   m_BackgroundColor[2] = float(CefColorGetR(props->iBackgroundColorARGB)) / 255.0f;
   m_BackgroundColor[1] = float(CefColorGetG(props->iBackgroundColorARGB)) / 255.0f;
   m_BackgroundColor[0] = float(CefColorGetB(props->iBackgroundColorARGB)) / 255.0f;
+  m_fMouseXScaleFactor = float(m_iXPos + m_iWidth) / float(m_iSkinXPos + m_iSkinWidth);
+  m_fMouseYScaleFactor = float(m_iYPos + m_iHeight) / float(m_iSkinYPos + m_iSkinHeight);
+  m_strTempStoreA      = (char*)malloc(TEMP_STORE_SIZE);
+  m_strTempStoreB      = (char*)malloc(TEMP_STORE_SIZE);
 }
 
 CWebBrowserClientBase::~CWebBrowserClientBase()
 {
+  free(m_strTempStoreA);
+  free(m_strTempStoreB);
 }
 
 bool CWebBrowserClientBase::SetInactive()
@@ -1315,9 +1408,11 @@ void CWebBrowserClientBase::SendMessage(Message& message, bool wait)
   msg->dwMessage  = message.dwMessage;
   msg->param1     = message.param1;
   msg->param2     = message.param2;
+  msg->param3     = message.param3;
   msg->lpVoid     = message.lpVoid;
   msg->strParam   = message.strParam;
   msg->params     = message.params;
+  msg->waitEvent  = message.waitEvent;
 
   m_processQueue.push(msg);
   lock.Unlock();
@@ -1351,6 +1446,23 @@ void CWebBrowserClientBase::HandleMessages()
         LOG_INTERNAL_MESSAGE(LOG_DEBUG, "Opened web site set icon url '%s'", pMsg->strParam.c_str());
         WEB->Control_SetIconURL(&m_addonHandle, pMsg->strParam.c_str());
         break;
+      case TMSG_SET_LOADING_STATE:
+        WEB->Control_SetLoadingState(&m_addonHandle, pMsg->param1, pMsg->param2, pMsg->param3);
+        break;
+      case TMSG_HANDLE_ON_PAINT:
+      {
+        OnPaintMessage *data = static_cast<OnPaintMessage*>(pMsg->lpVoid);
+        data->client.callback(pMsg->lpVoid);
+        m_bIsDirty = true;
+        break;
+      }
+      case TMSG_BROWSER_CLOSE:
+      {
+        CefRefPtr<CefBrowser> browser = (CefBrowser*)pMsg->lpVoid;
+
+        LOG_INTERNAL_MESSAGE(LOG_DEBUG, "Browser close");
+        break;
+      }
       default:
         break;
     };
@@ -1365,6 +1477,9 @@ void CWebBrowserClientBase::HandleMessages()
 
 bool CWebBrowserClientBase::OnAction(int actionId, int &nextItem)
 {
+  if (!m_Browser.get())
+    return false;
+
   CefRefPtr<CefBrowserHost> host = m_Browser->GetHost();
 
   CefKeyEvent key_event;
@@ -1390,6 +1505,72 @@ bool CWebBrowserClientBase::OnAction(int actionId, int &nextItem)
 
 bool CWebBrowserClientBase::OnMouseEvent(int id, double x, double y, double offsetX, double offsetY, int state)
 {
+  if (!m_Browser.get())
+    return true;
+
+  static const int scrollbarPixelsPerTick = 40;
+
+  CefRefPtr<CefBrowserHost> host = m_Browser->GetHost();
+
+  CefMouseEvent mouse_event;
+  mouse_event.x = x * m_fMouseXScaleFactor;
+  mouse_event.y = y * m_fMouseYScaleFactor;
+
+  switch (id)
+  {
+    case ADDON_ACTION_MOUSE_LEFT_CLICK:
+      mouse_event.modifiers = 0;
+      mouse_event.modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
+      host->SendMouseClickEvent(mouse_event, MBT_LEFT, false, 1);
+      host->SendMouseClickEvent(mouse_event, MBT_LEFT, true, 1);
+      m_iMousePreviousFlags = mouse_event.modifiers;
+      m_iMousePreviousControl = MBT_LEFT;
+      break;
+    case ADDON_ACTION_MOUSE_RIGHT_CLICK:
+      mouse_event.modifiers = 0;
+      mouse_event.modifiers |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
+      host->SendMouseClickEvent(mouse_event, MBT_RIGHT, false, 1);
+      host->SendMouseClickEvent(mouse_event, MBT_RIGHT, true, 1);
+      m_iMousePreviousFlags = mouse_event.modifiers;
+      m_iMousePreviousControl = MBT_RIGHT;
+      break;
+    case ADDON_ACTION_MOUSE_MIDDLE_CLICK:
+      mouse_event.modifiers = 0;
+      mouse_event.modifiers |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
+      host->SendMouseClickEvent(mouse_event, MBT_MIDDLE, false, 1);
+      host->SendMouseClickEvent(mouse_event, MBT_MIDDLE, true, 1);
+      m_iMousePreviousFlags = mouse_event.modifiers;
+      m_iMousePreviousControl = MBT_MIDDLE;
+      break;
+    case ADDON_ACTION_MOUSE_DOUBLE_CLICK:
+      mouse_event.modifiers = m_iMousePreviousFlags;
+      host->SendMouseClickEvent(mouse_event, m_iMousePreviousControl, false, 2);
+      host->SendMouseClickEvent(mouse_event, m_iMousePreviousControl, true, 2);
+      m_iMousePreviousControl = MBT_LEFT;
+      m_iMousePreviousFlags = 0;
+      break;
+    case ADDON_ACTION_MOUSE_WHEEL_UP:
+      host->SendMouseWheelEvent(mouse_event, 0, scrollbarPixelsPerTick);
+      break;
+    case ADDON_ACTION_MOUSE_WHEEL_DOWN:
+      host->SendMouseWheelEvent(mouse_event, 0, -scrollbarPixelsPerTick);
+      break;
+    case ADDON_ACTION_MOUSE_DRAG:
+
+      break;
+    case ADDON_ACTION_MOUSE_MOVE:
+    {
+      bool mouse_leave = state == 3 ? true : false;
+      host->SendMouseMoveEvent(mouse_event, mouse_leave);
+      break;
+    }
+    case ADDON_ACTION_MOUSE_LONG_CLICK:
+
+      break;
+    default:
+      break;
+  }
+
   return true;
 }
 
@@ -1400,9 +1581,9 @@ bool CWebBrowserClientBase::Initialize()
 
 bool CWebBrowserClientBase::Dirty()
 {
-  bool ret = false;
   HandleMessages();
-
+  bool ret = m_bIsDirty;
+  m_bIsDirty = false;
   return ret;
 }
 
@@ -1414,13 +1595,39 @@ bool CWebBrowserClientBase::OpenWebsite(const char* strURL, bool single, bool al
     return false;
   }
 
-  m_Browser->GetMainFrame()->LoadURL(strURL);
+  CefRefPtr<CefFrame> frame = m_Browser->GetMainFrame();
+  if (!frame.get())
+  {
+    LOG_MESSAGE(LOG_ERROR, "%s - Called without present frame", __FUNCTION__);
+    return false;
+  }
+
+  if (m_strStartupURL.empty())
+    m_strStartupURL = strURL;
+
+  frame->LoadURL(strURL);
   return true;
 }
 
-void CWebBrowserClientBase::ReloadWebsite()
+void CWebBrowserClientBase::CallSingleCommand(WEB_ADDON_SINGLE_COMMANDS command)
 {
-  m_Browser->Reload();
+  switch (command)
+  {
+    case WEB_CMD_RELOAD:
+      m_Browser->Reload();
+      break;
+    case WEB_CMD_STOP_LOAD:
+      m_Browser->StopLoad();
+      break;
+    case WEB_CMD_NAV_BACK:
+      m_Browser->GoBack();
+      break;
+    case WEB_CMD_NAV_FORWARD:
+      m_Browser->GoForward();
+      break;
+    default:
+      break;
+  }
 }
 
 void CWebBrowserClientBase::SetAddonHandle(ADDON_HANDLE addonHandle)
@@ -1428,6 +1635,20 @@ void CWebBrowserClientBase::SetAddonHandle(ADDON_HANDLE addonHandle)
   m_addonHandle.callerAddress = addonHandle->callerAddress;
   m_addonHandle.dataIdentifier = addonHandle->dataIdentifier;
   m_addonHandle.dataAddress = m_pControlIdent;
+
+  WEB->GetUsedSkinNames(&m_addonHandle, *m_strTempStoreA, *m_strTempStoreB, TEMP_STORE_SIZE);
+
+  std::string path = g_strUserPath;
+  if (path.at(path.size() - 1) != '\\' &&
+      path.at(path.size() - 1) != '/')
+    path.append("/");
+
+  m_strActiveSkinPath = StringUtils::Format("%sresources/skins/%s/", path.c_str(), m_strTempStoreA);
+  if (!KODI->DirectoryExists(m_strActiveSkinPath.c_str()))
+  {
+    LOG_INTERNAL_MESSAGE(LOG_NOTICE, "Currently used skin '%s' not supported, falling back to default '%s'", m_strTempStoreA, m_strTempStoreB);
+    m_strActiveSkinPath = StringUtils::Format("%sresources/skins/%s/", path.c_str(), m_strTempStoreB);
+  }
 }
 
 /*!
@@ -1442,6 +1663,21 @@ bool CWebBrowserClientBase::OnProcessMessageReceived(
     CefRefPtr<CefProcessMessage>          message)
 {
   CEF_REQUIRE_UI_THREAD();
+
+  if (m_pMessageRouter->OnProcessMessageReceived(browser, source_process, message))
+    return true;
+
+  // Check for messages from the client renderer.
+  std::string message_name = message->GetName();
+  if (message_name == "ClientRenderer.FocusedNodeChanged")
+  {
+    // A message is sent from ClientRenderDelegate to tell us whether the
+    // currently focused DOM node is editable. Use of |focus_on_editable_field_|
+    // is redundant with CefKeyEvent.focus_on_editable_field in OnPreKeyEvent
+    // but is useful for demonstration purposes.
+    m_bFocusOnEditableField = message->GetArgumentList()->GetBool(0);
+    return true;
+  }
 
   return false;
 }
@@ -1594,7 +1830,14 @@ bool CWebBrowserClientBase::OnRequestGeolocationPermission(
     int                                   request_id,
     CefRefPtr<CefGeolocationCallback>     callback)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  CEF_REQUIRE_UI_THREAD();
+
+  if (g_pWebManager->GetSettings()->GetGeolocationAllowance())
+  {
+    // Allow geolocation access from all websites.
+    callback->Continue(true);
+    return true;
+  }
   return false;
 }
 
@@ -1632,7 +1875,8 @@ bool CWebBrowserClientBase::OnBeforePopup(
 void CWebBrowserClientBase::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
   //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-//  if (!m_Browser)
+  m_iBrowserCount++;
+  if (!m_Browser.get())
   {
     m_Browser = browser;
   }
@@ -1662,6 +1906,16 @@ bool CWebBrowserClientBase::DoClose(CefRefPtr<CefBrowser> browser)
 void CWebBrowserClientBase::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
   //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  --m_iBrowserCount;
+  if (m_iBrowserCount == 0)
+  {
+
+    m_pMessageRouter = nullptr;
+  }
+
+  Message tMsg = {TMSG_BROWSER_CLOSE};
+  tMsg.lpVoid = browser;
+  SendMessage(tMsg, true);
 }
 //}
 
@@ -1675,14 +1929,18 @@ void CWebBrowserClientBase::OnLoadingStateChange(
     bool                                  canGoBack,
     bool                                  canGoForward)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  Message tMsg = {TMSG_SET_LOADING_STATE};
+  tMsg.param1 = isLoading;
+  tMsg.param2 = canGoBack;
+  tMsg.param3 = canGoForward;
+  SendMessage(tMsg, false);
 }
 
 void CWebBrowserClientBase::OnLoadStart(
     CefRefPtr<CefBrowser>                 browser,
     CefRefPtr<CefFrame>                   frame)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 void CWebBrowserClientBase::OnLoadEnd(
@@ -1690,7 +1948,7 @@ void CWebBrowserClientBase::OnLoadEnd(
     CefRefPtr<CefFrame>                   frame,
     int                                   httpStatusCode)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 void CWebBrowserClientBase::OnLoadError(
@@ -1700,7 +1958,23 @@ void CWebBrowserClientBase::OnLoadError(
     const CefString&                      errorText,
     const CefString&                      failedUrl)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "Failed to load %s %s", errorText.ToString().c_str(), failedUrl.ToString().c_str());
+
+  //! Don't display an error for downloaded files.
+  if (errorCode == ERR_ABORTED)
+    return;
+
+  //! Don't display an error for external protocols that we allow the Kodi to
+  //! handle. See OnProtocolExecution().
+  if (errorCode == ERR_UNKNOWN_URL_SCHEME)
+  {
+    std::string urlStr = frame->GetURL();
+    if (urlStr.find("special:") == 0)
+      return;
+  }
+
+  //! Load the error page.
+  LoadErrorPage(frame, failedUrl, errorCode, errorText);
 }
 //}
 
@@ -1738,7 +2012,7 @@ bool CWebBrowserClientBase::OnBeforeBrowse(
     CefRefPtr<CefRequest>                 request,
     bool                                  is_redirect)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  m_pMessageRouter->OnBeforeBrowse(browser, frame);
   return false;
 }
 
@@ -1749,7 +2023,7 @@ bool CWebBrowserClientBase::OnOpenURLFromTab(
     CefRequestHandler::WindowOpenDisposition target_disposition,
     bool                                  user_gesture)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -1759,6 +2033,7 @@ CefRequestHandler::ReturnValue CWebBrowserClientBase::OnBeforeResourceLoad(
     CefRefPtr<CefRequest>                 request,
     CefRefPtr<CefRequestCallback>         callback)
 {
+//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return RV_CONTINUE;
 }
 
@@ -1768,7 +2043,7 @@ void CWebBrowserClientBase::OnResourceRedirect(
     CefRefPtr<CefRequest>                 request,
     CefString&                            new_url)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 bool CWebBrowserClientBase::OnResourceResponse(
@@ -1777,7 +2052,7 @@ bool CWebBrowserClientBase::OnResourceResponse(
     CefRefPtr<CefRequest>                 request,
     CefRefPtr<CefResponse>                response)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -1791,7 +2066,7 @@ bool CWebBrowserClientBase::GetAuthCredentials(
     const CefString&                      scheme,
     CefRefPtr<CefAuthCallback>            callback)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -1800,8 +2075,7 @@ CefRefPtr<CefResourceHandler> CWebBrowserClientBase::GetResourceHandler(
     CefRefPtr<CefFrame>                   frame,
     CefRefPtr<CefRequest>                 request)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-  return NULL;
+  return CURICheck::GetResourceHandler(browser, frame, request);
 }
 
 bool CWebBrowserClientBase::OnQuotaRequest(
@@ -1810,8 +2084,13 @@ bool CWebBrowserClientBase::OnQuotaRequest(
     int64                                 new_size,
     CefRefPtr<CefRequestCallback>         callback)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-  return false;
+  CEF_REQUIRE_IO_THREAD();
+
+  static const int64 max_size = 1024 * 1024 * 20;  // 20mb.
+
+  // Grant the quota request if the size is reasonable.
+  callback->Continue(new_size <= max_size);
+  return true;
 }
 
 void CWebBrowserClientBase::OnProtocolExecution(
@@ -1819,7 +2098,7 @@ void CWebBrowserClientBase::OnProtocolExecution(
     const CefString&                      url,
     bool&                                 allow_os_execution)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 bool CWebBrowserClientBase::OnCertificateError(
@@ -1829,7 +2108,7 @@ bool CWebBrowserClientBase::OnCertificateError(
     CefRefPtr<CefSSLInfo>                 ssl_info,
     CefRefPtr<CefRequestCallback>         callback)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -1860,6 +2139,56 @@ void CWebBrowserClientBase::OnRenderProcessTerminated(
     CefRefPtr<CefBrowser>                 browser,
     TerminationStatus                     status)
 {
-//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  CEF_REQUIRE_UI_THREAD();
+
+  m_pMessageRouter->OnRenderProcessTerminated(browser);
+
+  // Don't reload if there's no start URL, or if the crash URL was specified.
+  if (m_strStartupURL.empty() || m_strStartupURL == "chrome://crash")
+    return;
+
+  CefRefPtr<CefFrame> frame = browser->GetMainFrame();
+  std::string url = frame->GetURL();
+
+  // Don't reload if the termination occurred before any URL had successfully
+  // loaded.
+  if (url.empty())
+    return;
+
+  std::string start_url = m_strStartupURL;
+  StringUtils::ToLower(url);
+  StringUtils::ToLower(start_url);
+
+  // Don't reload the URL that just resulted in termination.
+  if (url.find(start_url) == 0)
+    return;
+
+  frame->LoadURL(m_strStartupURL);
+}
+//}
+
+/*!
+ * @brief Own internal handle functions
+ */
+//{
+void CWebBrowserClientBase::LoadErrorPage(
+    CefRefPtr<CefFrame>                   frame,
+    const std::string&                    failed_url,
+    cef_errorcode_t                       error_code,
+    const std::string&                    other_info)
+{
+  std::stringstream ss;
+  ss << "<html><head><title>Page failed to load</title></head>"
+        "<body bgcolor=\"white\">"
+        "<h3>Page failed to load.</h3>"
+        "URL: <a href=\"" << failed_url << "\">"<< failed_url << "</a>"
+        "<br/>Error: " << CURICheck::GetErrorString(error_code) <<
+        " (" << error_code << ")";
+
+  if (!other_info.empty())
+    ss << "<br/>" << other_info;
+
+  ss << "</body></html>";
+  frame->LoadURL(CURICheck::GetDataURI(ss.str(), "text/html"));
 }
 //}

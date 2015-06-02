@@ -48,10 +48,13 @@ public:
   bool OnMouseEvent(const ADDON_HANDLE handle, int id, double x, double y, double offsetX, double offsetY, int state);
 
   bool OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus);
-  void ReloadWebsite(const ADDON_HANDLE handle);
+  void CallSingleCommand(const ADDON_HANDLE handle, WEB_ADDON_SINGLE_COMMANDS command);
 
   bool LoadUserSettings(void);
   bool SaveUserSettings(void);
+  CSettingsMain* GetSettings() { return &m_setting; }
+
+  const std::string& GetResourceDir() { return m_strResourcesPath; }
 
 protected:
   virtual void *Process(void);

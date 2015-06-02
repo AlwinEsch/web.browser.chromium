@@ -235,32 +235,6 @@ void CWebBrowserClientOpenGL::Render()
   glPopMatrix();
 }
 
-bool CWebBrowserClientOpenGL::Dirty()
-{
-  bool ret = false;
-
-  /*!
-   * Handle from chromium given data, must be done on kodi's renderer thread,
-   * thats why passed here
-   */
-  PLATFORM::CLockObject lock(m_Mutex);
-
-  m_processQueueMutex.Lock();
-  while (!m_processQueue.empty())
-  {
-    sPaintData *queueData = m_processQueue.front();
-    m_processQueue.pop();
-    queueData->function(queueData);
-    queueData->event.Signal();
-    ret = true;
-  }
-  m_processQueueMutex.Unlock();
-
-  CWebBrowserClientBase::Dirty();
-
-  return ret;
-}
-
 void CWebBrowserClientOpenGL::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
   CWebBrowserClientBase::OnAfterCreated(browser);
@@ -284,17 +258,6 @@ bool CWebBrowserClientOpenGL::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect
   return true;
 }
 
-bool CWebBrowserClientOpenGL::GetRootScreenRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
-{
-  PLATFORM::CLockObject lock(m_Mutex);
-  CEF_REQUIRE_UI_THREAD();
-
-  rect.x = rect.y = 0;
-  rect.width = m_iWidth;
-  rect.height = m_iHeight;
-  return true;
-}
-
 bool CWebBrowserClientOpenGL::GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY)
 {
   PLATFORM::CLockObject lock(m_Mutex);
@@ -305,34 +268,29 @@ bool CWebBrowserClientOpenGL::GetScreenPoint(CefRefPtr<CefBrowser> browser, int 
   return true;
 }
 
-bool CWebBrowserClientOpenGL::GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info)
-{
-  CEF_REQUIRE_UI_THREAD();
-  return false;
-}
-
 void CWebBrowserClientOpenGL::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
                                 const RectList& dirtyRects, const void* buffer,
                                 int width, int height)
 {
-  sPaintData data;
-  data.client = this;
-  data.browser = browser;
-  data.type = type;
-  data.dirtyRects = &dirtyRects;
-  data.buffer = buffer;
-  data.width = width;
-  data.height = height;
-  data.function = OnPaint;
-  m_processQueueMutex.Lock();
-  m_processQueue.push(&data);
-  m_processQueueMutex.Unlock();
-  if (!data.event.Wait(1000))
-    LOG_MESSAGE(LOG_ERROR, "%s - Event signal not processed!", __FUNCTION__);
+  m_onPaintMessage.client.callback = &OnPaint;
+  m_onPaintMessage.client.userptr  = this;
+  m_onPaintMessage.browser    = browser;
+  m_onPaintMessage.type       = type;
+  m_onPaintMessage.dirtyRects = &dirtyRects;
+  m_onPaintMessage.buffer     = buffer;
+  m_onPaintMessage.width      = width;
+  m_onPaintMessage.height     = height;
+
+  Message tMsg = {TMSG_HANDLE_ON_PAINT};
+  tMsg.lpVoid = &m_onPaintMessage;
+  SendMessage(tMsg, true);
 }
 
-void CWebBrowserClientOpenGL::OnPaint(sPaintData *data)
+void CWebBrowserClientOpenGL::OnPaint(void *msg)
 {
+  OnPaintMessage *data                = static_cast<OnPaintMessage*>(msg);
+  CWebBrowserClientOpenGL* thisClass  = static_cast<CWebBrowserClientOpenGL*>(data->client.userptr);
+
   CefRefPtr<CefBrowser> browser = data->browser;
   PaintElementType type         = data->type;
   const RectList& dirtyRects    = data->dirtyRects[0];
@@ -340,42 +298,43 @@ void CWebBrowserClientOpenGL::OnPaint(sPaintData *data)
   int width                     = data->width;
   int height                    = data->height;
 
-  if (!data->client->m_bInitialized)
-    data->client->Initialize();
 
-  if (data->client->m_bTransparentBackground) // Enable alpha blending if true.
+  if (!thisClass->m_bInitialized)
+    thisClass->Initialize();
+
+  if (thisClass->m_bTransparentBackground) // Enable alpha blending if true.
     glEnable(GL_BLEND); VERIFY_NO_ERROR;
 
   // Enable 2D textures.
   glEnable(GL_TEXTURE_2D); VERIFY_NO_ERROR;
 
-  DCHECK_NE(data->client->m_iTextureId, 0U);
-  glBindTexture(GL_TEXTURE_2D, data->client->m_iTextureId); VERIFY_NO_ERROR;
+  DCHECK_NE(thisClass->m_iTextureId, 0U);
+  glBindTexture(GL_TEXTURE_2D, thisClass->m_iTextureId); VERIFY_NO_ERROR;
 
   if (type == PET_VIEW)
   {
-    int old_width = data->client->m_iViewWidth;
-    int old_height = data->client->m_iViewHeight;
+    int old_width = thisClass->m_iViewWidth;
+    int old_height = thisClass->m_iViewHeight;
 
-    data->client->m_iViewWidth = width;
-    data->client->m_iViewHeight = height;
+    thisClass->m_iViewWidth = width;
+    thisClass->m_iViewHeight = height;
 
 #ifdef SHOW_UPDATE_RECT
-    data->client->m_updateRect = dirtyRects[0];
+    thisClass->m_updateRect = dirtyRects[0];
 #endif // SHOW_UPDATE_RECT
 
     glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, data->client->m_iViewWidth); VERIFY_NO_ERROR;
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, thisClass->m_iViewWidth); VERIFY_NO_ERROR;
 
-    if (old_width != data->client->m_iViewWidth || old_height != data->client->m_iViewHeight ||
+    if (old_width != thisClass->m_iViewWidth || old_height != thisClass->m_iViewHeight ||
         (dirtyRects.size() == 1 &&
-         dirtyRects[0] == CefRect(0, 0, data->client->m_iViewWidth, data->client->m_iViewHeight)))
+         dirtyRects[0] == CefRect(0, 0, thisClass->m_iViewWidth, thisClass->m_iViewHeight)))
     {
       // Update/resize the whole texture.
       glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0); VERIFY_NO_ERROR;
       glPixelStorei(GL_UNPACK_SKIP_ROWS, 0); VERIFY_NO_ERROR;
       glTexImage2D(
-          GL_TEXTURE_2D, 0, GL_RGBA, data->client->m_iViewWidth, data->client->m_iViewHeight, 0,
+          GL_TEXTURE_2D, 0, GL_RGBA, thisClass->m_iViewWidth, thisClass->m_iViewHeight, 0,
           GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer); VERIFY_NO_ERROR;
     }
     else
@@ -385,8 +344,8 @@ void CWebBrowserClientOpenGL::OnPaint(sPaintData *data)
       for (; i != dirtyRects.end(); ++i)
       {
         const CefRect& rect = *i;
-        DCHECK(rect.x + rect.width <= data->client->m_iViewWidth);
-        DCHECK(rect.y + rect.height <= data->client->m_iViewHeight);
+        DCHECK(rect.x + rect.width <= thisClass->m_iViewWidth);
+        DCHECK(rect.y + rect.height <= thisClass->m_iViewHeight);
         glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect.x); VERIFY_NO_ERROR;
         glPixelStorei(GL_UNPACK_SKIP_ROWS, rect.y); VERIFY_NO_ERROR;
         glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width,
@@ -396,11 +355,11 @@ void CWebBrowserClientOpenGL::OnPaint(sPaintData *data)
     }
     glPopClientAttrib();
   }
-  else if (type == PET_POPUP && data->client->m_popupRect.width > 0 &&
-           data->client->m_popupRect.height > 0)
+  else if (type == PET_POPUP && thisClass->m_popupRect.width > 0 &&
+           thisClass->m_popupRect.height > 0)
   {
-    int skip_pixels = 0, x = data->client->m_popupRect.x;
-    int skip_rows = 0, y = data->client->m_popupRect.y;
+    int skip_pixels = 0, x = thisClass->m_popupRect.x;
+    int skip_rows = 0, y = thisClass->m_popupRect.y;
     int w = width;
     int h = height;
 
@@ -417,10 +376,10 @@ void CWebBrowserClientOpenGL::OnPaint(sPaintData *data)
       skip_rows = -y;
       y = 0;
     }
-    if (x + w > data->client->m_iViewWidth)
-      w -= x + w - data->client->m_iViewWidth;
-    if (y + h > data->client->m_iViewHeight)
-      h -= y + h - data->client->m_iViewHeight;
+    if (x + w > thisClass->m_iViewWidth)
+      w -= x + w - thisClass->m_iViewWidth;
+    if (y + h > thisClass->m_iViewHeight)
+      h -= y + h - thisClass->m_iViewHeight;
 
     // Update the popup rectangle.
     glPixelStorei(GL_UNPACK_ROW_LENGTH, width); VERIFY_NO_ERROR;
@@ -435,8 +394,6 @@ void CWebBrowserClientOpenGL::OnPaint(sPaintData *data)
   glDisable(GL_TEXTURE_2D); VERIFY_NO_ERROR;
 
   // Disable alpha blending.
-  if (data->client->m_bTransparentBackground)
+  if (thisClass->m_bTransparentBackground)
     glDisable(GL_BLEND); VERIFY_NO_ERROR;
-
-  data->event.Signal();
 }

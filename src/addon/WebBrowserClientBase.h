@@ -25,6 +25,45 @@
 #include "include/wrapper/cef_message_router.h"
 #include "platform/threads/threads.h"
 
+#define TMSG_SET_OPENED_ADDRESS       100
+#define TMSG_SET_OPENED_TITLE         101
+#define TMSG_SET_ICON_URL             102
+#define TMSG_BROWSER_CLOSE            103
+#define TMSG_SET_LOADING_STATE        104
+#define TMSG_HANDLE_ON_PAINT          105
+
+struct MessageCallback
+{
+  void (*callback)(void *userptr);
+  void *userptr;
+};
+
+/*!
+ * Structure to pass browser data to render thread, used on related childs
+ */
+typedef struct
+{
+  MessageCallback       client;
+  CefRefPtr<CefBrowser> browser;
+  CefBrowserHost::PaintElementType      type;
+  const CefRenderHandler::RectList*       dirtyRects;
+  const void*           buffer;
+  int                   width;
+  int                   height;
+} OnPaintMessage;
+
+typedef struct
+{
+  unsigned int dwMessage;
+  int param1;
+  int param2;
+  int param3;
+  std::string strParam;
+  std::vector<std::string> params;
+  std::shared_ptr<PLATFORM::CEvent> waitEvent;
+  void* lpVoid;
+} Message;
+
 class CWebBrowserClientBase :
     public CefClient,
     public CefDisplayHandler,
@@ -71,6 +110,12 @@ public:
    */
   int CurrentInactiveCountdown();
 
+  /*!
+   * @brief Returns the number of browsers currently using this handler.
+   * @return number
+   */
+  int GetBrowserCount() const { return m_iBrowserCount; }
+
   bool OnAction(int actionId, int &nextItem);
   bool OnMouseEvent(int id, double x, double y, double offsetX, double offsetY, int state);
 
@@ -92,9 +137,9 @@ public:
   bool OpenWebsite(const char* strURL, bool single, bool allowMenus);
 
   /*!
-   * @brief Reload current active website
+   * @brief Handle given command
    */
-  void ReloadWebsite();
+  void CallSingleCommand(WEB_ADDON_SINGLE_COMMANDS command);
 
   /*!
    * @brief Used to give client the add-on handle data for callbacks.
@@ -571,58 +616,64 @@ public:
   IMPLEMENT_REFCOUNTING(CWebBrowserClientBase);
 
 protected:
+  void SendMessage(Message& message, bool wait);
+
   /*!
    * Given Kodi's settings data
    */
-  void        *m_pDevice;
-  int          m_iLeaveOpenTime;
-  int          m_iXPos;
-  int          m_iYPos;
-  int          m_iWidth;
-  int          m_iHeight;
-  float        m_fPixelRatio;
-  std::string  m_strIdName;
-  int          m_iGUIItemLeft;
-  int          m_iGUIItemRight;
-  int          m_iGUIItemTop;
-  int          m_iGUIItemBottom;
-  int          m_iGUIItemBack;
-  bool         m_bTransparentBackground;
-  void        *m_pControlIdent;
+  void         *m_pDevice;
+  int           m_iLeaveOpenTime;
+  int           m_iXPos;
+  int           m_iYPos;
+  int           m_iWidth;
+  int           m_iHeight;
+  float         m_fPixelRatio;
+  int           m_iSkinXPos;
+  int           m_iSkinYPos;
+  int           m_iSkinWidth;
+  int           m_iSkinHeight;
+  std::string   m_strIdName;
+  int           m_iGUIItemLeft;
+  int           m_iGUIItemRight;
+  int           m_iGUIItemTop;
+  int           m_iGUIItemBottom;
+  int           m_iGUIItemBack;
+  bool          m_bTransparentBackground;
+  void         *m_pControlIdent;
 
-  float        m_BackgroundColor[4];
+  float         m_BackgroundColor[4];
 
 private:
-  const int    m_iUniqueClientId;  /*!< Unique identification id of this control client */
-  time_t       m_inactivateTime;      /*!< Time where client becomes set inactive to handle the timeout */
+  #define TEMP_STORE_SIZE 1024
+  char*         m_strTempStoreA;                  /*!< Temporary storage for strings to access kodi's web lib */
+  char*         m_strTempStoreB;                  /*!<     "        "     "     "     "    "     "     "   " */
+
+  std::string   m_strStartupURL;
+  const int     m_iUniqueClientId;                /*!< Unique identification id of this control client */
+  time_t        m_inactivateTime;                 /*!< Time where client becomes set inactive to handle the timeout */
+  int           m_iBrowserCount;                  /*!< The current number of browsers using this handler. */
+  bool          m_bIsDirty;
+  std::string   m_strActiveSkinPath;
+  bool          m_bFocusOnEditableField;
+  float         m_fMouseXScaleFactor;
+  float         m_fMouseYScaleFactor;
+  int           m_iMousePreviousFlags;
+  cef_mouse_button_type_t m_iMousePreviousControl;
+
   CefRefPtr<CefBrowser> m_Browser;
   CefRefPtr<CefMessageRouterBrowserSide> m_pMessageRouter;
   ADDON_HANDLE_STRUCT m_addonHandle;
 
-  void NotifyAddress(const CefString& url);
-
-  #define TMSG_SET_OPENED_ADDRESS       100
-  #define TMSG_SET_OPENED_TITLE         101
-  #define TMSG_SET_ICON_URL             102
-
-  typedef struct
-  {
-    unsigned int dwMessage;
-    int param1;
-    int param2;
-    std::string strParam;
-    std::vector<std::string> params;
-    std::shared_ptr<PLATFORM::CEvent> waitEvent;
-    void* lpVoid;
-  } Message;
-
-  struct MessageCallback
-  {
-    void (*callback)(void *userptr);
-    void *userptr;
-  };
-
-  void SendMessage(Message& message, bool wait);
+  /*!
+   * @brief Own internal handle functions
+   */
+  //{
+  void LoadErrorPage(                                              ///<--  Load a data: URI containing the error message.
+      CefRefPtr<CefFrame>                   frame,                    ///
+      const std::string&                    failed_url,               ///
+      cef_errorcode_t                       error_code,               ///
+      const std::string&                    other_info);              ///
+  //}
   void HandleMessages();
 
   std::queue <Message*> m_processQueue;

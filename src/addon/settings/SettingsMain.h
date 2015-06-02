@@ -34,6 +34,9 @@ public:
   std::string GetStartURL() const;
   bool SetStartURL(std::string url);
 
+  void SetGeolocationAllowance(bool allow) { m_AllowGeolocation = allow; }
+  bool GetGeolocationAllowance() { return m_AllowGeolocation; }
+
 private:
   std::string GetSettingsFile() const;
   std::string GetUserSettingsFile() const;
@@ -42,4 +45,5 @@ private:
   std::string     m_currentUserSettingsFile;
 
   std::string     m_startURL;
+  bool            m_AllowGeolocation;
 };

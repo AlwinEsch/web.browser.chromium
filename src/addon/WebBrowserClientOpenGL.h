@@ -37,7 +37,6 @@ public:
    */
   virtual void Cleanup();
   virtual void Render();
-  virtual bool Dirty();
 
   /*!
    * CEF class handler alignment
@@ -55,9 +54,7 @@ public:
    * CefRenderHandler functions
    */
   virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) OVERRIDE;
-  virtual bool GetRootScreenRect(CefRefPtr<CefBrowser> browser, CefRect& rect) OVERRIDE;
   virtual bool GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY) OVERRIDE;
-  virtual bool GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info) OVERRIDE;
   virtual void OnPaint(CefRefPtr<CefBrowser> browser,
                        PaintElementType type,
                        const RectList& dirtyRects,
@@ -65,34 +62,16 @@ public:
                        int width, int height) OVERRIDE;
 
 private:
-  bool          m_bInitialized;          /*!< Render initialization done flag, becomes called on first OnPaint call */
-  unsigned int  m_iTextureId;
-  int           m_iViewWidth;
-  int           m_iViewHeight;
-  float         m_fSpinX;
-  float         m_fSpinY;
-  CefRect       m_popupRect;
-  CefRect       m_updateRect;
-
-  struct sPaintData;
-  typedef void (*GUIFunction)(struct sPaintData *data);
-
-  typedef struct sPaintData
-  {
-    CWebBrowserClientOpenGL* client;
-    CefRefPtr<CefBrowser> browser;
-    PaintElementType type;
-    const RectList *dirtyRects;
-    const void* buffer;
-    int width;
-    int height;
-    GUIFunction function;
-    PLATFORM::CEvent event;
-  } sPaintData;
-
-  std::queue <sPaintData*> m_processQueue;
-  PLATFORM::CMutex m_processQueueMutex;
+  bool            m_bInitialized;          /*!< Render initialization done flag, becomes called on first OnPaint call */
+  unsigned int    m_iTextureId;
+  int             m_iViewWidth;
+  int             m_iViewHeight;
+  float           m_fSpinX;
+  float           m_fSpinY;
+  CefRect         m_popupRect;
+  CefRect         m_updateRect;
+  OnPaintMessage  m_onPaintMessage;
   PLATFORM::CMutex m_Mutex;
 
-  static void OnPaint(sPaintData *data);
+  static void OnPaint(void *msg);
 };
