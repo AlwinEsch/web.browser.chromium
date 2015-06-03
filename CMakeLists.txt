@@ -187,6 +187,7 @@ include_directories(${INCLUDES}
                     ${platform_INCLUDE_DIRS}
                     ${KODI_INCLUDE_DIR}
                     ${PROJECT_SOURCE_DIR}/src/addon/
+                    ${PROJECT_SOURCE_DIR}/src/addon/Dialogs/
                     ${PROJECT_SOURCE_DIR}/src/addon/settings/
                     ${PROJECT_SOURCE_DIR}/src/addon/utils/)
 
@@ -194,6 +195,8 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/URICheckHandler.cpp
                                  src/addon/WebBrowserClientBase.cpp
                                  src/addon/WebBrowserManager.cpp
+                                 src/addon/Dialogs/WebGUIDialogBrowser.cpp
+                                 src/addon/Dialogs/WebGUIDialogContextMenu.cpp
                                  src/addon/settings/SettingsMain.cpp
                                  src/addon/utils/Utils.cpp)
 
