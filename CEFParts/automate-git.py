@@ -533,6 +533,7 @@ if not os.path.exists(depot_tools_dir):
   else:
     # On Linux and OS X check out depot_tools using Git.
     run('git clone '+depot_tools_url+' '+depot_tools_dir, download_dir)
+    run('git -C %s config core.longpaths true' % (depot_tools_dir), download_dir)
 
 if not options.noupdate:
   # Update depot_tools.
@@ -604,6 +605,8 @@ else:
 if not options.noupdate and not os.path.exists(cef_dir):
   cef_checkout_new = True
   run('%s clone %s %s' % (git_exe, cef_url, cef_dir), download_dir, \
+      depot_tools_dir)
+  run('%s -C %s config core.longpaths true' % (git_exe, cef_dir), download_dir, \
       depot_tools_dir)
 else:
   cef_checkout_new = False
