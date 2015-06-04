@@ -39,11 +39,12 @@
 #include "platform/util/StringUtils.h"
 
 #include "addon.h"
+#include "WebGUIDialogContextMenu.h"
 #include "WebBrowserClientBase.h"
 #include "WebBrowserManager.h"
 #include "URICheckHandler.h"
 #include "Utils.h"
-
+#include "Dialogs/WebGUIDialogContextMenu.h"
 // Reserved 0 - 255
 //  XBIRRemote.h
 //  XINPUT_IR_REMOTE-*
@@ -1544,8 +1545,8 @@ bool CWebBrowserClientBase::OnMouseEvent(int id, double x, double y, double offs
       break;
     case ADDON_ACTION_MOUSE_DOUBLE_CLICK:
       mouse_event.modifiers = m_iMousePreviousFlags;
-      host->SendMouseClickEvent(mouse_event, m_iMousePreviousControl, false, 2);
-      host->SendMouseClickEvent(mouse_event, m_iMousePreviousControl, true, 2);
+      host->SendMouseClickEvent(mouse_event, m_iMousePreviousControl, false, 1);
+      host->SendMouseClickEvent(mouse_event, m_iMousePreviousControl, true, 1);
       m_iMousePreviousControl = MBT_LEFT;
       m_iMousePreviousFlags = 0;
       break;
@@ -1693,7 +1694,10 @@ void CWebBrowserClientBase::OnBeforeContextMenu(
     CefRefPtr<CefContextMenuParams>       params,
     CefRefPtr<CefMenuModel>               model)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    m_contextMenu.Open(browser, frame, params, model);
+    model->Clear();
+//    model = new CWebGUIDialogContextMenu;
 }
 
 bool CWebBrowserClientBase::OnContextMenuCommand(
@@ -1703,15 +1707,15 @@ bool CWebBrowserClientBase::OnContextMenuCommand(
     int                                   command_id,
     EventFlags                            event_flags)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-  return false;
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  return true;
 }
 
 void CWebBrowserClientBase::OnContextMenuDismissed(
     CefRefPtr<CefBrowser>                 browser,
     CefRefPtr<CefFrame>                   frame)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 //}
 

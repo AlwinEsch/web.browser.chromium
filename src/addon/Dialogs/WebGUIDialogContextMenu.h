@@ -18,13 +18,33 @@
  */
 
 #include "include/cef_menu_model.h"
+#include "include/cef_context_menu_handler.h"
+#include "addon.h"
 
-class CWebGUIDialogContextMenu : CefMenuModel
+class CWebGUIDialogContextMenu
 {
 public:
   CWebGUIDialogContextMenu();
   virtual ~CWebGUIDialogContextMenu();
 
+  bool Open(
+    CefRefPtr<CefBrowser>                 browser,
+    CefRefPtr<CefFrame>                   frame,
+    CefRefPtr<CefContextMenuParams>       params,
+    CefRefPtr<CefMenuModel>               model);
+
+  bool OnClick(int controlId);
+  bool OnFocus(int controlId);
+  bool OnInit();
+  bool OnAction(int actionId);
+
+  static bool OnClickCB(GUIHANDLE cbhdl, int controlId);
+  static bool OnFocusCB(GUIHANDLE cbhdl, int controlId);
+  static bool OnInitCB(GUIHANDLE cbhdl);
+  static bool OnActionCB(GUIHANDLE cbhdl, int actionId);
+
+  /**
+  //{//@{
   virtual bool Clear()                                                ///!< Clears the menu. Returns true on success.
                         OVERRIDE;
   virtual int GetCount()                                              ///!< Returns the number of items in this menu.
@@ -210,4 +230,13 @@ public:
       bool&                                 ctrl_pressed,             ///
       bool&                                 alt_pressed)              ///
                         OVERRIDE;
+//}//@}
+*/
+private:
+  CAddonGUIWindow*                m_window;
+
+  CefRefPtr<CefBrowser>           m_browser;
+  CefRefPtr<CefFrame>             m_frame;
+  CefRefPtr<CefContextMenuParams> m_params;
+  CefRefPtr<CefMenuModel>         m_model;
 };

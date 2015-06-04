@@ -25,6 +25,8 @@
 #include "include/wrapper/cef_message_router.h"
 #include "platform/threads/threads.h"
 
+#include "Dialogs/WebGUIDialogContextMenu.h"
+
 #define TMSG_SET_OPENED_ADDRESS       100
 #define TMSG_SET_OPENED_TITLE         101
 #define TMSG_SET_ICON_URL             102
@@ -663,6 +665,8 @@ private:
   CefRefPtr<CefBrowser> m_Browser;
   CefRefPtr<CefMessageRouterBrowserSide> m_pMessageRouter;
   ADDON_HANDLE_STRUCT m_addonHandle;
+
+  CWebGUIDialogContextMenu  m_contextMenu;
 
   /*!
    * @brief Own internal handle functions
