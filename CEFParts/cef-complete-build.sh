@@ -84,22 +84,25 @@ printf "${WHITE}${BRIGHT}|                                                      
 printf "${WHITE}${BRIGHT}*-----------------------------------------------------------------------------------------*${NORMAL}\n"
 printf "\n"
 if [ "$dist" == "Ubuntu" ]; then
-  printf "${RED}${BRIGHT}Build not possible, need performed on ubuntu based system (needed from chromium parts)${NORMAL}\n"
+  printf "${RED}${BRIGHT}Build not possible, need performed on ubuntu based system (needed from chromium parts)!${NORMAL}\n"
+  exit 1
+fi
+FREE_DISK_SPACE=`df  . | tail -1 | tr -s ' ' | cut -d' ' -f4`
+# 25 GByte
+if [ $FREE_DISK_SPACE -gt 32212254720 ]; then
+  printf "${RED}${BRIGHT}Not enough free space available!${NORMAL}\n"
   exit 1
 fi
 
 printf "${WHITE}${BRIGHT}System info:${NORMAL}\n"
 printf "${WHITE} - Build start time :\t $START_TIME${NORMAL}\n"
 printf "${WHITE} - Linux version :\t $(uname -r)${NORMAL}\n"
-printf "\n"
-printf "${WHITE}"
-df -h $START_DIR
-printf "${NORMAL}\n"
+printf "${WHITE} - Free Disk size :\t %s GByte\n${NORMAL}\n" `expr $FREE_DISK_SPACE / 1024 / 1024`
 printf "${WHITE}${BRIGHT}*-----------------------------------------------------------------------------------------*${NORMAL}\n"
 printf "\n"
 
 check_packages
-mkdir $BASE_PATH/chromium
+mkdir -p $BASE_PATH/chromium
 
 ###############################################################################
 # Download required depot tools
@@ -164,6 +167,7 @@ TIME_HOUR=`expr $TIME / 3600`
 TIME_MIN=`expr $TIME / 60`
 TIME_SEC=`expr $TIME % 60`
 DATA_SIZE=`du -hs`
+FINAL_DISK_SPACE=`df  . | tail -1 | tr -s ' ' | cut -d' ' -f4`
 
 printf "\n${WHITE}${BRIGHT}*-----------------------------------------------------------------------------------------*${NORMAL}\n"
 printf "\n"
@@ -171,5 +175,6 @@ printf "${WHITE}${BRIGHT}Build complete info:${NORMAL}\n"
 printf "${WHITE} - Build start time :\t $START_TIME${NORMAL}\n"
 printf "${WHITE} - Build end time :\t $(date)${NORMAL}\n"
 printf "${WHITE} - Complete build time : $TIME_HOUR hours, $TIME_MIN minutes, $TIME_SEC seconds${NORMAL}\n"
-printf "${WHITE} - Used data size :\t ${DATA_SIZE}\t"
+printf "${WHITE} - Used data size :\t ${DATA_SIZE}\n"
+printf "${WHITE} - Free Disk size :\t %s GByte\n${NORMAL}\n" `expr $FINAL_DISK_SPACE / 1024 / 1024`
 printf "${NORMAL}\n"
