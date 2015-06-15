@@ -1,4 +1,23 @@
 #!/bin/bash
+###############################################################################
+#                                                                             #
+#     Copyright (C) 2015 Team KODI                                            #
+#     http://kodi.tv                                                          #
+#                                                                             #
+#  This program is free software: you can redistribute it and/or modify       #
+#  it under the terms of the GNU General Public License as published by       #
+#  the Free Software Foundation, either version 3 of the License, or          #
+#  (at your option) any later version.                                        #
+#                                                                             #
+#  This program is distributed in the hope that it will be useful,            #
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              #
+#  GNU General Public License for more details.                               #
+#                                                                             #
+#  You should have received a copy of the GNU General Public License          #
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.      #
+#                                                                             #
+###############################################################################
 
 DEPOT_TOOLS_URL="https://bitbucket.org/kodi-web/chromium_depot_tools.git"
 CEF_SOURCE_URL="https://bitbucket.org/kodi-web/cef.git"
@@ -20,21 +39,97 @@ BLINK=$(tput blink)
 REVERSE=$(tput smso)
 UNDERLINE=$(tput smul)
 
-START_DIR=`pwd`
 START_TIME=`date`
 START_TIME_SEC=`date +%s`
 
 DIST=`grep DISTRIB_ID /etc/*-release | awk -F '=' '{print $2}'`
 BASE_PATH=`pwd`
 CONTINUES_INSTALL_ALLOWED=false
+DISTNAME=utopic
+DO_INST_X86=1
+DO_INST_X64=1
+DO_INST_ARM=1
+DO_INST_SYMS=1
 
-export GYP_GENERATORS=ninja
+usage() {
+  echo "Usage: $0 [--options]"
+  echo "Options:"
+  echo "--branch      chromium branch to use, default is \"$CHROMIUM_BRANCH\""
+  echo "--distname    select internal used distribution, possible are only Ubuntu"
+  echo "              12.04 (precise), 14.04 (trusty) and 14.10 (utopic),"
+  echo "              default is \"${DISTNAME}\""
+  echo "--[no-]syms   enable or disable installation of debugging symbols"
+  echo "--lib32       enable installation of 32-bit libraries, e.g. for V8 snapshot"
+  echo "--[no-]x86    enable or disable installation of x86 32bit toolchain"
+  echo "--[no-]x64    enable or disable installation of x64 64bit toolchain"
+  echo "--[no-]arm    enable or disable installation of arm cross toolchain"
+  echo "--remove-build-flags"
+  echo "              remove build flag files before (forced build check)"
+  echo "--help        this help message"
+  echo "Script will prompt interactively for other values."
+  exit 1
+}
+
+process_opts() {
+  while test "$1" != "" ; do
+    case "$1" in
+      --distname)
+        case "$2" in
+            "")
+              echo "Option distname, no argument"
+              shift
+              ;;
+            *)
+              DISTNAME="$2"
+              shift
+              ;;
+        esac ;;
+      --branch)
+        case "$2" in
+            "")
+              echo "Option branch, no argument"
+              shift
+              ;;
+            *)
+              EXIST=`git ls-remote $CEF_SOURCE_URL $2 | wc -l`
+              if [ EXIST -eq 1 ];then
+                CHROMIUM_BRANCH="$2"
+              else
+                printf "${RED}${BRIGHT}ERROR: ${WHITE}Selected CEF branch \"%i\" does not exists${NORMAL}\n" "$2" >&2
+                exit 1
+              fi
+              shift
+              ;;
+        esac ;;
+      --syms)                   DO_INST_SYMS=1;;
+      --no-syms)                DO_INST_SYMS=0;;
+      --lib32)                  DO_INST_LIB32=1;;
+      --x86)                    DO_INST_X86=1;;
+      --no-x86)                 DO_INST_X86=0;;
+      --x64)                    DO_INST_X64=1;;
+      --no-x64)                 DO_INST_X64=0;;
+      --arm)                    DO_INST_ARM=1;;
+      --no-arm)                 DO_INST_ARM=0;;
+
+      --remove-build-flags)     DO_INST_CHROMEOS_FONTS=1;;
+      --help)                   usage;;
+      *)
+        echo "invalid command-line option: $OPTARG"
+        usage
+        ;;
+    esac
+    shift
+  done
+
+  if test "$do_inst_arm" = "1"; then
+    DO_INST_LIB32=1
+  fi
+}
 
 print_package_missing_warning() {
   printf "${WHITE}${BRIGHT}Missing package ${CYAN}%s${NORMAL}" $1
-  if [ CONTINUES_INSTALL_ALLOWED == false ]; then
+  if [ $CONTINUES_INSTALL_ALLOWED = false ]; then
     printf "${WHITE}, press enter or space to allow install of all missing parts${NORMAL}\n"
-    set CONTINUES_INSTALL_ALLOWED=true
   fi
 }
 
@@ -53,17 +148,18 @@ check_dev_package() {
 }
 
 check_package() {
-  which $1 > /dev/null
+  dpkg -s $1 > /dev/null
   if [ $? -eq 1 ]; then
-    print_package_missing_warning $2
-    if [ CONTINUES_INSTALL_ALLOWED == true ]; then
-      sudo apt-get install -qy $2
+    print_package_missing_warning $1
+    if [ $CONTINUES_INSTALL_ALLOWED == true ]; then
+      sudo apt-get install -qy $1
     else
       read -N1 key
+      CONTINUES_INSTALL_ALLOWED=true
       if [[ $key = "" ]]; then
-        sudo apt-get install -qy $2
+        sudo apt-get install -qy $1
       else
-        printf "${RED}${BRIGHT}Build stopped due to missing package ${NORMAL}'%s'\n" $2
+        printf "${RED}${BRIGHT}Build stopped due to missing package ${NORMAL}'%s'\n" $1
         exit 1
       fi
     fi
@@ -72,33 +168,193 @@ check_package() {
 
 check_packages() {
   check_dev_package
-  check_package git git
-  check_package svn subversion
-  check_package clang clang
+  check_package git
+  check_package subversion
+  check_package clang
 }
 
-printf "${WHITE}${BRIGHT}*-----------------------------------------------------------------------------------------*${NORMAL}\n"
-printf "${WHITE}${BRIGHT}|                                                                                         |${NORMAL}\n"
-printf "${WHITE}${BRIGHT}|                                  CEF complete build                                     |${NORMAL}\n"
-printf "${WHITE}${BRIGHT}|                                                                                         |${NORMAL}\n"
-printf "${WHITE}${BRIGHT}*-----------------------------------------------------------------------------------------*${NORMAL}\n"
+###############################################################################
+# Create chroot build environment
+create_chroot_build_environment() {
+  if [ ! -f ${BASE_PATH}/chromium/buildFlag0003_chroot_build_env_done_${DISTNAME}_${1}bit ]; then
+    printf "${BRIGHT}${GREEN}Start creation of chroot system for %ibit on %s ${WHITE}(follow related requests of them)${NORMAL}\n" $1 ${DISTNAME}
+    bash ${BASE_PATH}/install-chroot.sh -t $1 -d $DISTNAME -u -n
+    if [ $? != 0 ];then
+      printf "${RED}${BRIGHT}Creation of chroot build environment failed${NORMAL}\n"
+      exit $?
+    fi
+    touch ${BASE_PATH}/chromium/buildFlag0003_chroot_build_env_done_${DISTNAME}_${1}bit
+  else
+    printf "${WHITE}${BRIGHT}Creation of %ibit chroot build environment already done and skipped${NORMAL}\n" $1
+  fi
+}
+
+###############################################################################
+# Downlad and install build dependencies
+build_dependencies() {
+  if [ ! -f ${BASE_PATH}/chromium/buildFlag0004_chroot_build_deps_done_${DISTNAME}_${1} ]; then
+    printf "${WHITE}${BRIGHT}Downlad and install build dependencies for %i on %s ${NORMAL}\n" $i ${DISTNAME}
+    sudo /usr/local/bin/${DISTNAME}${1} sh -c "$BASE_PATH/chromium/src/build/install-build-deps.sh --no-syms;
+          rc=$?;
+          /etc/init.d/cron stop >/dev/null 2>&1 || :;
+          /etc/init.d/rsyslog stop >/dev/null 2>&1 || :;
+          /etc/init.d/dbus stop >/dev/null 2>&1 || :;
+          exit $rc"
+    if [ $? != 0 ];then
+      printf "${RED}${BRIGHT}Download build dependencies failed${NORMAL}\n"
+      exit $?
+    fi
+    GCC_VERSION=`${DISTNAME}${1} /usr/bin/g++-* --version | grep g++ | awk -F '-' '{print $2}' | awk -F ' ' '{print $1}'`
+    if [ $? != 0 ];then
+      printf "${RED}${BRIGHT}No g++ present!${NORMAL}\n"
+      exit $?
+    fi
+    sudo ${DISTNAME}${1} ln -sf g++-$GCC_VERSION /usr/bin/c++ -T
+    sudo ${DISTNAME}${1} ln -sf g++-$GCC_VERSION /usr/bin/g++ -T
+    sudo ${DISTNAME}${1} ln -sf gcc-$GCC_VERSION /usr/bin/gcc -T
+    sudo ${DISTNAME}${1} ln -sf gcc-ar-$GCC_VERSION /usr/bin/gcc-ar -T
+    sudo ${DISTNAME}${1} ln -sf gcc-nm-$GCC_VERSION /usr/bin/gcc-nm -T
+    sudo ${DISTNAME}${1} ln -sf gcc-ranlib-$GCC_VERSION /usr/bin/gcc-ranlib -T
+    sudo ${DISTNAME}${1} ln -sf gcov-$GCC_VERSION /usr/bin/gcov -T
+
+    touch ${BASE_PATH}/chromium/buildFlag0004_chroot_build_deps_done_${DISTNAME}_${1}
+  else
+    printf "${WHITE}${BRIGHT}Download and install of %i build dependencies was already done and skipped\n" $1
+  fi
+}
+
+###############################################################################
+# Run the cef_create_projects script (.bat on Windows, .sh on OS X and Linux)
+# to generate the build files based on the GYP configuration.
+create_projects() {
+  printf "${WHITE}${BRIGHT}Run the cef_create_projects script to generate needed %{1} CEF build files${NORMAL}\n" $1
+  # Install a helper script to launch commands in the chroot
+  sudo sh -c cat > $BASE_PATH/chromium/cef_build_${DISTNAME}_${1}.sh << EOF
+#!/bin/bash
+
+export PATH="${PATH}:${BASE_PATH}/chromium/depot_tools"
+
+cd $BASE_PATH/chromium/src/cef
+
+export GYP_GENERATORS=ninja
+EOF
+
+  if [ $1 = "32" ];then
+    sudo sh -c cat >> $BASE_PATH/chromium/cef_build_${DISTNAME}_${1}.sh << EOF
+export GYP_DEFINES="clang=0 target_arch=ia32"
+EOF
+  elif [ $1 = "arm" ];then
+  sudo sh -c cat >> $BASE_PATH/chromium/cef_build_${DISTNAME}_${1}.sh << EOF
+export GYP_DEFINES="OS=linux target_arch=arm arm_version=6 arm_neon=0 arm_float_abi=hard clang=0 enable_tracing=1"
+EOF
+  fi
+
+  sudo sh -c cat >> $BASE_PATH/chromium/cef_build_${DISTNAME}_${1}.sh << EOF
+
+./cef_create_projects.sh
+if [ $? != 0 ];then
+  printf "${RED}${BRIGHT}Creation CEF build files failed${NORMAL}\n" >&2
+  exit $?
+fi
+
+EOF
+
+  if [ $DO_INST_SYMS != 0 ];then
+    sudo sh -c cat >> $BASE_PATH/chromium/cef_build_${DISTNAME}_${1}.sh << EOF
+cd $BASE_PATH/chromium/src
+ninja -C out/Debug cefclient cef_unittests
+if [ $? != 0 ];then
+  printf "${RED}${BRIGHT}Creation CEF debug build files failed${NORMAL}\n" >&2
+  exit $?
+fi
+
+EOF
+  fi
+
+  sudo sh -c cat >> $BASE_PATH/chromium/cef_build_${DISTNAME}_${1}.sh << EOF
+cd $BASE_PATH/chromium/src
+ninja -C out/Release cefclient cef_unittests
+if [ $? != 0 ];then
+  printf "${RED}${BRIGHT}Creation CEF release build files failed${NORMAL}\n" >&2
+  exit $?
+fi
+
+EOF
+
+  sudo sh -c cat >> $BASE_PATH/chromium/cef_build_${DISTNAME}_${1}.sh << EOF
+cd $BASE_PATH/chromium/src/cef/tools
+# If using a Ninja build:
+./make_distrib.sh --ninja-build
+# If using default system build tools:
+#./make_distrib.sh
+if [ $? != 0 ];then
+  printf "${RED}${BRIGHT}Install of CEF build files failed${NORMAL}\n" >&2
+  exit $?
+fi
+
+EOF
+
+  sudo chmod 755 $BASE_PATH/chromium/cef_build_${DISTNAME}_${1}.sh
+}
+
+printf "${WHITE}${BRIGHT}*------------------------------------------------------------------------------*${NORMAL}\n"
+printf "${WHITE}${BRIGHT}|                                                                              |${NORMAL}\n"
+printf "${WHITE}${BRIGHT}|                              CEF complete build                              |${NORMAL}\n"
+printf "${WHITE}${BRIGHT}|                                                                              |${NORMAL}\n"
+printf "${WHITE}${BRIGHT}*------------------------------------------------------------------------------*${NORMAL}\n"
 printf "\n"
-if [ "$dist" == "Ubuntu" ]; then
-  printf "${RED}${BRIGHT}Build not possible, need performed on ubuntu based system (needed from chromium parts)!${NORMAL}\n"
+
+process_opts "$@"
+
+ubuntu_codenames="(precise|trusty|utopic)"
+if [ 0 -eq "${do_unsupported-0}" ] && [ 0 -eq "${do_quick_check-0}" ] ; then
+  if [[ ! $DISTNAME =~ $ubuntu_codenames ]]; then
+    printf "${RED}${BRIGHT}ERROR: ${WHITE}Only Ubuntu 12.04 (precise), 14.04 (trusty) and 14.10 (utopic)${NORMAL}\n" >&2
+    printf "${WHITE}${BRIGHT}       are currently supported${NORMAL}\n" >&2
+    exit 1
+  fi
+
+  if ! uname -m | egrep -q "i686|x86_64"; then
+    echo "Only x86 architectures are currently supported" >&2
+    exit
+  fi
+fi
+
+printf "${WHITE}${BRIGHT}This script will help you through the process of installing a Debian or Ubuntu${NORMAL}\n"
+printf "${WHITE}${BRIGHT}distribution in a chroot environment. You will have to provide your \"sudo\"${NORMAL}\n"
+printf "${WHITE}${BRIGHT}password when requested.${NORMAL}\n"
+printf "\n"
+
+if [ "$DIST" != "Ubuntu" -a "$DIST" != "Debian" ]; then
+  printf "${RED}${BRIGHT}Build not possible, need performed on ubuntu or debian based system (needed${NORMAL}\n" >&2
+  printf "${RED}${BRIGHT}from chromium parts)!${NORMAL}\n" >&2
   exit 1
 fi
-FREE_DISK_SPACE=`df  . | tail -1 | tr -s ' ' | cut -d' ' -f4`
+
+if [ -f $BASE_PATH/chromium/info_startDiskSize ];then
+  FREE_DISK_SPACE=`cat $BASE_PATH/chromium/info_startDiskSize`
+else
+  FREE_DISK_SPACE=`df  . | tail -1 | tr -s ' ' | cut -d' ' -f4`
+  echo $FREE_DISK_SPACE > $BASE_PATH/chromium/info_startDiskSize
+fi
+
 # 25 GByte
 if [ $FREE_DISK_SPACE -gt 32212254720 ]; then
-  printf "${RED}${BRIGHT}Not enough free space available!${NORMAL}\n"
+  printf "${RED}${BRIGHT}Not enough free space available!${NORMAL}\n" >&2
   exit 1
 fi
 
 printf "${WHITE}${BRIGHT}System info:${NORMAL}\n"
 printf "${WHITE} - Build start time :\t $START_TIME${NORMAL}\n"
 printf "${WHITE} - Linux version :\t $(uname -r)${NORMAL}\n"
+printf "${WHITE} - Used distribution :\t %s${NORMAL}\n" "$DISTNAME"
 printf "${WHITE} - Free Disk size :\t %s GByte\n${NORMAL}\n" `expr $FREE_DISK_SPACE / 1024 / 1024`
-printf "${WHITE}${BRIGHT}*-----------------------------------------------------------------------------------------*${NORMAL}\n"
+if [ "x$(id -u)" != x0 ] && [ 0 -eq "${do_quick_check-0}" ]; then
+  printf "${WHITE}${BRIGHT}Running as non-root user.${NORMAL}\n"
+  printf "${WHITE}${YELLOW}You might have to enter your password one or more times for 'sudo'.${NORMAL}\n\n"
+fi
+
+printf "${WHITE}${BRIGHT}*------------------------------------------------------------------------------*${NORMAL}\n"
 printf "\n"
 
 check_packages
@@ -106,60 +362,110 @@ mkdir -p $BASE_PATH/chromium
 
 ###############################################################################
 # Download required depot tools
-printf "${WHITE}${BRIGHT}Download chromium depot tools${NORMAL} %s\n" $DEPOT_TOOLS_URL
-git -C $BASE_PATH/chromium clone $DEPOT_TOOLS_URL
-export PATH="${PATH}:${BASE_PATH}/chromium/chromium_depot_tools"
+if [ ! -d ${BASE_PATH}/chromium/depot_tools ]; then
+  printf "${WHITE}${BRIGHT}Download chromium depot tools${NORMAL} %s\n" $DEPOT_TOOLS_URL
+  git -C $BASE_PATH/chromium clone $DEPOT_TOOLS_URL depot_tools
+  if [ $? != 0 ];then
+    printf "${RED}${BRIGHT}Download of depot tools failed${NORMAL}\n" >&2
+    exit $?
+  fi
+else
+  printf "${WHITE}${BRIGHT}Chromium depot tools already present and skipped\n"
+fi
+export PATH="${PATH}:${BASE_PATH}/chromium/depot_tools"
 
 ###############################################################################
 # Download Chromium source code using the fetch tool included with depot_tools.
 # This step only needs to be performed the first time Chromium code is checked
 # out.
-printf "${WHITE}${BRIGHT}Download chromium source code${NORMAL}\n"
-printf "${RED}${BRIGHT}WARNING: ${WHITE}Download takes a very long time ${UNDERLINE}(more as 12 hours possible)${NORMAL}\n"
-cd $BASE_PATH/chromium
-fetch --nohooks chromium --nosvn=True
+if [ ! -d ${BASE_PATH}/chromium/depot_tools ]; then
+  printf "${WHITE}${BRIGHT}Download chromium source code${NORMAL}\n"
+  printf "${RED}${BRIGHT}WARNING: ${WHITE}Download takes a very long time ${UNDERLINE}(more as 12 hours possible)${NORMAL}\n"
+  cd $BASE_PATH/chromium
+  fetch --nohooks chromium --nosvn=True
+  if [ $? != 0 ];then
+    printf "${RED}${BRIGHT}Download Chromium source code failed${NORMAL}\n" >&2
+    exit $?
+  fi
+else
+  printf "${WHITE}${BRIGHT}Chromium source code already present and skipped${NORMAL}\n"
+fi
 
 ###############################################################################
 # Download additional branch and tag information.
 cd $BASE_PATH/chromium/src
-gclient sync --nohooks --with_branch_heads
-git fetch
+if [ ! -f ${BASE_PATH}/chromium/buildFlag0001_branch_heads_present ]; then
+  printf "${WHITE}${BRIGHT}Download additional branch and tag information.${NORMAL}\n"
+  gclient sync --nohooks --with_branch_heads
+  git fetch
+  touch ${BASE_PATH}/chromium/buildFlag0001_branch_heads_present
+else
+  printf "${WHITE}${BRIGHT}Additional branch and tag information already present and skipped${NORMAL}\n"
+fi
 
 ###############################################################################
 # Check out the release branch HEAD revision and update the third-party
 # dependencies.
-printf "${WHITE}${BRIGHT}Update the Chromium checkout to the required commit hash${NORMAL} %s\n" $CHROMIUM_BRANCH
-# Check out the release branch HEAD revision. CEF may not build cleanly against this revision.
-git checkout refs/remotes/branch-heads/$CHROMIUM_BRANCH
-# Update third-party dependencies.
-gclient sync --jobs 16
+if [ ! -f ${BASE_PATH}/chromium/buildFlag0002_branch_heads_set_${CHROMIUM_BRANCH} ]; then
+  printf "${WHITE}${BRIGHT}Update the Chromium checkout to the required commit hash${NORMAL} %s\n" $CHROMIUM_BRANCH
+  # Check out the release branch HEAD revision. CEF may not build cleanly against this revision.
+  git checkout refs/remotes/branch-heads/$CHROMIUM_BRANCH
+  # Update third-party dependencies.
+  gclient sync --jobs 16
+  touch ${BASE_PATH}/chromium/buildFlag0002_branch_heads_set_${CHROMIUM_BRANCH}
+else
+  printf "${WHITE}${BRIGHT}Release branch checkout for %s already done and skipped${NORMAL}\n" $CHROMIUM_BRANCH
+fi
+
+###############################################################################
+# Create chroot build environment
+if [ DO_INST_X86 != 0 ];then
+  create_chroot_build_environment "32"
+fi
+if [ DO_INST_X64 != 0 ];then
+  create_chroot_build_environment "64"
+fi
+
+###############################################################################
+# Downlad and install build dependencies
+if [ DO_INST_X86 != 0 ];then
+  build_dependencies 32
+fi
+if [ DO_INST_X64 != 0 ];then
+  build_dependencies 64
+fi
 
 ###############################################################################
 # Download CEF source code from the CEF Git repository to a "cef" directory
 # inside the Chromium "src" directory. If Chromium code was downloaded to
 # "/path/to/chromium/src" then CEF code should be downloaded to
 # "/path/to/chromium/src/cef". Note that the directory must be named "cef".
-printf "${WHITE}${BRIGHT}Download CEF source code from${NORMAL} %s\n" $CEF_SOURCE_URL
-git -C $BASE_PATH/chromium/src clone $CEF_SOURCE_URL
-cd $BASE_PATH/chromium/src/cef
-git checkout $CHROMIUM_BRANCH
-
-###############################################################################
-# Create chroot build environment
-printf "${BRIGHT}${GREEN}Start creation of chroot system${WHITE} (follow related requests of them)${NORMAL}\n"
-printf "${BRIGHT}${BLUE}NOTE:${WHITE} Only Chromium supported targets are: ${UNDERLINE}precise and utopic${NORMAL}\n\n"
-exec ${START_DIR}/chromium/src/build/install-chroot.sh
-if [ $? != 0 ];then
-  printf "${RED}${BRIGHT}Creation of chroot build environment failed${NORMAL}\n"
-  exit 1
+if [ ! -d "$BASE_PATH/chromium/src/cef" ]; then
+  printf "${WHITE}${BRIGHT}Download CEF source code from${NORMAL} %s\n" $CEF_SOURCE_URL
+  git -C $BASE_PATH/chromium/src clone $CEF_SOURCE_URL --branch $CHROMIUM_BRANCH cef
+  if [ $? != 0 ];then
+    printf "${RED}${BRIGHT}Download CEF files failed${NORMAL}\n" >&2
+    exit $?
+  fi
+else
+  printf "${WHITE}${BRIGHT}Download CEF source code was already done and skipped${NORMAL}\n"
 fi
 
-
-
-
-
-
-
+###############################################################################
+# Run the cef_create_projects script (.bat on Windows, .sh on OS X and Linux)
+# to generate the build files based on the GYP configuration.
+if [ DO_INST_X86 != 0 ];then
+  create_projects 32
+  sudo ${DISTNAME}32 $BASE_PATH/chromium/cef_build_${DISTNAME}_32.sh
+fi
+if [ DO_INST_X64 != 0 ];then
+  create_projects 64
+  sudo ${DISTNAME}64 $BASE_PATH/chromium/cef_build_${DISTNAME}_64.sh
+fi
+if [ DO_INST_ARM != 0 ];then
+  create_projects arm
+  sudo ${DISTNAME}arm $BASE_PATH/chromium/cef_build_${DISTNAME}_arm.sh
+fi
 
 TIME=`date +%s`
 TIME=`expr $TIME - $START_TIME_SEC`
@@ -169,7 +475,7 @@ TIME_SEC=`expr $TIME % 60`
 DATA_SIZE=`du -hs`
 FINAL_DISK_SPACE=`df  . | tail -1 | tr -s ' ' | cut -d' ' -f4`
 
-printf "\n${WHITE}${BRIGHT}*-----------------------------------------------------------------------------------------*${NORMAL}\n"
+printf "${WHITE}${BRIGHT}*------------------------------------------------------------------------------*${NORMAL}\n"
 printf "\n"
 printf "${WHITE}${BRIGHT}Build complete info:${NORMAL}\n"
 printf "${WHITE} - Build start time :\t $START_TIME${NORMAL}\n"
