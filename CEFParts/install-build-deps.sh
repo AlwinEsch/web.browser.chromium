@@ -112,7 +112,7 @@ dev_list="apache2.2-bin bison cdbs curl dpkg-dev elfutils devscripts fakeroot
           rpm ruby subversion ttf-dejavu-core ttf-indic-fonts ttf-kochi-gothic
           ttf-kochi-mincho wdiff xfonts-mathml zip $chromeos_dev_list"
 
-dev_list="${dev_list} libgtk2.0-dev libgtkglext1-dev"
+dev_list="${dev_list} libgtk2.0-dev libgtkglext1 libgtkglext1-dev"
 
 # 64-bit systems need a minimum set of 32-bit compat packages for the pre-built
 # NaCl binaries.
