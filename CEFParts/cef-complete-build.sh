@@ -179,14 +179,14 @@ check_packages() {
 ###############################################################################
 # Create chroot build environment
 create_chroot_build_environment() {
-  if [ ! -f ${BASE_PATH}/chromium/buildFlag0003_chroot_build_env_done_${DISTNAME}_${1}bit ]; then
+  if [ ! -f "${BASE_PATH}/chromium/buildFlag0003_chroot_build_env_done_${DISTNAME}_${1}bit" ]; then
     printf "${BRIGHT}${GREEN}Start creation of chroot system for %ibit on %s ${WHITE}(follow related requests of them)${NORMAL}\n" $1 ${DISTNAME}
-    bash ${BASE_PATH}/install-chroot.sh -t $1 -d $DISTNAME -u -n
+    bash "${BASE_PATH}/install-chroot.sh" -t $1 -d $DISTNAME -u -n
     if [ $? != 0 ];then
       printf "${RED}${BRIGHT}Creation of chroot build environment failed${NORMAL}\n"
       exit $?
     fi
-    touch ${BASE_PATH}/chromium/buildFlag0003_chroot_build_env_done_${DISTNAME}_${1}bit
+    touch "${BASE_PATH}/chromium/buildFlag0003_chroot_build_env_done_${DISTNAME}_${1}bit"
   else
     printf "${WHITE}${BRIGHT}Creation of %ibit chroot build environment already done and skipped${NORMAL}\n" $1
   fi
@@ -195,9 +195,9 @@ create_chroot_build_environment() {
 ###############################################################################
 # Downlad and install build dependencies
 build_dependencies() {
-  if [ ! -f ${BASE_PATH}/chromium/buildFlag0004_chroot_build_deps_done_${DISTNAME}_${1} ]; then
+  if [ ! -f "${BASE_PATH}/chromium/buildFlag0004_chroot_build_deps_done_${DISTNAME}_${1}" ]; then
     printf "${WHITE}${BRIGHT}Downlad and install build dependencies for %i on %s ${NORMAL}\n" $1 ${DISTNAME}
-    sudo /usr/local/bin/${DISTNAME}${1} sh -c "$BASE_PATH/chromium/src/build/install-build-deps.sh --no-syms;
+    sudo /usr/local/bin/${DISTNAME}${1} sh -c "\"$BASE_PATH/chromium/src/build/install-build-deps.sh\" --no-syms;
           rc=$?;
           /etc/init.d/cron stop >/dev/null 2>&1 || :;
           /etc/init.d/rsyslog stop >/dev/null 2>&1 || :;
@@ -220,7 +220,7 @@ build_dependencies() {
     sudo ${DISTNAME}${1} ln -sf gcc-ranlib-$GCC_VERSION /usr/bin/gcc-ranlib -T
     sudo ${DISTNAME}${1} ln -sf gcov-$GCC_VERSION /usr/bin/gcov -T
 
-    touch ${BASE_PATH}/chromium/buildFlag0004_chroot_build_deps_done_${DISTNAME}_${1}
+    touch "${BASE_PATH}/chromium/buildFlag0004_chroot_build_deps_done_${DISTNAME}_${1}"
   else
     printf "${WHITE}${BRIGHT}Download and install of %i build dependencies was already done and skipped\n" $1
   fi
@@ -365,9 +365,9 @@ mkdir -p "$BASE_PATH/chromium"
 
 ###############################################################################
 # Download required depot tools
-if [ ! -d ${BASE_PATH}/chromium/depot_tools ]; then
+if [ ! -d "${BASE_PATH}/chromium/depot_tools" ]; then
   printf "${WHITE}${BRIGHT}Download chromium depot tools${NORMAL} %s\n" $DEPOT_TOOLS_URL
-  git -C "$BASE_PATH/chromium clone $DEPOT_TOOLS_URL depot_tools"
+  git -C "$BASE_PATH/chromium" clone $DEPOT_TOOLS_URL depot_tools
   if [ $? != 0 ];then
     printf "${RED}${BRIGHT}Download of depot tools failed${NORMAL}\n" >&2
     exit $?
@@ -399,7 +399,7 @@ fi
 # Download Chromium source code using the fetch tool included with depot_tools.
 # This step only needs to be performed the first time Chromium code is checked
 # out.
-if [ ! -d ${BASE_PATH}/chromium/src ]; then
+if [ ! -d "${BASE_PATH}/chromium/src" ]; then
   COMMIT_HASH=`cat "$BASE_PATH/chromium/cef/CHROMIUM_BUILD_COMPATIBILITY.txt" | tail -2 | cut -d' ' -f4 | cut -d "'" -f2 | head -1`
   printf "${WHITE}${BRIGHT}Download chromium source code using commit_hash:${NORMAL} %s\n" $COMMIT_HASH
   printf "${RED}${BRIGHT}WARNING: ${WHITE}Download takes a very long time ${UNDERLINE}(more as 12 hours possible)${NORMAL}\n"
@@ -421,11 +421,11 @@ fi
 ###############################################################################
 # Download additional branch and tag information.
 cd "$BASE_PATH/chromium/src"
-if [ ! -f ${BASE_PATH}/chromium/buildFlag0001_branch_heads_present ]; then
+if [ ! -f "${BASE_PATH}/chromium/buildFlag0001_branch_heads_present" ]; then
   printf "${WHITE}${BRIGHT}Download additional branch and tag information.${NORMAL}\n"
   gclient sync --nohooks --with_branch_heads
   git fetch
-  touch ${BASE_PATH}/chromium/buildFlag0001_branch_heads_present
+  touch "${BASE_PATH}/chromium/buildFlag0001_branch_heads_present"
 else
   printf "${WHITE}${BRIGHT}Additional branch and tag information already present and skipped${NORMAL}\n"
 fi
@@ -433,13 +433,13 @@ fi
 ###############################################################################
 # Check out the release branch HEAD revision and update the third-party
 # dependencies.
-if [ ! -f ${BASE_PATH}/chromium/buildFlag0002_branch_heads_set_${CHROMIUM_BRANCH} ]; then
+if [ ! -f "${BASE_PATH}/chromium/buildFlag0002_branch_heads_set_${CHROMIUM_BRANCH}" ]; then
   printf "${WHITE}${BRIGHT}Update the Chromium checkout to the required commit hash${NORMAL} %s\n" $CHROMIUM_BRANCH
   # Check out the release branch HEAD revision. CEF may not build cleanly against this revision.
   git checkout refs/remotes/branch-heads/$CHROMIUM_BRANCH
   # Update third-party dependencies.
   gclient sync --jobs 16
-  touch ${BASE_PATH}/chromium/buildFlag0002_branch_heads_set_${CHROMIUM_BRANCH}
+  touch "${BASE_PATH}/chromium/buildFlag0002_branch_heads_set_${CHROMIUM_BRANCH}"
 else
   printf "${WHITE}${BRIGHT}Release branch checkout for %s already done and skipped${NORMAL}\n" $CHROMIUM_BRANCH
 fi
