@@ -58,7 +58,8 @@ DO_BUILD_CEF=1
 DO_UPDATE=1
 DO_CLEAN=0
 
-usage() {
+usage()
+{
   echo "Usage: $0 [--options]"
   echo "Options:"
   echo "--branch      chromium branch to use, default is \"$CHROMIUM_BRANCH\""
@@ -81,7 +82,8 @@ usage() {
   exit 1
 }
 
-process_opts() {
+process_opts()
+{
   while test "$1" != "" ; do
     case "$1" in
       --distname)
@@ -140,14 +142,16 @@ process_opts() {
   fi
 }
 
-print_package_missing_warning() {
+print_package_missing_warning()
+{
   printf "${WHITE}${BRIGHT}Missing package ${CYAN}%s${NORMAL}" $1
   if [ $CONTINUES_INSTALL_ALLOWED = false ]; then
     printf "${WHITE}, press enter or space to allow install of all missing parts${NORMAL}\n"
   fi
 }
 
-check_dev_package() {
+check_dev_package()
+{
   which gcc > /dev/null
   if [ $? -eq 1 ]; then
     printf "${WHITE}${BRIGHT}Missing build system, complete kodi dependencies becomes\ninstalled, press enter or space to install${NORMAL}\n"
@@ -161,7 +165,8 @@ check_dev_package() {
   fi
 }
 
-check_package() {
+check_package()
+{
   dpkg -s $1 > /dev/null
   if [ $? -eq 1 ]; then
     print_package_missing_warning $1
@@ -180,7 +185,8 @@ check_package() {
   fi
 }
 
-check_packages() {
+check_packages()
+{
   check_dev_package
   check_package git
   check_package subversion
@@ -189,51 +195,50 @@ check_packages() {
 
 ###############################################################################
 # Create chroot build environment
-create_chroot_build_environment() {
+create_chroot_build_environment()
+{
+  printf "${BRIGHT}${GREEN}Start creation of chroot system for %ibit on %s\n  ${WHITE}(follow related requests of them)${NORMAL}\n" $1 ${DISTNAME}
   if [ ! -f "${BASE_PATH}/chromium/buildFlag0003_chroot_build_env_done_${DISTNAME}_${1}bit" ]; then
-    printf "\n${BRIGHT}${GREEN}Start creation of chroot system for %ibit on %s ${WHITE}(follow related requests of them)${NORMAL}\n" $1 ${DISTNAME}
     bash "${BASE_PATH}/install-chroot.sh" -t $1 -d $DISTNAME -u -n
-    if [ $? != 0 ];then
-      printf "${RED}${BRIGHT}Creation of chroot build environment failed${NORMAL}\n"
-      exit $?
-    fi
-    touch "${BASE_PATH}/chromium/buildFlag0003_chroot_build_env_done_${DISTNAME}_${1}bit"
+    evaluate_retval
   else
-    printf "\n${WHITE}${BRIGHT}Creation of %ibit chroot build environment already done and skipped${NORMAL}\n" $1
+    log_skip_msg
   fi
 }
 
 ###############################################################################
 # Downlad and install build dependencies
-build_dependencies() {
+build_dependencies()
+{
+  printf "\n${WHITE}${BRIGHT}Downlad and install build dependencies for %i on %s ${NORMAL}\n" $1 ${DISTNAME}
   if [ ! -f "${BASE_PATH}/chromium/buildFlag0004_chroot_build_deps_done_${DISTNAME}_${1}" ]; then
-    printf "\n${WHITE}${BRIGHT}Downlad and install build dependencies for %i on %s ${NORMAL}\n" $1 ${DISTNAME}
     sudo /usr/local/bin/${DISTNAME}${1} sh -c "\"$BASE_PATH/chromium/src/build/install-build-deps.sh\" --no-syms;
           rc=$?;
           /etc/init.d/cron stop >/dev/null 2>&1 || :;
           /etc/init.d/rsyslog stop >/dev/null 2>&1 || :;
           /etc/init.d/dbus stop >/dev/null 2>&1 || :;
           exit $rc"
-    if [ $? != 0 ];then
-      printf "${RED}${BRIGHT}Download build dependencies failed${NORMAL}\n"
-      exit $?
-    fi
+    evalute_reterr
     GCC_VERSION=`${DISTNAME}${1} /usr/bin/g++-* --version | grep g++ | awk -F '-' '{print $2}' | awk -F ' ' '{print $1}'`
-    if [ $? != 0 ];then
-      printf "${RED}${BRIGHT}No g++ present!${NORMAL}\n"
-      exit $?
-    fi
+    evalute_reterr
     sudo ${DISTNAME}${1} ln -sf g++-$GCC_VERSION /usr/bin/c++ -T
+    evalute_reterr
     sudo ${DISTNAME}${1} ln -sf g++-$GCC_VERSION /usr/bin/g++ -T
+    evalute_reterr
     sudo ${DISTNAME}${1} ln -sf gcc-$GCC_VERSION /usr/bin/gcc -T
+    evalute_reterr
     sudo ${DISTNAME}${1} ln -sf gcc-ar-$GCC_VERSION /usr/bin/gcc-ar -T
+    evalute_reterr
     sudo ${DISTNAME}${1} ln -sf gcc-nm-$GCC_VERSION /usr/bin/gcc-nm -T
+    evalute_reterr
     sudo ${DISTNAME}${1} ln -sf gcc-ranlib-$GCC_VERSION /usr/bin/gcc-ranlib -T
+    evalute_reterr
     sudo ${DISTNAME}${1} ln -sf gcov-$GCC_VERSION /usr/bin/gcov -T
+    evaluate_retval
 
     touch "${BASE_PATH}/chromium/buildFlag0004_chroot_build_deps_done_${DISTNAME}_${1}"
   else
-    printf "\n${WHITE}${BRIGHT}Download and install of %i build dependencies was already done and skipped\n" $1
+    log_skip_msg
   fi
 }
 
@@ -569,7 +574,7 @@ fi
 # Update the Chromium checkout.
 cd "$BASE_PATH/chromium/src"
 printf "${WHITE}${BRIGHT}Update the Chromium checkout to needed source${NORMAL} ..."
-if [ $CHROMIUM_CHECKOUT_CHANGED == 0 ];then
+if [ $CHROMIUM_CHECKOUT_CHANGED != 0 ];then
   printf "\n"
   if [ $CHROMIUM_CHECKOUT_NEW != 0 ];then
     if [ $DO_CLEAN != 0 ];then
@@ -635,80 +640,38 @@ else
   log_skip_msg
 fi
 
+# Create chroot build environment
+if [ $DO_INST_X86 != 0 ];then
+  create_chroot_build_environment 32
+fi
+if [ $DO_INST_X64 != 0 ];then
+  create_chroot_build_environment 64
+fi
+exit
+# Downlad and install build dependencies
+if [ $DO_INST_X86 != 0 ];then
+  build_dependencies 32
+fi
+if [ $DO_INST_X64 != 0 ];then
+  build_dependencies 64
+fi
 
-
-## Download Chromium source code using the fetch tool included with depot_tools.
-## This step only needs to be performed the first time Chromium code is checked
-## out.
-#
-#printf "\n${WHITE}${BRIGHT}Download chromium source code using commit_hash:${NORMAL} %s\n" $COMMIT_HASH
-##if [ ! -d "${BASE_PATH}/chromium/src" -a $DO_NO_UPDATE == 0 ]; then
-#  printf "${RED}${BRIGHT}WARNING: ${WHITE}Download takes a very long time ${UNDERLINE}(more as 12 hours possible)${NORMAL}\n"
-#  cd "$BASE_PATH/chromium"
-#  CHROMIUM_CHECKOUT_NEW=1
-#  fetch --nohooks chromium --nosvn=True
-#  if [ $? != 0 ];then
-#    printf "${RED}${BRIGHT}Download Chromium source code failed${NORMAL}\n" >&2
-#    exit $?
-#  fi
-##else
-##  printf "${WHITE}${BRIGHT}Chromium source code present from:${NORMAL} %s\n" `git config --get remote.origin.url`
-##  CHROMIUM_CHECKOUT_NEW=0
-##fi
-#exit
-#printf "\n${WHITE}${BRIGHT}Checking updates${NORMAL}\n"
-#cd "$BASE_PATH/chromium/src"
-#if [ DO_CLEAN != 0 -a CHROMIUM_CHECKOUT_NEW != 0 ];then
-#  gclient sync --force --revision $COMMIT_HASH --jobs 16
-#else
-#  gclient sync --revision $COMMIT_HASH --jobs 16
-#fi
-#if [ $? != 0 ];then
-#  printf "${RED}${BRIGHT}Download Chromium source code failed${NORMAL}\n" >&2
-#  exit $?
-#fi
-#exit
-## Download additional branch and tag information.
-#printf "\n${WHITE}${BRIGHT}Download additional branch and tag information.${NORMAL}\n"
-#
-#if [ DO_CLEAN != 0 ];then
-#  gclient sync --reset --nohooks --with_branch_heads --jobs 16
-#else
-#  gclient sync --nohooks --with_branch_heads --jobs 16
-#fi
-#exit
-## Create chroot build environment
-#if [ $DO_INST_X86 != 0 ];then
-#  create_chroot_build_environment 32
-#fi
-#if [ $DO_INST_X64 != 0 ];then
-#  create_chroot_build_environment 64
-#fi
-#
-## Downlad and install build dependencies
-#if [ $DO_INST_X86 != 0 ];then
-#  build_dependencies 32
-#fi
-#if [ $DO_INST_X64 != 0 ];then
-#  build_dependencies 64
-#fi
-#
-#if [ $DO_BUILD_CEF != 0 ];then
-#  # Run the cef_create_projects script (.bat on Windows, .sh on OS X and Linux)
-#  # to generate the build files based on the GYP configuration.
-#  if [ $DO_INST_X86 != 0 ];then
-#    create_projects 32
-#    sudo ${DISTNAME}32 "$BASE_PATH/chromium/cef_build_${DISTNAME}_32.sh"
-#  fi
-#  if [ $DO_INST_X64 != 0 ];then
-#    create_projects 64
-#    sudo ${DISTNAME}64 "$BASE_PATH/chromium/cef_build_${DISTNAME}_64.sh"
-#  fi
-#  if [ $DO_INST_ARM != 0 ];then
-#    create_projects arm
-#    sudo ${DISTNAME}32 "$BASE_PATH/chromium/cef_build_${DISTNAME}_arm.sh"
-#  fi
-#fi
+if [ $DO_BUILD_CEF != 0 ];then
+  # Run the cef_create_projects script (.bat on Windows, .sh on OS X and Linux)
+  # to generate the build files based on the GYP configuration.
+  if [ $DO_INST_X86 != 0 ];then
+    create_projects 32
+    sudo ${DISTNAME}32 "$BASE_PATH/chromium/cef_build_${DISTNAME}_32.sh"
+  fi
+  if [ $DO_INST_X64 != 0 ];then
+    create_projects 64
+    sudo ${DISTNAME}64 "$BASE_PATH/chromium/cef_build_${DISTNAME}_64.sh"
+  fi
+  if [ $DO_INST_ARM != 0 ];then
+    create_projects arm
+    sudo ${DISTNAME}32 "$BASE_PATH/chromium/cef_build_${DISTNAME}_arm.sh"
+  fi
+fi
 
 TIME=`date +%s`
 TIME=`expr $TIME - $START_TIME_SEC`
