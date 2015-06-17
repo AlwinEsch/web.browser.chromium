@@ -1,0 +1,89 @@
+#!/bin/bash
+
+NORMAL="\\033[0;39m"         # Standard console grey
+SUCCESS="\\033[1;32m"        # Success is green
+WARNING="\\033[1;33m"        # Warnings are yellow
+FAILURE="\\033[1;31m"        # Failures are red
+INFO="\\033[1;36m"           # Information is light cyan
+BRACKET="\\033[1;34m"        # Brackets are blue
+
+# Use a colored prefix
+SUCCESS_SUFFIX="${BRACKET}[${SUCCESS}  OK  ${BRACKET}]${NORMAL}"
+FAILURE_SUFFIX="${BRACKET}[${FAILURE} FAIL ${BRACKET}]${NORMAL}"
+WARNING_SUFFIX="${BRACKET}[${WARNING} WARN ${BRACKET}]${NORMAL}"
+SKIP_SUFFIX="${BRACKET}[${INFO} SKIP ${BRACKET}]${NORMAL}"
+DONE_SUFFIX="${BRACKET}[${INFO} DONE ${BRACKET}]${NORMAL}"
+
+COLUMNS=80
+
+## Screen Dimensions
+# Find current screen size
+if [ -z "${COLUMNS}" ]; then
+   COLUMNS=$(stty size)
+   COLUMNS=${COLUMNS##* }
+fi
+
+# When using remote connections, such as a serial port, stty size returns 0
+if [ "${COLUMNS}" = "0" ]; then
+   COLUMNS=80
+fi
+
+## Measurements for positioning result messages
+COL=$((${COLUMNS} - 8))
+WCOL=$((${COL} - 2))
+
+## Set Cursor Position Commands, used via echo
+SET_COL="\\033[${COL}G"      # at the $COL char
+SET_WCOL="\\033[${WCOL}G"    # at the $WCOL char
+CURS_UP="\\033[1A\\033[0G"   # Up one line, at the 0'th char
+CURS_ZERO="\\033[0G"
+
+log_success_msg()
+{
+  /bin/echo -e "${CURS_ZERO}${SET_COL}${SUCCESS_SUFFIX}"
+  return 0
+}
+
+log_failure_msg()
+{
+  /bin/echo -e "${CURS_ZERO}${SET_COL}${FAILURE_SUFFIX}"
+  return 0
+}
+
+log_warning_msg()
+{
+  /bin/echo -e "${CURS_ZERO}${SET_COL}${WARNING_SUFFIX}"
+  return 0
+}
+
+log_skip_msg()
+{
+  /bin/echo -e "${CURS_ZERO}${SET_COL}${SKIP_SUFFIX}"
+  return 0
+}
+
+log_done_msg()
+{
+  /bin/echo -e "${CURS_ZERO}${SET_COL}${DONE_SUFFIX}"
+  return 0
+}
+
+evaluate_retval()
+{
+  local error_value="${?}"
+  if [ ${error_value} = 0 ]; then
+    log_success_msg
+  else
+    log_failure_msg
+    exit ${error_value}
+  fi
+}
+
+evalute_reterr()
+{
+  local error_value="${?}"
+  if [ ${error_value} != 0 ]; then
+    log_failure_msg
+    exit ${error_value}
+  fi
+}

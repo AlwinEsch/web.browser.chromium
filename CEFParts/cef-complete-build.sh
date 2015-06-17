@@ -19,6 +19,10 @@
 #                                                                             #
 ###############################################################################
 
+COLUMNS=80
+
+. ./tool_functions
+
 DEPOT_TOOLS_URL="https://bitbucket.org/kodi-web/chromium_depot_tools.git"
 CEF_SOURCE_URL="https://bitbucket.org/kodi-web/cef.git"
 CHROMIUM_BRANCH="2357"
@@ -307,11 +311,11 @@ EOF
   sudo chmod 755 "$BASE_PATH/chromium/cef_build_${DISTNAME}_${1}.sh"
 }
 
-printf "${WHITE}${BRIGHT}*------------------------------------------------------------------------------*${NORMAL}\n"
-printf "${WHITE}${BRIGHT}|                                                                              |${NORMAL}\n"
-printf "${WHITE}${BRIGHT}|                              CEF complete build                              |${NORMAL}\n"
-printf "${WHITE}${BRIGHT}|                                                                              |${NORMAL}\n"
-printf "${WHITE}${BRIGHT}|------------------------------------------------------------------------------|${NORMAL}\n"
+printf "${WHITE}${BRIGHT}*-----------------------------------------------------------------------------*${NORMAL}\n"
+printf "${WHITE}${BRIGHT}|                                                                             |${NORMAL}\n"
+printf "${WHITE}${BRIGHT}|                              CEF complete build                             |${NORMAL}\n"
+printf "${WHITE}${BRIGHT}|                                                                             |${NORMAL}\n"
+printf "${WHITE}${BRIGHT}|-----------------------------------------------------------------------------|${NORMAL}\n"
 printf "\n"
 
 process_opts "$@"
@@ -359,10 +363,11 @@ if [ $FREE_DISK_SPACE -gt 32212254720 ]; then
 fi
 
 printf "${WHITE}${BRIGHT}Build info:${NORMAL}\n"
-printf "${WHITE} - CEF branch :\t\t %s${NORMAL}\n" $CHROMIUM_BRANCH
-printf "${WHITE} - CEF URL :\t\t %s${NORMAL}\n" $CEF_SOURCE_URL
-printf "${WHITE} - CEF source dir. :\t %s${NORMAL}\n" "$BASE_PATH/chromium/cef"
-printf "${WHITE} - Force clean :\t "
+printf "${WHITE} - Depot tools :\t${NORMAL}%s\n" $DEPOT_TOOLS_URL
+printf "${WHITE} - CEF branch :\t\t%s${NORMAL}\n" $CHROMIUM_BRANCH
+printf "${WHITE} - CEF URL :\t\t%s${NORMAL}\n" $CEF_SOURCE_URL
+printf "${WHITE} - CEF source dir. :\t%s${NORMAL}\n" "$BASE_PATH/chromium/cef"
+printf "${WHITE} - Force clean :\t"
 if [ $DO_CLEAN != 0 ]; then
   printf "Yes${NORMAL}\n"
 else
@@ -370,39 +375,88 @@ else
 fi
 
 printf "\n${WHITE}${BRIGHT}System info:${NORMAL}\n"
-printf "${WHITE} - Build start time :\t $START_TIME${NORMAL}\n"
-printf "${WHITE} - Linux version :\t $(uname -r)${NORMAL}\n"
-printf "${WHITE} - Used distribution :\t %s${NORMAL}\n" "$DISTNAME"
-printf "${WHITE} - Free Disk size :\t %s GByte\n${NORMAL}\n" `expr $FREE_DISK_SPACE / 1024 / 1024`
+printf "${WHITE} - Build start time :\t$START_TIME${NORMAL}\n"
+printf "${WHITE} - Linux version :\t$(uname -r)${NORMAL}\n"
+printf "${WHITE} - Used distribution :\t%s${NORMAL}\n" "$DISTNAME"
+printf "${WHITE} - Free Disk size :\t%s GByte\n${NORMAL}\n" `expr $FREE_DISK_SPACE / 1024 / 1024`
 if [ "x$(id -u)" != x0 ] && [ 0 -eq "${do_quick_check-0}" ]; then
   printf "${WHITE}${BRIGHT}Running as non-root user.${NORMAL}\n"
   printf "${WHITE}${YELLOW}You might have to enter your password one or more times for 'sudo'.${NORMAL}\n\n"
 fi
 
-printf "${WHITE}${BRIGHT}|------------------------------------------------------------------------------|${NORMAL}\n"
+printf "${WHITE}${BRIGHT}|-----------------------------------------------------------------------------|${NORMAL}\n"
+
+
+cat > "$BASE_PATH/chromium/build.log" << EOF
+# Cromium build log messages
+
+EOF
+
+cat > "$BASE_PATH/chromium/.tempLogger" << EOF
+#!/bin/bash
+
+# Process bar handler
+
+GREEN=\$(tput setaf 2)
+YELLOW=\$(tput setaf 3)
+BLUE=\$(tput setaf 4)
+MAGENTA=\$(tput setaf 5)
+CYAN=\$(tput setaf 6)
+WHITE=\$(tput setaf 7)
+BRIGHT=\$(tput bold)
+NORMAL=\$(tput sgr0)
+
+printf "In progress, for details see $BASE_PATH/chromium/build.log\n"
+
+POSITION=0
+
+while [ -f .tempLoggerActive ]; do
+  printf "\$WHITE[\$NORMAL"
+
+  PROGRESS=""
+  COUNTER=0
+  while [ \$COUNTER -lt 52 ]; do
+    let COUNTER=COUNTER+1
+    if [ \$POSITION == \$COUNTER ]; then
+      PROGRESS=\${PROGRESS}\$BRIGHT\$GREEN"|"\$NORMAL
+    else
+      PROGRESS=\${PROGRESS}"."
+    fi
+  done
+  printf \$PROGRESS
+  let POSITION=POSITION+1
+  if [ \$POSITION -ge 52 ]; then
+    POSITION=0
+  fi
+
+  printf "\$WHITE] %s\$NORMAL\r" "\`tail -1 "$BASE_PATH/chromium/build.log" | cut -d' ' -f1 | cut -c-17\`"
+  sleep 1
+done
+printf "\n"
+EOF
 
 check_packages
 
 # Download required depot tools
+printf "\n${WHITE}${BRIGHT}Download chromium depot tools${NORMAL}"
 if [ ! -d "${BASE_PATH}/chromium/depot_tools" ]; then
-  printf "\n${WHITE}${BRIGHT}Download chromium depot tools:${NORMAL} %s\n" $DEPOT_TOOLS_URL
+  printf " ...\n"
   git -C "$BASE_PATH/chromium" clone $DEPOT_TOOLS_URL depot_tools
-  if [ $? != 0 ];then
-    printf "${RED}${BRIGHT}Download of depot tools failed${NORMAL}\n" >&2
-    exit $?
-  fi
+  evaluate_retval
   CEF_CHECKOUT_NEW=1
 else
   CEF_CHECKOUT_NEW=0
+  log_done_msg
 fi
 
 export PATH="${PATH}:${BASE_PATH}/chromium/depot_tools"
 
 # Update depot tools
-if [ $CEF_CHECKOUT_NEW = 0 -e $DO_UPDATE != 0 ];then
-  printf "\n${WHITE}${BRIGHT}Update chromium depot tools${NORMAL}\n"
+if [ $CEF_CHECKOUT_NEW = 0 -a $DO_UPDATE != 0 ];then
+  printf "${WHITE}${BRIGHT}Update chromium depot tools ... ${NORMAL}"
   cd ${BASE_PATH}/chromium/depot_tools
-  update_depot_tools
+  update_depot_tools >>"$BASE_PATH/chromium/build.log"
+  evaluate_retval
 fi
 
 # Download CEF source code from the CEF Git repository to a "cef" directory
@@ -415,17 +469,18 @@ fi
 
 if [ $DO_BUILD_CEF != 0 ];then
   if [ ! -d "$BASE_PATH/chromium/cef" ]; then
-    printf "${WHITE}${BRIGHT}Download CEF source code:${NORMAL} %s\n" $CEF_SOURCE_URL
+    printf "${WHITE}${BRIGHT}Download CEF source code${NORMAL} ...\n"
     git -C "$BASE_PATH/chromium" clone $CEF_SOURCE_URL --branch $CHROMIUM_BRANCH cef
-    if [ $? != 0 ];then
-      printf "${RED}${BRIGHT}Download CEF files failed${NORMAL}\n" >&2
-      exit $?
-    fi
+    evaluate_retval
   elif [ $DO_UPDATE != 0 ];then
-    printf "${WHITE}${BRIGHT}CEF check newest revision: "
-    git -C "$BASE_PATH/chromium/cef" pull
-    printf "${NORMAL}"
+    printf "${WHITE}${BRIGHT}CEF check newest revision${NORMAL} ..."
+    echo "CEF check newest revision:" >> "$BASE_PATH/chromium/build.log"
+    git -C "$BASE_PATH/chromium/cef" pull >>"$BASE_PATH/chromium/build.log"
+    evaluate_retval
+    echo "" >> "$BASE_PATH/chromium/build.log"
   fi
+else
+  log_skip_msg
 fi
 
 # Create gclient configuration file.
@@ -458,101 +513,202 @@ EOF
 fi
 
 # Initial Chromium checkout.
+printf "${WHITE}${BRIGHT}Download chromium source code${NORMAL} ..."
 if [ ! -d "${BASE_PATH}/chromium/src" -a $DO_UPDATE != 0 ];then
-  printf "\n${WHITE}${BRIGHT}Download chromium source code using${NORMAL}\n"
+  printf "\n${RED}${BRIGHT}WARNING: ${WHITE}Download takes a very long time ${UNDERLINE}(more as 12 hours possible)${NORMAL}\n"
   cd "$BASE_PATH/chromium"
   CHROMIUM_CHECKOUT_NEW=1
-  gclient sync --nohooks --with_branch_heads --jobs 16
+  touch "$BASE_PATH/chromium/.tempLoggerActive"
+  bash "$BASE_PATH/chromium/.tempLogger" &
+  tailPID=$!
+  echo "Initial Chromium checkout:" >> "$BASE_PATH/chromium/build.log"
+  echo "started" >> "$BASE_PATH/chromium/build.log"
+  gclient sync --nohooks --with_branch_heads --jobs 16 2>&1 >> "$BASE_PATH/chromium/build.log"
+  error_value="${?}"
+  rm "$BASE_PATH/chromium/.tempLoggerActive"
+  if [ ${error_value} = 0 ]; then
+    log_success_msg
+    sleep 1
+  fi
+  if [[ ! -z `ps --no-headers -p $tailPID` ]]; then
+    kill $tailPID
+  fi
+  if [ ${error_value} != 0 ]; then
+    log_failure_msg
+    exit ${error_value}
+  fi
+  echo "" >> "$BASE_PATH/chromium/build.log"
 else
   CHROMIUM_CHECKOUT_NEW=0
+  log_done_msg
 fi
 
-exit
-
-# Download Chromium source code using the fetch tool included with depot_tools.
-# This step only needs to be performed the first time Chromium code is checked
-# out.
-COMMIT_HASH=`cat "$BASE_PATH/chromium/cef/CHROMIUM_BUILD_COMPATIBILITY.txt" | tail -2 | cut -d' ' -f4 | cut -d "'" -f2 | head -1`
-printf "\n${WHITE}${BRIGHT}Download chromium source code using commit_hash:${NORMAL} %s\n" $COMMIT_HASH
-#if [ ! -d "${BASE_PATH}/chromium/src" -a $DO_NO_UPDATE == 0 ]; then
-  printf "${RED}${BRIGHT}WARNING: ${WHITE}Download takes a very long time ${UNDERLINE}(more as 12 hours possible)${NORMAL}\n"
-  cd "$BASE_PATH/chromium"
-  CHROMIUM_CHECKOUT_NEW=1
-  fetch --nohooks chromium --nosvn=True
-  if [ $? != 0 ];then
-    printf "${RED}${BRIGHT}Download Chromium source code failed${NORMAL}\n" >&2
-    exit $?
-  fi
-#else
-#  printf "${WHITE}${BRIGHT}Chromium source code present from:${NORMAL} %s\n" `git config --get remote.origin.url`
-#  CHROMIUM_CHECKOUT_NEW=0
-#fi
-exit
-printf "\n${WHITE}${BRIGHT}Checking updates${NORMAL}\n"
-cd "$BASE_PATH/chromium/src"
-if [ DO_CLEAN != 0 -a CHROMIUM_CHECKOUT_NEW != 0 ];then
-  gclient sync --force --revision $COMMIT_HASH --jobs 16
-else
-  gclient sync --revision $COMMIT_HASH --jobs 16
-fi
-if [ $? != 0 ];then
-  printf "${RED}${BRIGHT}Download Chromium source code failed${NORMAL}\n" >&2
-  exit $?
-fi
-exit
-# Download additional branch and tag information.
-printf "\n${WHITE}${BRIGHT}Download additional branch and tag information.${NORMAL}\n"
-
-if [ DO_CLEAN != 0 ];then
-  gclient sync --reset --nohooks --with_branch_heads --jobs 16
-else
-  gclient sync --nohooks --with_branch_heads --jobs 16
-fi
-exit
-# Create chroot build environment
-if [ $DO_INST_X86 != 0 ];then
-  create_chroot_build_environment 32
-fi
-if [ $DO_INST_X64 != 0 ];then
-  create_chroot_build_environment 64
-fi
-
-# Downlad and install build dependencies
-if [ $DO_INST_X86 != 0 ];then
-  build_dependencies 32
-fi
-if [ $DO_INST_X64 != 0 ];then
-  build_dependencies 64
-fi
-
-if [ $DO_BUILD_CEF != 0 ];then
-  # Copy CEF to chromium source folder
-  if [ ! -d "$BASE_PATH/chromium/src/cef" ]; then
-    printf "\n${WHITE}${BRIGHT}Transfering CEF source code to chromium${NORMAL}\n"
-    cp -fR "$BASE_PATH/chromium/cef" "$BASE_PATH/chromium/src"
-    if [ $? != 0 ];then
-      printf "${RED}${BRIGHT}Copy CEF files failed${NORMAL}\n" >&2
-      exit $?
-    fi
+# Determine if the Chromium checkout needs to change.
+CHROMIUM_CHECKOUT=`cat "$BASE_PATH/chromium/cef/CHROMIUM_BUILD_COMPATIBILITY.txt" | tail -2 | cut -d' ' -f4 | cut -d "'" -f2 | head -1`
+if [ -d "${BASE_PATH}/chromium/src" -a $DO_UPDATE != 0 ]; then
+  cd "$BASE_PATH/chromium/src"
+  CHROMIUM_CURRENT_HASH=`git rev-parse "HEAD"`
+  CHROMIUM_DESIRED_HASH=`git rev-parse $CHROMIUM_CHECKOUT`
+  if [ $CHROMIUM_CHECKOUT_NEW != 0 -o $CHROMIUM_CURRENT_HASH != $CHROMIUM_DESIRED_HASH ]; then
+    CHROMIUM_CHECKOUT_CHANGED=1
   else
-    printf "\n${WHITE}${BRIGHT}Transfering CEF source code was already done and skipped${NORMAL}\n"
+    CHROMIUM_CHECKOUT_CHANGED=0
+  fi
+  printf "${WHITE}${BRIGHT}Chromium Current Checkout:${NORMAL} %s\n" $CHROMIUM_CURRENT_HASH
+  printf "${WHITE}${BRIGHT}Chromium Desired Checkout:${NORMAL} %s (%s)\n" $CHROMIUM_DESIRED_HASH $CHROMIUM_CHECKOUT
+fi
+
+if [ $CHROMIUM_CHECKOUT_CHANGED != 0 ];then
+  rm -fr "$BASE_PATH/chromium/src/cef"
+fi
+
+if [ $DO_CLEAN != 0 ];then
+  rm -fr "$BASE_PATH/chromium/src/out"
+fi
+
+# Update the Chromium checkout.
+cd "$BASE_PATH/chromium/src"
+printf "${WHITE}${BRIGHT}Update the Chromium checkout to needed source${NORMAL} ..."
+if [ $CHROMIUM_CHECKOUT_CHANGED == 0 ];then
+  printf "\n"
+  if [ $CHROMIUM_CHECKOUT_NEW != 0 ];then
+    if [ $DO_CLEAN != 0 ];then
+      # Remove all local changes including third-party git checkouts managed by
+      # gclient.
+      git clean -dffx
+    else
+      # Revert all changes in the Chromium checkout.
+      gclient revert --nohooks
+    fi
+    evalute_reterr
+  fi
+  # Fetch new sources.
+  git fetch
+  evalute_reterr
+  # Also fetch tags, which are required for release branch builds.
+  git fetch --tags
+  evalute_reterr
+
+  # Checkout the requested branch.
+  if [ $DO_CLEAN = 0 ];then
+    git checkout $CHROMIUM_CHECKOUT
+    if [ ${?} != 0 ];then
+      DO_CLEAN=1
+    fi
+  fi
+  if [ $DO_CLEAN != 0 ];then
+    git checkout --force $CHROMIUM_CHECKOUT
+  fi
+  evalute_reterr
+
+  # Patch the Chromium DEPS file if necessary.
+  if [[ -z `patch --dry-run -Np0 -i "$BASE_PATH/chromium/cef/patch/patches/.DEPS.git.patch"` ]];then
+    patch -Np0 -i "$BASE_PATH/chromium/cef/patch/patches/.DEPS.git.patch"
+  fi
+  # Set the GYP_CHROMIUM_NO_ACTION value temporarily so that `gclient sync` does
+  # not run gyp.
+  set GYP_CHROMIUM_NO_ACTION 1
+
+  # Update third-party dependencies including branch/tag information.
+  if [ DO_CLEAN != 0 ];then
+    gclient sync --reset --nohooks --with_branch_heads --jobs 16
+  else
+    gclient sync --nohooks --with_branch_heads --jobs 16
   fi
 
-  # Run the cef_create_projects script (.bat on Windows, .sh on OS X and Linux)
-  # to generate the build files based on the GYP configuration.
-  if [ $DO_INST_X86 != 0 ];then
-    create_projects 32
-    sudo ${DISTNAME}32 "$BASE_PATH/chromium/cef_build_${DISTNAME}_32.sh"
+  # Clear the GYP_CHROMIUM_NO_ACTION value.
+  unset GYP_CHROMIUM_NO_ACTION
+
+  # Delete the src/out directory created by `gclient sync`.
+  rm -fr "$BASE_PATH/chromium/src/out"
+  log_success_msg
+
+  # Copy CEF to chromium source folder
+  printf "${WHITE}${BRIGHT}Transfering CEF source code to chromium${NORMAL}"
+  if [ ! -d "$BASE_PATH/chromium/src/cef" ]; then
+    cp -fR "$BASE_PATH/chromium/cef" "$BASE_PATH/chromium/src"
+    evaluate_retval
+  else
+    log_skip_msg
   fi
-  if [ $DO_INST_X64 != 0 ];then
-    create_projects 64
-    sudo ${DISTNAME}64 "$BASE_PATH/chromium/cef_build_${DISTNAME}_64.sh"
-  fi
-  if [ $DO_INST_ARM != 0 ];then
-    create_projects arm
-    sudo ${DISTNAME}32 "$BASE_PATH/chromium/cef_build_${DISTNAME}_arm.sh"
-  fi
+else
+  log_skip_msg
 fi
+
+
+
+## Download Chromium source code using the fetch tool included with depot_tools.
+## This step only needs to be performed the first time Chromium code is checked
+## out.
+#
+#printf "\n${WHITE}${BRIGHT}Download chromium source code using commit_hash:${NORMAL} %s\n" $COMMIT_HASH
+##if [ ! -d "${BASE_PATH}/chromium/src" -a $DO_NO_UPDATE == 0 ]; then
+#  printf "${RED}${BRIGHT}WARNING: ${WHITE}Download takes a very long time ${UNDERLINE}(more as 12 hours possible)${NORMAL}\n"
+#  cd "$BASE_PATH/chromium"
+#  CHROMIUM_CHECKOUT_NEW=1
+#  fetch --nohooks chromium --nosvn=True
+#  if [ $? != 0 ];then
+#    printf "${RED}${BRIGHT}Download Chromium source code failed${NORMAL}\n" >&2
+#    exit $?
+#  fi
+##else
+##  printf "${WHITE}${BRIGHT}Chromium source code present from:${NORMAL} %s\n" `git config --get remote.origin.url`
+##  CHROMIUM_CHECKOUT_NEW=0
+##fi
+#exit
+#printf "\n${WHITE}${BRIGHT}Checking updates${NORMAL}\n"
+#cd "$BASE_PATH/chromium/src"
+#if [ DO_CLEAN != 0 -a CHROMIUM_CHECKOUT_NEW != 0 ];then
+#  gclient sync --force --revision $COMMIT_HASH --jobs 16
+#else
+#  gclient sync --revision $COMMIT_HASH --jobs 16
+#fi
+#if [ $? != 0 ];then
+#  printf "${RED}${BRIGHT}Download Chromium source code failed${NORMAL}\n" >&2
+#  exit $?
+#fi
+#exit
+## Download additional branch and tag information.
+#printf "\n${WHITE}${BRIGHT}Download additional branch and tag information.${NORMAL}\n"
+#
+#if [ DO_CLEAN != 0 ];then
+#  gclient sync --reset --nohooks --with_branch_heads --jobs 16
+#else
+#  gclient sync --nohooks --with_branch_heads --jobs 16
+#fi
+#exit
+## Create chroot build environment
+#if [ $DO_INST_X86 != 0 ];then
+#  create_chroot_build_environment 32
+#fi
+#if [ $DO_INST_X64 != 0 ];then
+#  create_chroot_build_environment 64
+#fi
+#
+## Downlad and install build dependencies
+#if [ $DO_INST_X86 != 0 ];then
+#  build_dependencies 32
+#fi
+#if [ $DO_INST_X64 != 0 ];then
+#  build_dependencies 64
+#fi
+#
+#if [ $DO_BUILD_CEF != 0 ];then
+#  # Run the cef_create_projects script (.bat on Windows, .sh on OS X and Linux)
+#  # to generate the build files based on the GYP configuration.
+#  if [ $DO_INST_X86 != 0 ];then
+#    create_projects 32
+#    sudo ${DISTNAME}32 "$BASE_PATH/chromium/cef_build_${DISTNAME}_32.sh"
+#  fi
+#  if [ $DO_INST_X64 != 0 ];then
+#    create_projects 64
+#    sudo ${DISTNAME}64 "$BASE_PATH/chromium/cef_build_${DISTNAME}_64.sh"
+#  fi
+#  if [ $DO_INST_ARM != 0 ];then
+#    create_projects arm
+#    sudo ${DISTNAME}32 "$BASE_PATH/chromium/cef_build_${DISTNAME}_arm.sh"
+#  fi
+#fi
 
 TIME=`date +%s`
 TIME=`expr $TIME - $START_TIME_SEC`
@@ -562,7 +718,7 @@ TIME_SEC=`expr $TIME % 60`
 DATA_SIZE=`du -hs`
 FINAL_DISK_SPACE=`df  . | tail -1 | tr -s ' ' | cut -d' ' -f4`
 
-printf "${WHITE}${BRIGHT}|------------------------------------------------------------------------------|${NORMAL}\n"
+printf "\n${WHITE}${BRIGHT}|------------------------------------------------------------------------------|${NORMAL}\n"
 printf "\n"
 printf "${WHITE}${BRIGHT}Build complete info:${NORMAL}\n"
 printf "${WHITE} - Build start time :\t $START_TIME${NORMAL}\n"
