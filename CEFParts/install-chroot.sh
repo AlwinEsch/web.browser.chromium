@@ -21,6 +21,7 @@ admin=$(grep '^admin:' /etc/group >&/dev/null && echo admin || echo adm)
 # Only be used on 64bit systems
 arch=
 alt_repos=
+distname=
 
 usage() {
   echo "usage: ${0##*/} [-m mirror] [-g group,...] [-s] [-c] [-t bits] [-d distname] [-u]"
@@ -92,21 +93,13 @@ ${OPTARG} ${OPTARG} none rw,bind 0 0"
         fi
         ;;
       d)
-        if [ "${OPTARG}" == "precise" -o "${OPTARG}" == "utopic" ]; then
-          distname="$OPTARG"
-        else
-          echo "Invalid -d option"
-          usage
-        fi
+        distname="$OPTARG"
         ;;
       u)
         alt_repos="y"
         ;;
       n)
         no_install_build_deps="y"
-        ;;
-      t)
-        distname
         ;;
       h)
         usage
@@ -224,6 +217,7 @@ fi
 echo
 
 # On x86-64, ask whether the user wants to install x86-32 or x86-64
+archflag=
 if [ "$(uname -m)" = x86_64 ]; then
   if [ -z $arch ]; then
     while :; do
@@ -768,7 +762,7 @@ fi
 
 # If the install-build-deps.sh script can be found, offer to run it now
 script="$(dirname $(readlink -f "$0"))/install-build-deps.sh"
-if [ -x "${script}" -a ! "${no_install_build_deps}" ]; then
+if [ -x "${script}" ]; then
   while :; do
     echo
     echo "If you plan on building Chrome inside of the new chroot environment,"
