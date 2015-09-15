@@ -23,41 +23,7 @@ set(cef-binary_NO_INSTALL 1)
 
 include(color-defaults)
 
-if(CEF_COMPLETE)
-  if(CEF_NO_DEBUG_BUILD)
-    list(APPEND CEF_BUILD_VAL "--no-debug-build ")
-  endif()
-  if(CEF_NO_RELEASE_BUILD)
-    list(APPEND CEF_BUILD_VAL "--no-release-build ")
-  endif()
-  if(CEF_BUILD_LOG_FILE)
-    message(STATUS "CEF log files build enabled which becomes stored at ${BoldWhite}${CMAKE_CURRENT_BINARY_DIR}/CEFComplete${ColourReset}")
-    list(APPEND CEF_BUILD_VAL "--build-log-file ")
-  endif()
-
-  set(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/CEFComplete/chromium/src/cef/binary_distrib/cef_binary_3.${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE})
-
-  message(STATUS "Created CEF binary ${BoldWhite}cef_binary_3.${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE}-${CEF_OWN_CHANGES_VERSION}.zip${ColourReset} becomes stored at ${BoldWhite}${CMAKE_CURRENT_BINARY_DIR}${ColourReset}")
-
-  add_external_project(cef-binary
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cef-binary/src/cef-binary
-    DOWNLOAD_COMMAND python ${PROJECT_SOURCE_DIR}/CEFParts/automate-git.py
-                            --download-dir=${CMAKE_CURRENT_BINARY_DIR}/CEFComplete
-                            --url=${CEF_BRANCH_URL}
-                            --branch=${CEF_BRANCH_VERSION}
-                            ${CEF_BUILD_VAL}
-    UPDATE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE} ${CMAKE_CURRENT_BINARY_DIR}/cef-binary/src/cef-binary
-    INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE}.zip ${CMAKE_CURRENT_BINARY_DIR}
-  )
-
-  add_custom_command(TARGET cef-binary
-    COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_CURRENT_BINARY_DIR}/cef_binary_3.${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE}.zip
-                                       kodi-web-${CEF_OWN_CHANGES_VERSION}_cef_binary_3.${CEF_COMPLETE_VERSION}_${CEF_OS_NAME}${BITSIZE}.zip
-  )
-else()
-  add_external_project(cef-binary)
-endif()
-
+add_external_project(cef-binary)
 ExternalProject_Get_Property(cef-binary SOURCE_DIR)
 ExternalProject_Get_Property(cef-binary BINARY_DIR)
 
