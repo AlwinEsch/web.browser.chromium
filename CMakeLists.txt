@@ -156,7 +156,7 @@ add_project(cef-binary REQUIRED)
 get_include_dir(cef-binary TEMP)
 list(APPEND INCLUDES ${TEMP})
 
-link_directories(${CMAKE_CURRENT_BINARY_DIR}/cef
+link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib/cef
                  ${CMAKE_CURRENT_BINARY_DIR})
 
 include_directories(${INCLUDES}
@@ -192,11 +192,11 @@ target_link_libraries(kodichromium ${DEPLIBS})
 
 add_custom_command(TARGET kodichromium POST_BUILD
   # Move binary to cef folder
-  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/kodichromium${CMAKE_EXECUTABLE_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/kodichromium${CMAKE_EXECUTABLE_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
   COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/kodichromium${CMAKE_EXECUTABLE_SUFFIX}
 )
 
-build_web_addon(web.KODIChromiumBrowser KODICHROMIUM DEPLIBS ${CMAKE_CURRENT_BINARY_DIR}/cef)
+build_web_addon(web.KODIChromiumBrowser KODICHROMIUM DEPLIBS ${CMAKE_CURRENT_BINARY_DIR}/lib/cef ${CMAKE_CURRENT_BINARY_DIR}/share/cef)
 
 if(PACKAGE_ZIP EQUAL 1)
   # needed for project installing

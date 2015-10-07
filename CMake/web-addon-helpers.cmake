@@ -32,13 +32,24 @@ add_custom_target(web-addon-package
                   COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target package)
 
 macro(add_cpack_workaround target version ext)
+  if(NOT PACKAGE_DIR)
+    set(PACKAGE_DIR "${CMAKE_INSTALL_PREFIX}/zips")
+  endif()
+
   add_custom_command(TARGET web-addon-package PRE_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E rename addon-${target}-${version}.${ext} ${target}-${version}.${ext})
+                     COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/addon-${target}-${version}.${ext} ${CMAKE_BINARY_DIR}/${target}-${version}.${ext}
+                     COMMAND ${CMAKE_COMMAND} -E make_directory ${PACKAGE_DIR}
+                     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${target}-${version}.${ext} ${PACKAGE_DIR})
 endmacro()
 
 # Grab the version from a given add-on's addon.xml
 macro (addon_version dir prefix)
-  file(READ ${dir}/addon.xml ADDONXML)
+  IF(EXISTS ${PROJECT_SOURCE_DIR}/${dir}/addon.xml.in)
+    FILE(READ ${PROJECT_SOURCE_DIR}/${dir}/addon.xml.in ADDONXML)
+  ELSE()
+    FILE(READ ${dir}/addon.xml ADDONXML)
+  ENDIF()
+
   string(REGEX MATCH "<addon[^>]*version.?=.?.[0-9\\.]+" VERSION_STRING ${ADDONXML})
   string(REGEX REPLACE ".*version=.([0-9\\.]+).*" "\\1" ${prefix}_VERSION ${VERSION_STRING})
   message(STATUS ${prefix}_VERSION=${${prefix}_VERSION})
@@ -50,25 +61,44 @@ endmacro()
 # @param prefix Included project parts
 # @param libs which required for it
 # @param additional folders to install
-macro (build_web_addon target prefix libs additionals)
+macro (build_web_addon target prefix libs additionals_lib additionals_share)
   add_library(${target} ${${prefix}_SOURCES})
   target_link_libraries(${target} ${${libs}})
   addon_version(${target} ${prefix})
-  set_target_properties(${target} PROPERTIES VERSION ${${prefix}_VERSION}
-                                  SOVERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}
-                                  PREFIX "")
+  SET_TARGET_PROPERTIES(${target} PROPERTIES VERSION ${${prefix}_VERSION}
+                                             SOVERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}
+                                             PREFIX "")
   if(OS STREQUAL "android")
     set_target_properties(${target} PROPERTIES PREFIX "lib")
   endif(OS STREQUAL "android")
 
+  # get the library's location
+  SET(LIBRARY_LOCATION $<TARGET_FILE:${target}>)
+  # get the library's filename
+  if("${CORE_SYSTEM_NAME}" STREQUAL "android")
+    # for android we need the filename without any version numbers
+    set(LIBRARY_FILENAME $<TARGET_LINKER_FILE_NAME:${target}>)
+  else()
+    SET(LIBRARY_FILENAME $<TARGET_FILE_NAME:${target}>)
+  endif()
+
+  # if there's an addon.xml.in we need to generate the addon.xml
+  IF(EXISTS ${PROJECT_SOURCE_DIR}/${target}/addon.xml.in)
+    SET(PLATFORM ${CORE_SYSTEM_NAME})
+
+    FILE(READ ${PROJECT_SOURCE_DIR}/${target}/addon.xml.in addon_file)
+    STRING(CONFIGURE "${addon_file}" addon_file_conf @ONLY)
+    FILE(GENERATE OUTPUT ${PROJECT_SOURCE_DIR}/${target}/addon.xml CONTENT "${addon_file_conf}")
+  ENDIF()
+
   # set zip as default if web-addon-package is called without PACKAGE_XXX
-  set(CPACK_GENERATOR "ZIP")
-  set(ext "zip")
-  if(PACKAGE_ZIP EQUAL 1 OR PACKAGE_TGZ EQUAL 1)
-    if(PACKAGE_TGZ EQUAL 1)
-      set(CPACK_GENERATOR "TGZ")
-      set(ext "tar.gz")
-    endif(PACKAGE_TGZ EQUAL 1)
+  SET(CPACK_GENERATOR "ZIP")
+  SET(ext "zip")
+  if(PACKAGE_ZIP OR PACKAGE_TGZ)
+    if(PACKAGE_TGZ)
+      SET(CPACK_GENERATOR "TGZ")
+      SET(ext "tar.gz")
+    endif(PACKAGE_TGZ)
     set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
     set(CPACK_PACKAGE_FILE_NAME addon)
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -78,22 +108,20 @@ macro (build_web_addon target prefix libs additionals)
     set(CPACK_COMPONENTS_IGNORE_GROUPS 1)
     list(APPEND CPACK_COMPONENTS_ALL ${target}-${${prefix}_VERSION})
     # Pack files together to create an archive
-    install(DIRECTORY ${target} DESTINATION ./ COMPONENT ${target}-${${prefix}_VERSION})
+    INSTALL(DIRECTORY ${target} DESTINATION ./ COMPONENT ${target}-${${prefix}_VERSION} PATTERN "addon.xml.in" EXCLUDE)
     if(WIN32)
-      # get the installation location for the addon's target
-      get_property(dll_location TARGET ${target} PROPERTY LOCATION)
       # in case of a VC++ project the installation location contains a $(Configuration) VS variable
       # we replace it with ${CMAKE_BUILD_TYPE} (which doesn't cover the case when the build configuration
       # is changed within Visual Studio)
-      string(REPLACE "$(Configuration)" "${CMAKE_BUILD_TYPE}" dll_location "${dll_location}")
+      string(REPLACE "$(Configuration)" "${CMAKE_BUILD_TYPE}" LIBRARY_LOCATION "${LIBRARY_LOCATION}")
 
       # install the generated DLL file
-      install(PROGRAMS ${dll_location} DESTINATION ${target}
+      install(PROGRAMS ${LIBRARY_LOCATION} DESTINATION ${target}
               COMPONENT ${target}-${${prefix}_VERSION})
 
       if(CMAKE_BUILD_TYPE MATCHES Debug)
         # for debug builds also install the PDB file
-        get_filename_component(dll_directory ${dll_location} DIRECTORY)
+        get_filename_component(dll_directory ${LIBRARY_LOCATION} DIRECTORY)
         install(FILES ${dll_directory}/${target}.pdb
                 DESTINATION ${target}
                 COMPONENT ${target}-${${prefix}_VERSION})
@@ -105,12 +133,15 @@ macro (build_web_addon target prefix libs additionals)
       install(TARGETS ${target}
               DESTINATION ${target}
               COMPONENT ${target}-${${prefix}_VERSION})
-      install(DIRECTORY ${additionals}
+      install(DIRECTORY ${additionals_lib}
+              DESTINATION ${target}
+              COMPONENT ${target}-${${prefix}_VERSION})
+      install(DIRECTORY ${additionals_lib}
               DESTINATION ${target}
               COMPONENT ${target}-${${prefix}_VERSION})
     endif(WIN32)
     add_cpack_workaround(${target} ${${prefix}_VERSION} ${ext})
-  else(PACKAGE_ZIP EQUAL 1 OR PACKAGE_TGZ EQUAL 1)
+  else(PACKAGE_ZIP OR PACKAGE_TGZ)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
       if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR NOT CMAKE_INSTALL_PREFIX)
         message(STATUS "setting install paths to match ${APP_NAME}: CMAKE_INSTALL_PREFIX: ${${APP_NAME_UC}_PREFIX}")
@@ -126,13 +157,11 @@ macro (build_web_addon target prefix libs additionals)
     else()
       set(CMAKE_INSTALL_LIBDIR "lib/${APP_NAME_LC}")
     endif()
-    install(TARGETS ${target}
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}/kodi/addons/${target})
-    install(DIRECTORY ${target}
-            DESTINATION share/kodi/addons)
-    install(DIRECTORY ${additionals}
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}/kodi/addons/${target})
-  endif(PACKAGE_ZIP EQUAL 1 OR PACKAGE_TGZ EQUAL 1)
+    install(TARGETS ${target} DESTINATION ${CMAKE_INSTALL_LIBDIR}/addons/${target})
+    install(DIRECTORY ${target} DESTINATION share/${APP_NAME_LC}/addons PATTERN "addon.xml.in" EXCLUDE)
+    install(DIRECTORY ${additionals_lib} DESTINATION ${CMAKE_INSTALL_LIBDIR}/addons/${target})
+    install(DIRECTORY ${additionals_share} DESTINATION share/${APP_NAME_LC}/addons/${target})
+  endif(PACKAGE_ZIP OR PACKAGE_TGZ)
 endmacro()
 
 # finds a path to a given file (recursive)
