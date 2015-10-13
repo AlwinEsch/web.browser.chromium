@@ -150,8 +150,6 @@ else()
   endif()
 endif()
 
-include (${CMAKE_CURRENT_SOURCE_DIR}/versions.cmake)
-
 add_project(cef-binary REQUIRED)
 get_include_dir(cef-binary TEMP)
 list(APPEND INCLUDES ${TEMP})

@@ -23,6 +23,52 @@ set(cef-binary_NO_INSTALL 1)
 
 include(color-defaults)
 
+# TODO: improve way for binary package check
+if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/cef-binary-packages")
+  execute_process(COMMAND cmake -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/cef-binary-packages)
+endif()
+execute_process(
+  COMMAND git clone https://github.com/kodi-web/cef-binary-packages.git
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
+)
+
+if(NOT CEF_BINARY)
+  if(${CORE_SYSTEM_NAME} STREQUAL linux AND ${BITSIZE} STREQUAL 32)
+    set(CEF_BINARY i686-linux-gnu)
+  elseif(${CORE_SYSTEM_NAME} STREQUAL linux AND ${BITSIZE} STREQUAL 64)
+    set(CEF_BINARY x86_64-linux-gnu)
+  elseif(${CORE_SYSTEM_NAME} STREQUAL osx AND ${BITSIZE} STREQUAL 32)
+    set(CEF_BINARY i386-apple-darwin)
+  elseif(${CORE_SYSTEM_NAME} STREQUAL osx AND ${BITSIZE} STREQUAL 64)
+    set(CEF_BINARY x86_64-apple-darwin)
+  elseif(${CORE_SYSTEM_NAME} STREQUAL ios)
+    set(CEF_BINARY arm-apple-darwin)
+  elseif(${CORE_SYSTEM_NAME} STREQUAL windows AND ${BITSIZE} STREQUAL 32)
+    set(CEF_BINARY i686-windows)
+  elseif(${CORE_SYSTEM_NAME} STREQUAL windows AND ${BITSIZE} STREQUAL 64)
+    set(CEF_BINARY x86_64-windows)
+  elseif(${CORE_SYSTEM_NAME} STREQUAL rbpi)
+    set(CEF_BINARY arm-linux-gnueabihf)
+  endif()
+endif()
+
+#set(CEF_BINARY arm-linux-androideabi)
+#set(CEF_BINARY arm-linux-gnueabi)
+#set(CEF_BINARY i686-linux-android)
+
+if(NOT CEF_BINARY)
+  message(FATAL_ERROR "${BoldWhite}Missing 'CEF_BINARY' value !!!${ColourReset}")
+endif()
+
+file(READ ${CMAKE_CURRENT_BINARY_DIR}/cef-binary-packages/x86_64-linux-gnu/binary-package.txt BINARY_PACKAGE_ZIP)
+STRING(REGEX REPLACE "\n" "" BINARY_PACKAGE_ZIP "${BINARY_PACKAGE_ZIP}")
+file(READ ${CMAKE_CURRENT_BINARY_DIR}/cef-binary-packages/x86_64-linux-gnu/md5sum.txt BINARY_PACKAGE_MD5_SUM)
+STRING(REGEX REPLACE "\n" "" BINARY_PACKAGE_MD5_SUM "${BINARY_PACKAGE_MD5_SUM}")
+add_revision(cef-binary
+  URL ${BINARY_PACKAGE_ZIP}
+  URL_MD5 ${BINARY_PACKAGE_MD5_SUM}
+)
+
 add_external_project(cef-binary)
 ExternalProject_Get_Property(cef-binary SOURCE_DIR)
 ExternalProject_Get_Property(cef-binary BINARY_DIR)
@@ -39,14 +85,19 @@ add_custom_command(TARGET cef-binary
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/cef/locales
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/locales ${CMAKE_CURRENT_BINARY_DIR}/share/cef/locales
-  COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}cef${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/cef_100_percent.pak ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/cef_200_percent.pak ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/cef.pak ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/chrome-sandbox ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/devtools_resources.pak ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/icudtl.dat ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}ffmpegsumo${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/natives_blob.bin ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/snapshot_blob.bin ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+
+  COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}cef${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}ffmpegsumo${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+
+  # TODO: Fix installed library load
+  COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}cef${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/cefsimple/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}ffmpegsumo${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/share/cef
 )
