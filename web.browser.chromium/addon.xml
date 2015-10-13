@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon
-	id="web.KODIChromiumBrowser"
+	id="web.browser.chromium"
 	version="0.0.5"
 	name="KODI Chromium Internet Browser"
 	provider-name="Team KODI">
@@ -10,11 +10,11 @@
 	</requires>
 	<extension
 		point="kodi.web"
-		library_linux="web.KODIChromiumBrowser.so"
-		library_osx="web.KODIChromiumBrowser.dylib"
-		library_wingl="web.KODIChromiumBrowser.dll"
-		library_windx="web.KODIChromiumBrowser.dll"
-		library_android="libweb.KODIChromiumBrowser.so" />
+		library_linux="web.browser.chromium.so"
+		library_osx="web.browser.chromium.dylib"
+		library_wingl="web.browser.chromium.dll"
+		library_windx="web.browser.chromium.dll"
+		library_android="libweb.browser.chromium.so" />
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en">Internet browser based upon Google Chromium project</summary>
 		<description lang="en">KODIChromiumBrowser web browser line based on the modern, cross-platform architecture provided by the Chromium project.
@@ -25,6 +25,6 @@ NOTE: This add-on is still in development and everything is currently possible (
 		<forum></forum>
 		<website>http://esmasol.de/open-source/kodi-add-on-s/chromium-web-browser/</website>
 		<email></email>
-		<source>https://github.com/AlwinEsch/web.KODIChromiumBrowser</source>
+		<source>https://github.com/AlwinEsch/web.browser.chromium</source>
 	</extension>
 </addon>

@@ -18,7 +18,7 @@
 #                                                                             #
 ###############################################################################
 
-project(web.KODIChromiumBrowser)
+project(web.browser.chromium)
 
 cmake_minimum_required(VERSION 2.8.12.2)
 
@@ -194,7 +194,7 @@ add_custom_command(TARGET kodichromium POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/kodichromium${CMAKE_EXECUTABLE_SUFFIX}
 )
 
-build_web_addon(web.KODIChromiumBrowser KODICHROMIUM DEPLIBS ${CMAKE_CURRENT_BINARY_DIR}/lib/cef ${CMAKE_CURRENT_BINARY_DIR}/share/cef)
+build_web_addon(web.browser.chromium KODICHROMIUM DEPLIBS ${CMAKE_CURRENT_BINARY_DIR}/lib/cef ${CMAKE_CURRENT_BINARY_DIR}/share/cef)
 
 if(PACKAGE_ZIP EQUAL 1)
   # needed for project installing
@@ -206,7 +206,7 @@ elseif(PACKAGE_TGZ EQUAL 1)
   message(STATUS "package tgz specified")
 endif()
 
-add_dependencies(web.KODIChromiumBrowser cef-binary)
+add_dependencies(web.browser.chromium cef-binary)
 add_definitions(-DKODICHROMIUM_VERSION="${KODICHROMIUM_VERSION}")
 
 include(CPack)
