@@ -313,6 +313,7 @@
 
 #define ADDON_ACTION_AUDIO_DELAY            161
 #define ADDON_ACTION_SUBTITLE_DELAY         162
+#define ADDON_ACTION_MENU                   163
 
 #define ADDON_ACTION_RECORD                 170
 
@@ -609,6 +610,7 @@ enum KeyboardCode
 // the same values.
 KeyboardCode ActionIdToKeyboardCode(int actionId)
 {
+fprintf(stderr, "actionId - %i\n", actionId);
   switch (actionId)
   {
     case ADDON_ACTION_MOVE_LEFT:        return VKEY_LEFT;
@@ -616,10 +618,10 @@ KeyboardCode ActionIdToKeyboardCode(int actionId)
     case ADDON_ACTION_MOVE_UP:          return VKEY_UP;
     case ADDON_ACTION_MOVE_DOWN:        return VKEY_DOWN;
     case ADDON_ACTION_PAGE_UP:          return VKEY_PRIOR;
-    case ADDON_ACTION_PAGE_DOWN:        return VKEY_NEXT;
-    case ADDON_ACTION_SELECT_ITEM:      return VKEY_RETURN;
+    case ADDON_ACTION_PAGE_DOWN:        fprintf(stderr, "ADDON_ACTION_PAGE_DOWN\n"); return VKEY_NEXT;
+    case ADDON_ACTION_SELECT_ITEM:      fprintf(stderr, "ADDON_ACTION_SELECT_ITEM\n"); return VKEY_RETURN;
     case ADDON_ACTION_HIGHLIGHT_ITEM:
-      fprintf(stderr, "ADDON_ACTION_HIGHLIGHT_ITEM\n");;
+      fprintf(stderr, "ADDON_ACTION_HIGHLIGHT_ITEM\n");
       break;
     case ADDON_ACTION_PARENT_DIR:
       fprintf(stderr, "ADDON_ACTION_PARENT_DIR\n");;
@@ -1048,13 +1050,16 @@ KeyboardCode ActionIdToKeyboardCode(int actionId)
     case ADDON_ACTION_FILTER_SMS9:
       fprintf(stderr, "ADDON_ACTION_FILTER_SMS9\n");
       break;
-    case ADDON_ACTION_FIRST_PAGE:       return VKEY_HOME;
-    case ADDON_ACTION_LAST_PAGE:        return VKEY_END;
+    case ADDON_ACTION_FIRST_PAGE:        fprintf(stderr, "ADDON_ACTION_SELECT_ITEM\n"); return VKEY_HOME;
+    case ADDON_ACTION_LAST_PAGE:         fprintf(stderr, "ADDON_ACTION_SELECT_ITEM\n"); return VKEY_END;
     case ADDON_ACTION_AUDIO_DELAY:
       fprintf(stderr, "ADDON_ACTION_AUDIO_DELAY\n");
       break;
     case ADDON_ACTION_SUBTITLE_DELAY:
       fprintf(stderr, "ADDON_ACTION_SUBTITLE_DELAY\n");
+      break;
+    case ADDON_ACTION_MENU:
+      fprintf(stderr, "ADDON_ACTION_MENU\n");
       break;
     case ADDON_ACTION_RECORD:
       fprintf(stderr, "ADDON_ACTION_RECORD\n");
@@ -1480,6 +1485,25 @@ bool CWebBrowserClientBase::OnAction(int actionId, int &nextItem)
 {
   if (!m_Browser.get())
     return false;
+
+  /*
+   * Following actions forced to use on kodi itself
+   * Need to be rechecked on chromium about usage, e.g. volume which also changeable there
+   */
+  switch (actionId)
+  {
+    case ADDON_ACTION_VOLUME_UP:
+    case ADDON_ACTION_VOLUME_DOWN:
+    case ADDON_ACTION_VOLAMP:
+    case ADDON_ACTION_MUTE:
+      return false;
+    case ADDON_ACTION_NAV_BACK:
+    case ADDON_ACTION_MENU:
+    case ADDON_ACTION_PREVIOUS_MENU:
+      return false;
+    default:
+      break;
+  };
 
   CefRefPtr<CefBrowserHost> host = m_Browser->GetHost();
 

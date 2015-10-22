@@ -36,6 +36,7 @@ CWebBrowserManager::~CWebBrowserManager()
 
 bool CWebBrowserManager::Create()
 {
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser add-on process creation start", __FUNCTION__);
 
   SetCEFPaths();
@@ -65,6 +66,7 @@ bool CWebBrowserManager::Create()
 
 void CWebBrowserManager::Destroy()
 {
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   m_isActive = false;
 
   StopThread();
@@ -126,6 +128,7 @@ void *CWebBrowserManager::Process()
 
 WEB_ADDON_ERROR CWebBrowserManager::CreateControl(const WEB_ADDON_GUI_PROPS &props, unsigned int webType, ADDON_HANDLE handle)
 {
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   /*!
    * Paranoia ;-), prevent not wanted creation calls (normally not done)
    */
@@ -156,6 +159,7 @@ WEB_ADDON_ERROR CWebBrowserManager::CreateControl(const WEB_ADDON_GUI_PROPS &pro
 
 void CWebBrowserManager::CreateControl_Main(sMainThreadData *data)
 {
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   data->ret.addonError = WEB_ADDON_ERROR_FAILED;
   CWebBrowserClient *pBrowserClient;
 
@@ -202,6 +206,7 @@ void CWebBrowserManager::CreateControl_Main(sMainThreadData *data)
 
 bool CWebBrowserManager::DestroyControl(const ADDON_HANDLE handle)
 {
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   //! Check for wrongly passed empty handle.
   if (handle == NULL)
   {
@@ -225,6 +230,7 @@ bool CWebBrowserManager::DestroyControl(const ADDON_HANDLE handle)
 
 void CWebBrowserManager::DestroyControl_Main(sMainThreadData *data)
 {
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   //! Find wanted control to destroy.
   int identifier = data->handle[0]->dataIdentifier;
   std::map<int, CWebBrowserClient*>::iterator itr = data->manager->m_BrowserClients.find(identifier);
@@ -256,6 +262,7 @@ bool CWebBrowserManager::SetLanguage(const char *language)
 
 bool CWebBrowserManager::OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus)
 {
+  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   sMainThreadData data;
   data.manager = this;
   data.handle = &handle;
@@ -275,6 +282,7 @@ bool CWebBrowserManager::OpenWebsite(const ADDON_HANDLE handle, const char* strU
 
 void CWebBrowserManager::OpenWebsite_Main(sMainThreadData *data)
 {
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   LOG_MESSAGE(LOG_DEBUG, "%s - Open URL '%s' called", __FUNCTION__, data->data.OpenWebsite.strURL);
   data->ret.booleanError = ((CWebBrowserClient*)data->handle[0]->callerAddress)->OpenWebsite(data->data.OpenWebsite.strURL,
                                                                                              data->data.OpenWebsite.single,
@@ -303,27 +311,32 @@ void CWebBrowserManager::Stop(const ADDON_HANDLE handle)
 
 bool CWebBrowserManager::OnInit(const ADDON_HANDLE handle)
 {
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   LOG_MESSAGE(LOG_DEBUG, "%s - Web browser control initialize", __FUNCTION__);
   return true;
 }
 
 bool CWebBrowserManager::OnAction(const ADDON_HANDLE handle, int actionId, int &nextItem)
 {
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   return ((CWebBrowserClient*)handle->callerAddress)->OnAction(actionId, nextItem);
 }
 
 bool CWebBrowserManager::OnMouseEvent(const ADDON_HANDLE handle, int mouseId, double x, double y, double offsetX, double offsetY, int state)
 {
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   return ((CWebBrowserClient*)handle->callerAddress)->OnMouseEvent(mouseId, x, y, offsetX, offsetY, state);
 }
 
 bool CWebBrowserManager::LoadUserSettings(void)
 {
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   return m_setting.LoadUserSettings();
 }
 
 bool CWebBrowserManager::SaveUserSettings(void)
 {
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   return m_setting.SaveUserSettings();
 }
 
