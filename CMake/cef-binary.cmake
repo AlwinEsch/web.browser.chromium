@@ -88,6 +88,7 @@ add_custom_command(TARGET cef-binary
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef.pak                      ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_100_percent.pak          ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_200_percent.pak          ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_extensions.pak           ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_resources.pak            ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/devtools_resources.pak       ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/icudtl.dat                   ${CMAKE_CURRENT_BINARY_DIR}/share/cef
