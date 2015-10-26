@@ -17,12 +17,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+ #define NDEBUG 1
+
 #include <queue>
 
 #include "include/cef_app.h"
 #include "include/cef_client.h"
 #include "include/cef_render_handler.h"
 #include "include/wrapper/cef_message_router.h"
+#include "include/wrapper/cef_resource_manager.h"
 #include "platform/threads/threads.h"
 
 #include "Dialogs/WebGUIDialogContextMenu.h"
@@ -66,22 +69,29 @@ typedef struct
   void* lpVoid;
 } Message;
 
+
 class CWebBrowserClientBase :
     public CefClient,
     public CefDisplayHandler,
     public CefDragHandler,
     public CefGeolocationHandler,
+    public CefJSDialogHandler,
+    public CefFindHandler,
+    public CefFocusHandler,
     public CefLoadHandler,
-    public CefKeyboardHandler,
-    public CefDownloadHandler,
-    public CefContextMenuHandler,
+    /*public CefKeyboardHandler,*/
+    /*public CefDownloadHandler,*/
+    /*public CefContextMenuHandler,*/
     public CefLifeSpanHandler,
     public CefRenderHandler,
-    public CefRequestHandler
+    public CefRequestHandler,
+    public CefRequestContextHandler
 {
 public:
   CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props);
   virtual ~CWebBrowserClientBase();
+
+  void SetBrowser(CefRefPtr<CefBrowser> browser);
 
   /*!
    * @brief return the unique identification id of this control client
@@ -176,7 +186,7 @@ public:
    * Implement this interface to handle context menu events. The methods of this
    * class will be called on the UI thread.
    */
-  //{
+  /*//{
   virtual CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() OVERRIDE { return this; }
 
   virtual void OnBeforeContextMenu(                                ///<-- Called before a context menu is displayed. |params| provides information
@@ -198,7 +208,7 @@ public:
       CefRefPtr<CefBrowser>                 browser,                  /// was empty or a command was selected.
       CefRefPtr<CefFrame>                   frame)                    ///
                         OVERRIDE;                                     ///
-  //}
+  //}*/
   /*!
    * @brief CefDisplayHandler methods
    *
@@ -247,7 +257,7 @@ public:
    * Class used to handle file downloads. The methods of this class will called
    * on the browser process UI thread.
    */
-  //{
+  /*//{
   virtual CefRefPtr<CefDownloadHandler> GetDownloadHandler() OVERRIDE { return this; }
 
   virtual void OnBeforeDownload(                                      /// Called before a download begins. |suggested_name| is the suggested name for
@@ -262,7 +272,7 @@ public:
       CefRefPtr<CefDownloadItem>            download_item,            /// Execute |callback| either asynchronously or in this method to cancel the
       CefRefPtr<CefDownloadItemCallback>    callback)                 /// download if desired. Do not keep a reference to |download_item| outside of
                         OVERRIDE;                                     /// this method.
-  //}
+  //}*/
   /*!
    * @brief CefDragHandler methods
    *
@@ -301,13 +311,93 @@ public:
       int                                   request_id)               ///
                         OVERRIDE;                                     ///
   //}
+
+  /*!
+   * @brief CefJSDialogHandler methods
+   *
+   * Implement this interface to handle events related to JavaScript dialogs. The
+   * methods of this class will be called on the UI thread.
+   */
+  //{
+  CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() OVERRIDE { return this; }
+
+  virtual bool OnJSDialog(                                         ///<--
+      CefRefPtr<CefBrowser>                 browser,                  ///
+      const CefString&                      origin_url,               ///
+      const CefString&                      accept_lang,              ///
+      JSDialogType                          dialog_type,              ///
+      const CefString&                      message_text,             ///
+      const CefString&                      default_prompt_text,      ///
+      CefRefPtr<CefJSDialogCallback>        callback,                 ///
+      bool&                                 suppress_message)         ///
+                        OVERRIDE;                                     ///
+
+  virtual bool OnBeforeUnloadDialog(                               ///<--
+      CefRefPtr<CefBrowser>                 browser,                  ///
+      const CefString&                      message_text,             ///
+      bool                                  is_reload,                ///
+      CefRefPtr<CefJSDialogCallback>        callback)                 ///
+                        OVERRIDE;                                     ///
+
+  virtual void OnResetDialogState(                                 ///<--
+      CefRefPtr<CefBrowser>                 browser)                  ///
+                        OVERRIDE;                                     ///
+
+  virtual void OnDialogClosed(                                     ///<--
+      CefRefPtr<CefBrowser>                 browser)                  ///
+                        OVERRIDE;                                     ///
+  //}
+
+  /*!
+   * @brief CefFindHandler methods
+   *
+   * Implement this interface to handle events related to find results. The
+   * methods of this class will be called on the UI thread.
+   */
+  //{
+  CefRefPtr<CefFindHandler> GetFindHandler() OVERRIDE { return this; }
+
+  virtual void OnFindResult(
+      CefRefPtr<CefBrowser>                 browser,                  ///
+      int                                   identifier,
+      int                                   count,
+      const CefRect&                        selectionRect,
+      int                                   activeMatchOrdinal,
+      bool                                  finalUpdate)
+                        OVERRIDE;                                     ///
+  //}
+
+  /*!
+   * @brief CefFocusHandler methods
+   *
+   * Implement this interface to handle events related to focus. The methods of
+   * this class will be called on the UI thread.
+   */
+  //{
+  CefRefPtr<CefFocusHandler> GetFocusHandler() OVERRIDE { return this; }
+
+  virtual void OnTakeFocus(
+      CefRefPtr<CefBrowser>                 browser,                  ///
+      bool                                  next)
+                        OVERRIDE;                                     ///
+
+  virtual bool OnSetFocus(
+      CefRefPtr<CefBrowser>                 browser,                  ///
+      FocusSource                           source)
+                        OVERRIDE;                                     ///
+
+  virtual void OnGotFocus(
+      CefRefPtr<CefBrowser>                 browser)                  ///
+                        OVERRIDE;                                     ///
+  //}
+
   /*!
    * @brief CefKeyboardHandler methods
    *
    * Implement this interface to handle events related to keyboard input. The
    * methods of this class will be called on the UI thread.
    */
-  //{
+  /*//{
   virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() OVERRIDE { return this; }
 
   virtual bool OnPreKeyEvent(                                         /// Called before a keyboard event is sent to the renderer. |event| contains
@@ -322,7 +412,7 @@ public:
       const CefKeyEvent&                    event,                    /// |os_event| is the operating system event message, if any. Return true if
       CefEventHandle                        os_event)                 /// the keyboard event was handled or false otherwise.
                         OVERRIDE;                                     ///
-  //}
+  //}*/
   /*!
    * @brief CefLifeSpanHandler methods
    *
@@ -425,17 +515,17 @@ public:
       bool                                  canGoForward)             ///
                         OVERRIDE;                                     ///
 
-  virtual void OnLoadStart(                                           /// Called when the browser begins loading a frame. The |frame| value will never be empty -- call
-      CefRefPtr<CefBrowser>                 browser,                  /// the IsMain() method to check if this frame is the main frame. Multiple frames may be loading
-      CefRefPtr<CefFrame>                   frame)                    /// at the same time. Sub-frames may start or continue loading after the main frame load has ended.
-                        OVERRIDE;                                     /// This method may not be called for a particular frame if the load request for that frame fails.
+//  virtual void OnLoadStart(                                           /// Called when the browser begins loading a frame. The |frame| value will never be empty -- call
+//      CefRefPtr<CefBrowser>                 browser,                  /// the IsMain() method to check if this frame is the main frame. Multiple frames may be loading
+//      CefRefPtr<CefFrame>                   frame)                    /// at the same time. Sub-frames may start or continue loading after the main frame load has ended.
+//                        OVERRIDE;                                     /// This method may not be called for a particular frame if the load request for that frame fails.
                                                                       /// For notification of overall browser load status use OnLoadingStateChange instead.
-  virtual void OnLoadEnd(
-      CefRefPtr<CefBrowser>                 browser,                  /// Called when the browser is done loading a frame. The |frame| value will never be empty -- call
-      CefRefPtr<CefFrame>                   frame,                    /// the IsMain() method to check if this frame is the main frame. Multiple frames may be loading at
-      int                                   httpStatusCode)           /// the same time. Sub-frames may start or continue loading after the main frame load has ended.
-                        OVERRIDE;                                     /// Thismethod will always be called for all frames irrespective of whether the request completes
-                                                                      /// successfully.
+//  virtual void OnLoadEnd(
+//      CefRefPtr<CefBrowser>                 browser,                  /// Called when the browser is done loading a frame. The |frame| value will never be empty -- call
+//      CefRefPtr<CefFrame>                   frame,                    /// the IsMain() method to check if this frame is the main frame. Multiple frames may be loading at
+//      int                                   httpStatusCode)           /// the same time. Sub-frames may start or continue loading after the main frame load has ended.
+//                        OVERRIDE;                                     /// Thismethod will always be called for all frames irrespective of whether the request completes
+//                                                                      /// successfully.
   virtual void OnLoadError(
       CefRefPtr<CefBrowser>                 browser,                  /// Called when the resource load for a navigation fails or is canceled.
       CefRefPtr<CefFrame>                   frame,                    /// |errorCode| is the error code number, |errorText| is the error text and
@@ -594,13 +684,6 @@ public:
       CefRefPtr<CefRequestCallback>         callback)                 /// If CefSettings.ignore_certificate_errors is set all invalid certificates
                         OVERRIDE;                                     /// will be accepted without calling this method.
 
-  virtual bool OnBeforePluginLoad(                                 ///<-- Called on the browser process IO thread before a plugin is loaded. Return
-      CefRefPtr<CefBrowser>                 browser,                  /// true to block loading of the plugin.
-      const CefString&                      url,                      ///
-      const CefString&                      policy_url,               ///
-      CefRefPtr<CefWebPluginInfo>           info)                     ///
-                        OVERRIDE;                                     ///
-
   virtual void OnPluginCrashed(                                    ///<-- Called on the browser process UI thread when a plugin has crashed.
       CefRefPtr<CefBrowser>                 browser,                  /// |plugin_path| is the path of the plugin that crashed.
       const CefString&                      plugin_path)              ///
@@ -613,6 +696,27 @@ public:
   virtual void OnRenderProcessTerminated(                          ///<-- Called on the browser process UI thread when the render process
       CefRefPtr<CefBrowser>                 browser,                  /// terminates unexpectedly. |status| indicates how the process
       TerminationStatus                     status)                   /// terminated.
+                        OVERRIDE;                                     ///
+  //}
+
+  /*!
+   * @brief CefRequestContextHandler methods
+   *
+   * Implement this interface to handle events related to browser requests. The
+   * methods of this class will be called on the thread indicated.
+   */
+  //{
+//  virtual CefRefPtr<CefRequestContextHandler> GetHandler() OVERRIDE { return this; }
+
+  virtual CefRefPtr<CefCookieManager> GetCookieManager()           ///<--
+                        OVERRIDE;                                     ///
+
+  virtual bool OnBeforePluginLoad(                                 ///<--
+      const CefString&                      mime_type,                ///
+      const CefString&                      plugin_url,               ///
+      const CefString&                      top_origin_url,           ///
+      CefRefPtr<CefWebPluginInfo>           plugin_info,              ///
+      PluginPolicy*                         plugin_policy)            ///
                         OVERRIDE;                                     ///
   //}
   IMPLEMENT_REFCOUNTING(CWebBrowserClientBase);
@@ -662,7 +766,9 @@ private:
   int           m_iMousePreviousFlags;
   cef_mouse_button_type_t m_iMousePreviousControl;
 
-  CefRefPtr<CefBrowser> m_Browser;
+  int                     m_BrowserId;
+  CefRefPtr<CefBrowser>   m_Browser;
+
   CefRefPtr<CefMessageRouterBrowserSide> m_pMessageRouter;
   ADDON_HANDLE_STRUCT m_addonHandle;
 
@@ -682,4 +788,15 @@ private:
 
   std::queue <Message*> m_processQueue;
   PLATFORM::CMutex m_Mutex;
+
+
+
+  // Manages the registration and delivery of resources.
+  CefRefPtr<CefResourceManager> m_resourceManager;
+
+
+  bool                          m_isClosing;
+  typedef std::list< CefRefPtr<CefBrowser> > browserList;
+  browserList                   m_popupBrowsers;          /* List of any popup browser windows. Only accessed on the CEF UI thread. */
+
 };

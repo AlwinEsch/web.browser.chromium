@@ -21,6 +21,8 @@
 #include "platform/util/util.h"
 #include "platform/util/timeutils.h"
 
+#include "include/internal/cef_types.h"
+
 #include "SettingsMain.h"
 #include "addon.h"
 
@@ -29,7 +31,9 @@ using namespace PLATFORM;
 
 CSettingsMain::CSettingsMain() :
   m_startURL(""),
-  m_AllowGeolocation(false)
+  m_allowGeolocation(false),
+  m_mouseCursorChangeDisabled(false),
+  m_logLevelCEF(LOGSEVERITY_VERBOSE)
 {
   m_baseSettingsFile = GetSettingsFile();
   m_currentUserSettingsFile = GetUserSettingsFile();
@@ -65,6 +69,11 @@ bool CSettingsMain::LoadSettings(void)
     m_startURL = "";
   else
     m_startURL = strTmp;
+
+  if (!XMLUtils::GetBoolean(pRootElement, "mousecursorchangedisabled", m_mouseCursorChangeDisabled))
+    m_mouseCursorChangeDisabled = false;
+  if (!XMLUtils::GetInt(pRootElement, "loglevelcef", (int&)m_logLevelCEF))
+    m_logLevelCEF = LOGSEVERITY_VERBOSE;
 }
 
 bool CSettingsMain::SaveSettings(void)
@@ -76,6 +85,8 @@ bool CSettingsMain::SaveSettings(void)
     return false;
 
   XMLUtils::SetString(pRoot, "starturl", m_startURL);
+  XMLUtils::SetBoolean(pRoot, "mousecursorchangedisabled", m_mouseCursorChangeDisabled);
+  XMLUtils::SetInt(pRoot, "loglevelcef", (int&)m_logLevelCEF);
   if (!xmlDoc.SaveFile(m_baseSettingsFile))
   {
     KODI->Log(LOG_ERROR, "failed to write web browser settings data");
@@ -105,11 +116,8 @@ bool CSettingsMain::LoadUserSettings(void)
   }
 
   /* default start url */
-  bool bTmp;
-  if (!XMLUtils::GetBoolean(pRootElement, "allowgeolocation", bTmp))
-    m_AllowGeolocation = false;
-  else
-    m_AllowGeolocation = bTmp;
+  if (!XMLUtils::GetBoolean(pRootElement, "allowgeolocation", m_allowGeolocation))
+    m_allowGeolocation = false;
 }
 
 bool CSettingsMain::SaveUserSettings(void)
@@ -129,7 +137,7 @@ bool CSettingsMain::SaveUserSettings(void)
   if (pRoot == NULL)
     return false;
 
-  XMLUtils::SetBoolean(pRoot, "allowgeolocation", m_AllowGeolocation);
+  XMLUtils::SetBoolean(pRoot, "allowgeolocation", m_allowGeolocation);
 
   if (!xmlDoc.SaveFile(m_currentUserSettingsFile))
   {
@@ -140,7 +148,7 @@ bool CSettingsMain::SaveUserSettings(void)
   return true;
 }
 
-std::string CSettingsMain::GetStartURL() const
+std::string CSettingsMain::StartURL() const
 {
   return m_startURL;
 }
@@ -153,7 +161,7 @@ bool CSettingsMain::SetStartURL(std::string url)
 
 std::string CSettingsMain::GetSettingsFile() const
 {
-  std::string settingFile = g_strAddonPath;
+  std::string settingFile = g_strAddonSharePath;
   if (settingFile.at(settingFile.size() - 1) == '\\' ||
       settingFile.at(settingFile.size() - 1) == '/')
     settingFile.append("webBrowserSettings.xml");

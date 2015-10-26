@@ -1,0 +1,33 @@
+# Kodi Media Center language file
+# Addon Name: Chromium web browser
+# Addon id: web.browser.chromium
+# Addon Provider: Alwin Esch, Team Kodi
+msgid ""
+msgstr ""
+"Project-Id-Version: KODI Main\n"
+"Report-Msgid-Bugs-To: http://trac.kodi.tv/\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Kodi Translation Team\n"
+"Language-Team: English (United States) (http://www.transifex.com/projects/p/kodi-main/language/en_US/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en_US\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "#30000"
+msgid "Chromium web browser - SUID sandbox helper"
+msgstr ""
+
+msgctxt "#30001"
+msgid "The SUID sandbox helper binary is missing!\nAborting now the start of web browser add-on.\n\nSee https://github.com/kodi-web/web.browser.chromium/wiki/Linux-SUID-Sandbox for details."
+msgstr ""
+
+msgctxt "#30002"
+msgid "The SUID sandbox helper binary need after add-on installation one time configured correctly.\nPlease enter super user password.\n\nSee https://github.com/kodi-web/web.browser.chromium/wiki/Linux-SUID-Sandbox for details."
+msgstr ""
+
+msgctxt "#30003"
+msgid "Please enter SUID password"
+msgstr ""

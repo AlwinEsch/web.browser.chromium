@@ -1346,6 +1346,7 @@ CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDO
   m_bFocusOnEditableField(0),
   m_iMousePreviousFlags(0),
   m_iMousePreviousControl(MBT_LEFT),
+  m_BrowserId(-1),
   m_Browser(NULL),
   m_pDevice(props->pDevice),
   m_iXPos(props->iXPos),
@@ -1365,22 +1366,30 @@ CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDO
   m_iGUIItemBottom(props->iGUIItemBottom),
   m_iGUIItemBack(props->iGUIItemBack),
   m_bTransparentBackground(props->bUseTransparentBackground),
-  m_pControlIdent(props->pControlIdent)
+  m_pControlIdent(props->pControlIdent),
+  m_isClosing(false)
 {
-  m_BackgroundColor[3] = float(CefColorGetA(props->iBackgroundColorARGB)) / 255.0f;
-  m_BackgroundColor[2] = float(CefColorGetR(props->iBackgroundColorARGB)) / 255.0f;
-  m_BackgroundColor[1] = float(CefColorGetG(props->iBackgroundColorARGB)) / 255.0f;
-  m_BackgroundColor[0] = float(CefColorGetB(props->iBackgroundColorARGB)) / 255.0f;
-  m_fMouseXScaleFactor = float(m_iXPos + m_iWidth) / float(m_iSkinXPos + m_iSkinWidth);
-  m_fMouseYScaleFactor = float(m_iYPos + m_iHeight) / float(m_iSkinYPos + m_iSkinHeight);
-  m_strTempStoreA      = (char*)malloc(TEMP_STORE_SIZE);
-  m_strTempStoreB      = (char*)malloc(TEMP_STORE_SIZE);
+  m_BackgroundColor[3]  = float(CefColorGetA(props->iBackgroundColorARGB)) / 255.0f;
+  m_BackgroundColor[2]  = float(CefColorGetR(props->iBackgroundColorARGB)) / 255.0f;
+  m_BackgroundColor[1]  = float(CefColorGetG(props->iBackgroundColorARGB)) / 255.0f;
+  m_BackgroundColor[0]  = float(CefColorGetB(props->iBackgroundColorARGB)) / 255.0f;
+  m_fMouseXScaleFactor  = float(m_iXPos + m_iWidth) / float(m_iSkinXPos + m_iSkinWidth);
+  m_fMouseYScaleFactor  = float(m_iYPos + m_iHeight) / float(m_iSkinYPos + m_iSkinHeight);
+  m_strTempStoreA       = (char*)malloc(TEMP_STORE_SIZE);
+  m_strTempStoreB       = (char*)malloc(TEMP_STORE_SIZE);
+//  m_resourceManager     = new CefResourceManager();
+
 }
 
 CWebBrowserClientBase::~CWebBrowserClientBase()
 {
   free(m_strTempStoreA);
   free(m_strTempStoreB);
+}
+
+void CWebBrowserClientBase::SetBrowser(CefRefPtr<CefBrowser> browser)
+{
+  m_Browser = browser;
 }
 
 bool CWebBrowserClientBase::SetInactive()
@@ -1457,6 +1466,7 @@ void CWebBrowserClientBase::HandleMessages()
         break;
       case TMSG_HANDLE_ON_PAINT:
       {
+        LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
         OnPaintMessage *data = static_cast<OnPaintMessage*>(pMsg->lpVoid);
         data->client.callback(pMsg->lpVoid);
         m_bIsDirty = true;
@@ -1612,6 +1622,8 @@ bool CWebBrowserClientBase::Dirty()
   return ret;
 }
 
+static bool fir = false;
+
 bool CWebBrowserClientBase::OpenWebsite(const char* strURL, bool single, bool allowMenus)
 {
   if (!m_Browser.get())
@@ -1689,8 +1701,8 @@ bool CWebBrowserClientBase::OnProcessMessageReceived(
 {
   CEF_REQUIRE_UI_THREAD();
 
-  if (m_pMessageRouter->OnProcessMessageReceived(browser, source_process, message))
-    return true;
+//  if (m_pMessageRouter->OnProcessMessageReceived(browser, source_process, message))
+//    return true;
 
   // Check for messages from the client renderer.
   std::string message_name = message->GetName();
@@ -1711,7 +1723,7 @@ bool CWebBrowserClientBase::OnProcessMessageReceived(
 /*!
  * @brief CefContextMenuHandler methods
  */
-//{
+/*//{
 void CWebBrowserClientBase::OnBeforeContextMenu(
     CefRefPtr<CefBrowser>                 browser,
     CefRefPtr<CefFrame>                   frame,
@@ -1741,7 +1753,7 @@ void CWebBrowserClientBase::OnContextMenuDismissed(
 {
     LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
-//}
+//}*/
 
 /*!
  * @brief CefDisplayHandler methods
@@ -1790,7 +1802,7 @@ bool CWebBrowserClientBase::OnTooltip(
     CefRefPtr<CefBrowser>                 browser,
     CefString&                            text)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s - %s", __FUNCTION__, text.ToString().c_str());
+    LOG_MESSAGE(LOG_DEBUG, "%s - %s", __FUNCTION__, text.ToString().c_str());
   return false;
 }
 
@@ -1798,7 +1810,7 @@ void CWebBrowserClientBase::OnStatusMessage(
     CefRefPtr<CefBrowser>                 browser,
     const CefString&                      value)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s - %s", __FUNCTION__, value.ToString().c_str());
+    LOG_MESSAGE(LOG_DEBUG, "%s - %s", __FUNCTION__, value.ToString().c_str());
 }
 
 bool CWebBrowserClientBase::OnConsoleMessage(
@@ -1815,14 +1827,14 @@ bool CWebBrowserClientBase::OnConsoleMessage(
 /*!
  * @brief CefDownloadHandler methods
  */
-//{
+/*//{
 void CWebBrowserClientBase::OnBeforeDownload(
     CefRefPtr<CefBrowser>                 browser,
     CefRefPtr<CefDownloadItem>            download_item,
     const CefString&                      suggested_name,
     CefRefPtr<CefBeforeDownloadCallback>  callback)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 void CWebBrowserClientBase::OnDownloadUpdated(
@@ -1830,9 +1842,9 @@ void CWebBrowserClientBase::OnDownloadUpdated(
     CefRefPtr<CefDownloadItem>            download_item,
     CefRefPtr<CefDownloadItemCallback>    callback)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
-//}
+//}*/
 
 /*!
  * @brief CefDragHandler methods
@@ -1843,7 +1855,13 @@ bool CWebBrowserClientBase::OnDragEnter(
     CefRefPtr<CefDragData> dragData,
     CefRenderHandler::DragOperationsMask mask)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  CEF_REQUIRE_UI_THREAD();
+
+  /* Forbid dragging of link URLs */
+  if(mask & DRAG_OPERATION_LINK)
+    return true;
+
   return false;
 }
 //}
@@ -1860,7 +1878,7 @@ bool CWebBrowserClientBase::OnRequestGeolocationPermission(
 {
   CEF_REQUIRE_UI_THREAD();
 
-  if (g_pWebManager->GetSettings()->GetGeolocationAllowance())
+  if (g_pWebManager->GetSettings()->GeolocationAllowance())
   {
     // Allow geolocation access from all websites.
     callback->Continue(true);
@@ -1875,7 +1893,93 @@ void CWebBrowserClientBase::OnCancelGeolocationPermission(
     const CefString&                      requesting_url,
     int                                   request_id)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+}
+//}
+
+/*!
+ * @brief CefJSDialogHandler methods
+ */
+//{
+bool CWebBrowserClientBase::OnJSDialog(
+    CefRefPtr<CefBrowser>                 browser,
+    const CefString&                      origin_url,
+    const CefString&                      accept_lang,
+    JSDialogType                          dialog_type,
+    const CefString&                      message_text,
+    const CefString&                      default_prompt_text,
+    CefRefPtr<CefJSDialogCallback>        callback,
+    bool&                                 suppress_message)
+{
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  return false;
+}
+
+bool CWebBrowserClientBase::OnBeforeUnloadDialog(
+    CefRefPtr<CefBrowser>                 browser,
+    const CefString&                      message_text,
+    bool                                  is_reload,
+    CefRefPtr<CefJSDialogCallback>        callback)
+{
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  return false;
+}
+
+void CWebBrowserClientBase::OnResetDialogState(
+    CefRefPtr<CefBrowser>                 browser)
+{
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+}
+
+void CWebBrowserClientBase::OnDialogClosed(
+    CefRefPtr<CefBrowser>                 browser)
+{
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+}
+//}
+
+/*!
+ * @brief CefFindHandler methods
+ *
+ * Implement this interface to handle events related to find results. The
+ * methods of this class will be called on the UI thread.
+ */
+//{
+void CWebBrowserClientBase::OnFindResult(
+    CefRefPtr<CefBrowser>                 browser,
+    int                                   identifier,
+    int                                   count,
+    const CefRect&                        selectionRect,
+    int                                   activeMatchOrdinal,
+    bool                                  finalUpdate)
+{
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+}
+//}
+
+/*!
+ * @brief CefFocusHandler methods
+ */
+//{
+void CWebBrowserClientBase::OnTakeFocus(
+    CefRefPtr<CefBrowser>                 browser,
+    bool                                  next)
+{
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+}
+
+bool CWebBrowserClientBase::OnSetFocus(
+    CefRefPtr<CefBrowser>                 browser,
+    FocusSource                           source)
+{
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  return false;
+}
+
+void CWebBrowserClientBase::OnGotFocus(
+    CefRefPtr<CefBrowser>                 browser)
+{
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 //}
 
@@ -1896,54 +2000,81 @@ bool CWebBrowserClientBase::OnBeforePopup(
     CefBrowserSettings&                   settings,
     bool*                                 no_javascript_access)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  if(browser->GetHost()->IsWindowRenderingDisabled())
+      return true; /* Cancel popups in off-screen rendering mode */
+
   return false;
 }
 
 void CWebBrowserClientBase::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-  m_iBrowserCount++;
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  CEF_REQUIRE_UI_THREAD();
+
   if (!m_Browser.get())
   {
-    m_Browser = browser;
+    LOG_MESSAGE(LOG_DEBUG, "---------------------------------------------------------%s", __FUNCTION__);
+    m_Browser   = browser;
+    m_BrowserId = browser->GetIdentifier();
   }
+  else if(browser->IsPopup())
+    m_popupBrowsers.push_back(browser); /* Add to the list of popup browsers */
 
-  if (!m_pMessageRouter)
-  {
-    // Create the browser-side router for query handling.
-    CefMessageRouterConfig config;
-    m_pMessageRouter = CefMessageRouterBrowserSide::Create(config);
-
-
-  }
+  m_iBrowserCount++;
 }
 
 bool CWebBrowserClientBase::RunModal(CefRefPtr<CefBrowser> browser)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
 bool CWebBrowserClientBase::DoClose(CefRefPtr<CefBrowser> browser)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-  return false;
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  CEF_REQUIRE_UI_THREAD();
+
+  /*
+   * Closing the main window requires special handling. See the DoClose()
+   * documentation in the CEF header for a detailed destription of this process
+   */
+
+  if (m_BrowserId == browser->GetIdentifier())
+  {
+    //FIXME: browser->GetHost(); /* Notify the browser that the parent window is about to close. */
+    m_isClosing = true; /* Set a flag to indicate that the window close should be allowed */
+  }
+
+  return false; /* Allow the close. For windowed browsers this will result in the OS close event being sent */
 }
 
 void CWebBrowserClientBase::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-  --m_iBrowserCount;
-  if (m_iBrowserCount == 0)
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+
+  CEF_REQUIRE_UI_THREAD();
+
+  if (m_BrowserId == browser->GetIdentifier())
   {
+    m_Browser = nullptr;/* Free the browser pointer so that the browser can be destroyed */
 
-    m_pMessageRouter = nullptr;
+    Message tMsg = {TMSG_BROWSER_CLOSE};
+    tMsg.lpVoid = browser;
+    SendMessage(tMsg, true);
   }
-
-  Message tMsg = {TMSG_BROWSER_CLOSE};
-  tMsg.lpVoid = browser;
-  SendMessage(tMsg, true);
+  else if (browser->IsPopup())
+  {
+    // Remove from the browser popup list.
+    for (browserList::iterator it = m_popupBrowsers.begin(); it != m_popupBrowsers.end(); ++it)
+    {
+      if((*it)->IsSame(browser))
+      {
+        m_popupBrowsers.erase(it);
+        break;
+      }
+    }
+  }
 }
 //}
 
@@ -1964,20 +2095,20 @@ void CWebBrowserClientBase::OnLoadingStateChange(
   SendMessage(tMsg, false);
 }
 
-void CWebBrowserClientBase::OnLoadStart(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefFrame>                   frame)
-{
+//void CWebBrowserClientBase::OnLoadStart(
+//    CefRefPtr<CefBrowser>                 browser,
+//    CefRefPtr<CefFrame>                   frame)
+//{
 //    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-}
+//}
 
-void CWebBrowserClientBase::OnLoadEnd(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefFrame>                   frame,
-    int                                   httpStatusCode)
-{
+//void CWebBrowserClientBase::OnLoadEnd(
+//    CefRefPtr<CefBrowser>                 browser,
+//    CefRefPtr<CefFrame>                   frame,
+//    int                                   httpStatusCode)
+//{
 //    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-}
+//}
 
 void CWebBrowserClientBase::OnLoadError(
     CefRefPtr<CefBrowser>                 browser,
@@ -1997,7 +2128,7 @@ void CWebBrowserClientBase::OnLoadError(
   if (errorCode == ERR_UNKNOWN_URL_SCHEME)
   {
     std::string urlStr = frame->GetURL();
-    if (urlStr.find("special:") == 0)
+    if (urlStr.find("spotify:") == 0)
       return;
   }
 
@@ -2009,14 +2140,14 @@ void CWebBrowserClientBase::OnLoadError(
 /*!
  * @brief CefKeyboardHandler methods
  */
-//{
+/*//{
 bool CWebBrowserClientBase::OnPreKeyEvent(
     CefRefPtr<CefBrowser>                 browser,
     const CefKeyEvent&                    event,
     CefEventHandle                        os_event,
     bool*                                 is_keyboard_shortcut)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -2025,10 +2156,10 @@ bool CWebBrowserClientBase::OnKeyEvent(
     const CefKeyEvent&                    event,
     CefEventHandle                        os_event)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
-//}
+//}*/
 
 /*!
  * @brief CefRequestHandler methods
@@ -2040,7 +2171,14 @@ bool CWebBrowserClientBase::OnBeforeBrowse(
     CefRefPtr<CefRequest>                 request,
     bool                                  is_redirect)
 {
-  m_pMessageRouter->OnBeforeBrowse(browser, frame);
+  std::string strURL = request->GetURL();
+  LOG_MESSAGE(LOG_DEBUG, "%s - %s", __FUNCTION__, strURL.c_str());
+
+  // We only care about these on the main frame
+  if (!frame.get() || !frame->IsMain())
+    return false;
+
+//  m_pMessageRouter->OnBeforeBrowse(browser, frame);
   return false;
 }
 
@@ -2051,7 +2189,7 @@ bool CWebBrowserClientBase::OnOpenURLFromTab(
     CefRequestHandler::WindowOpenDisposition target_disposition,
     bool                                  user_gesture)
 {
-//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -2061,8 +2199,11 @@ CefRequestHandler::ReturnValue CWebBrowserClientBase::OnBeforeResourceLoad(
     CefRefPtr<CefRequest>                 request,
     CefRefPtr<CefRequestCallback>         callback)
 {
-//  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-  return RV_CONTINUE;
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+
+  CEF_REQUIRE_IO_THREAD();
+
+  return RV_CONTINUE;//m_resourceManager->OnBeforeResourceLoad(browser, frame, request, callback);
 }
 
 void CWebBrowserClientBase::OnResourceRedirect(
@@ -2071,7 +2212,7 @@ void CWebBrowserClientBase::OnResourceRedirect(
     CefRefPtr<CefRequest>                 request,
     CefString&                            new_url)
 {
-//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 bool CWebBrowserClientBase::OnResourceResponse(
@@ -2080,7 +2221,7 @@ bool CWebBrowserClientBase::OnResourceResponse(
     CefRefPtr<CefRequest>                 request,
     CefRefPtr<CefResponse>                response)
 {
-//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -2094,7 +2235,7 @@ bool CWebBrowserClientBase::GetAuthCredentials(
     const CefString&                      scheme,
     CefRefPtr<CefAuthCallback>            callback)
 {
-//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -2103,7 +2244,9 @@ CefRefPtr<CefResourceHandler> CWebBrowserClientBase::GetResourceHandler(
     CefRefPtr<CefFrame>                   frame,
     CefRefPtr<CefRequest>                 request)
 {
-  return CURICheck::GetResourceHandler(browser, frame, request);
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+
+  return nullptr;
 }
 
 bool CWebBrowserClientBase::OnQuotaRequest(
@@ -2126,7 +2269,15 @@ void CWebBrowserClientBase::OnProtocolExecution(
     const CefString&                      url,
     bool&                                 allow_os_execution)
 {
-//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+
+  CEF_REQUIRE_UI_THREAD();
+
+  std::string urlStr = url;
+
+  // Allow OS execution of Spotify URIs.
+  if (urlStr.find("spotify:") == 0)
+    allow_os_execution = true;
 }
 
 bool CWebBrowserClientBase::OnCertificateError(
@@ -2136,17 +2287,7 @@ bool CWebBrowserClientBase::OnCertificateError(
     CefRefPtr<CefSSLInfo>                 ssl_info,
     CefRefPtr<CefRequestCallback>         callback)
 {
-//    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-  return false;
-}
-
-bool CWebBrowserClientBase::OnBeforePluginLoad(
-    CefRefPtr<CefBrowser>                 browser,
-    const CefString&                      url,
-    const CefString&                      policy_url,
-    CefRefPtr<CefWebPluginInfo>           info)
-{
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
@@ -2154,22 +2295,23 @@ void CWebBrowserClientBase::OnPluginCrashed(
     CefRefPtr<CefBrowser>                 browser,
     const CefString&                      plugin_path)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 void CWebBrowserClientBase::OnRenderViewReady(
     CefRefPtr<CefBrowser>                 browser)
 {
-  //  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 void CWebBrowserClientBase::OnRenderProcessTerminated(
     CefRefPtr<CefBrowser>                 browser,
     TerminationStatus                     status)
 {
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
 
-  m_pMessageRouter->OnRenderProcessTerminated(browser);
+//  m_pMessageRouter->OnRenderProcessTerminated(browser);
 
   // Don't reload if there's no start URL, or if the crash URL was specified.
   if (m_strStartupURL.empty() || m_strStartupURL == "chrome://crash")
@@ -2192,6 +2334,36 @@ void CWebBrowserClientBase::OnRenderProcessTerminated(
     return;
 
   frame->LoadURL(m_strStartupURL);
+}
+//}
+
+
+/*!
+ * @brief CefRequestContextHandler methods
+ */
+//{
+CefRefPtr<CefCookieManager> CWebBrowserClientBase::GetCookieManager()
+{
+  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  return NULL;
+}
+
+bool CWebBrowserClientBase::OnBeforePluginLoad(
+    const CefString&                      mime_type,
+    const CefString&                      plugin_url,
+    const CefString&                      top_origin_url,
+    CefRefPtr<CefWebPluginInfo>           plugin_info,
+    PluginPolicy*                         plugin_policy)
+{
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
+  // Always allow the PDF plugin to load.
+  if (*plugin_policy != PLUGIN_POLICY_ALLOW && mime_type == "application/pdf")
+  {
+    *plugin_policy = PLUGIN_POLICY_ALLOW;
+    return true;
+  }
+
+  return false;
 }
 //}
 

@@ -36,7 +36,8 @@ using namespace ADDON;
 std::string               g_strTempPath       = "";
 std::string               g_strLogPath        = "";
 std::string               g_strUserPath       = "";
-std::string               g_strAddonPath      = "";
+std::string               g_strAddonLibPath   = "";
+std::string               g_strAddonSharePath = "";
 CWebBrowserManager       *g_pWebManager       = NULL;
 CHelper_libXBMC_addon    *KODI                = NULL;
 CHelper_libKODI_web      *WEB                 = NULL;
@@ -78,12 +79,13 @@ ADDON_STATUS ADDON_Create(void* hdl, void* props)
 
   KODI->Log(LOG_DEBUG, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
 
-  m_CurStatus     = ADDON_STATUS_UNKNOWN;
-  g_strTempPath   = webProps->strTempPath;
-  g_strLogPath    = webProps->strLogPath;
-  g_strUserPath   = webProps->strUserPath;
-  g_strAddonPath  = webProps->strAddonPath;
-  g_pWebManager   = new CWebBrowserManager;
+  m_CurStatus           = ADDON_STATUS_UNKNOWN;
+  g_strTempPath         = webProps->strTempPath;
+  g_strLogPath          = webProps->strLogPath;
+  g_strUserPath         = webProps->strUserPath;
+  g_strAddonLibPath     = webProps->strAddonLibPath;
+  g_strAddonSharePath   = webProps->strAddonSharePath;
+  g_pWebManager         = new CWebBrowserManager;
 
   if (!g_pWebManager->Create())
   {

@@ -16,6 +16,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <vector>
+
+#include "platform/util/StringUtils.h"
+#include "include/cef_app.h"
+#include "include/cef_version.h"
+#include "include/wrapper/cef_helpers.h"
+
 #include "addon.h"
 #include "WebBrowserManager.h"
 #include "Utils.h"
@@ -23,10 +30,321 @@
 using namespace std;
 using namespace ADDON;
 
+class CWebBrowserApp : public CefApp,
+                       public CefBrowserProcessHandler,
+                       public CefRenderProcessHandler,
+                       public CefResourceBundleHandler
+{
+public:
+  CWebBrowserApp();
+  virtual ~CWebBrowserApp();
+
+  /*!
+   * @brief CefApp methods
+   *
+   * Implement this interface to provide handler implementations. Methods will be
+   * called by the process and/or thread indicated.
+   */
+  //{
+  virtual void OnBeforeCommandLineProcessing(                      ///<--
+      const CefString& process_type,                                  ///
+      CefRefPtr<CefCommandLine> command_line)                         ///
+                        OVERRIDE;                                     ///
+
+  virtual void OnRegisterCustomSchemes(                            ///<--
+      CefRefPtr<CefSchemeRegistrar> registrar)                        ///
+                        OVERRIDE;                                     ///
+  //}
+
+  /*!
+   * @brief CefBrowserProcessHandler methods
+   */
+  //{
+  virtual void OnContextInitialized()                              ///<--
+                        OVERRIDE;                                     ///
+  //}
+
+  /*!
+   * @brief CefRenderProcessHandler methods
+   *
+   * Class used to implement render process callbacks. The methods of this class
+   * will be called on the render process main thread (TID_RENDERER) unless
+   * otherwise indicated.
+   */
+  //{
+  virtual void OnRenderThreadCreated(                              ///<--
+      CefRefPtr<CefListValue> extra_info)                             ///
+                        OVERRIDE;                                     ///
+
+  virtual void OnWebKitInitialized()                               ///<--
+                        OVERRIDE;                                     ///
+
+  virtual void OnBrowserCreated(                                   ///<--
+      CefRefPtr<CefBrowser> browser)                                  ///
+                        OVERRIDE;                                     ///
+
+  virtual void OnBrowserDestroyed(                                 ///<--
+      CefRefPtr<CefBrowser> browser)                                  ///
+                        OVERRIDE;                                     ///
+
+  virtual CefRefPtr<CefLoadHandler> GetLoadHandler()               ///<--
+                        OVERRIDE;                                     ///
+
+  virtual bool OnBeforeNavigation(                                 ///<--
+      CefRefPtr<CefBrowser> browser,                                  ///
+      CefRefPtr<CefFrame> frame,                                      ///
+      CefRefPtr<CefRequest> request,                                  ///
+      NavigationType navigation_type,                                 ///
+      bool is_redirect)                                               ///
+                        OVERRIDE;                                     ///
+
+  virtual void OnContextCreated(                                   ///<--
+      CefRefPtr<CefBrowser> browser,                                  ///
+      CefRefPtr<CefFrame> frame,                                      ///
+      CefRefPtr<CefV8Context> context)                                ///
+                        OVERRIDE;                                     ///
+
+  virtual void OnContextReleased(                                  ///<--
+      CefRefPtr<CefBrowser> browser,                                  ///
+      CefRefPtr<CefFrame> frame,                                      ///
+      CefRefPtr<CefV8Context> context)                                ///
+                        OVERRIDE;                                     ///
+
+  virtual void OnUncaughtException(                                ///<--
+      CefRefPtr<CefBrowser> browser,                                  ///
+      CefRefPtr<CefFrame> frame,                                      ///
+      CefRefPtr<CefV8Context> context,                                ///
+      CefRefPtr<CefV8Exception> exception,                            ///
+      CefRefPtr<CefV8StackTrace> stackTrace)                          ///
+                        OVERRIDE;                                     ///
+
+  virtual void OnFocusedNodeChanged(                               ///<--
+      CefRefPtr<CefBrowser> browser,                                  ///
+      CefRefPtr<CefFrame> frame,                                      ///
+      CefRefPtr<CefDOMNode> node)                                     ///
+                        OVERRIDE;                                     ///
+
+  virtual bool OnProcessMessageReceived(                           ///<--
+      CefRefPtr<CefBrowser> browser,                                  ///
+      CefProcessId source_process,                                    ///
+      CefRefPtr<CefProcessMessage> message)                           ///
+                        OVERRIDE;                                     ///
+  //}
+
+  /*!
+   * @brief CefResourceBundleHandler methods
+   *
+   * Class used to implement a custom resource bundle interface. See CefSettings
+   * for additional options related to resource bundle loading. The methods of
+   * this class may be called on multiple threads.
+   */
+  //{
+  virtual bool GetLocalizedString(                                 ///<--
+      int                                   string_id,                ///
+      CefString&                            string)                   ///
+                        OVERRIDE;                                     ///
+
+  virtual bool GetDataResource(                                    ///<--
+      int                                   resource_id,              ///
+      void*&                                data,                     ///
+      size_t&                               data_size)                ///
+                        OVERRIDE;                                     ///
+
+  virtual bool GetDataResourceForScale(                            ///<--
+      int                                   resource_id,              ///
+      ScaleFactor                           scale_factor,             ///
+      void*&                                data,                     ///
+      size_t&                               data_size)                ///
+                        OVERRIDE;                                     ///
+  //}
+
+  virtual CefRefPtr<CefResourceBundleHandler> GetResourceBundleHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() OVERRIDE { return this; }
+
+protected:
+  // Schemes that will be registered with the global cookie manager.
+  std::vector<CefString>  m_cookieableSchemes;
+
+private:
+  // Include the default reference counting implementation.
+  IMPLEMENT_REFCOUNTING(CWebBrowserApp);
+};
+
+CWebBrowserApp::CWebBrowserApp()
+{
+  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+}
+
+CWebBrowserApp::~CWebBrowserApp()
+{
+  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+}
+
+/*!
+ * @brief CefApp methods
+ */
+//{
+void CWebBrowserApp::OnBeforeCommandLineProcessing(
+    const CefString& process_type,
+    CefRefPtr<CefCommandLine> command_line)
+{
+  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+}
+
+void CWebBrowserApp::OnRegisterCustomSchemes(
+    CefRefPtr<CefSchemeRegistrar> registrar)
+{
+  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+}
+//}
+
+/*!
+ * @brief CefBrowserProcessHandler methods
+ */
+//{
+void CWebBrowserApp::OnContextInitialized()
+{
+  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+
+  CEF_REQUIRE_UI_THREAD();
+
+  // Register cookieable schemes with the global cookie manager.
+  CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
+  DCHECK(manager.get());
+  manager->SetSupportedSchemes(m_cookieableSchemes, NULL);
+
+}
+//}
+
+/*!
+ * @brief CefRenderProcessHandler methods
+ */
+//{
+void CWebBrowserApp::OnRenderThreadCreated(
+    CefRefPtr<CefListValue> extra_info)
+{
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+}
+
+void CWebBrowserApp::OnWebKitInitialized()
+{
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+}
+
+void CWebBrowserApp::OnBrowserCreated(
+    CefRefPtr<CefBrowser> browser)
+{
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+}
+
+void CWebBrowserApp::OnBrowserDestroyed(
+    CefRefPtr<CefBrowser> browser)
+{
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+}
+
+CefRefPtr<CefLoadHandler> CWebBrowserApp::GetLoadHandler()
+{
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+  return nullptr;
+}
+
+bool CWebBrowserApp::OnBeforeNavigation(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request,
+    NavigationType navigation_type,
+    bool is_redirect)
+{
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+  return false;
+}
+
+void CWebBrowserApp::OnContextCreated(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefV8Context> context)
+{
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+}
+
+void CWebBrowserApp::OnContextReleased(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefV8Context> context)
+{
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+}
+
+void CWebBrowserApp::OnUncaughtException(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefV8Context> context,
+    CefRefPtr<CefV8Exception> exception,
+    CefRefPtr<CefV8StackTrace> stackTrace)
+{
+fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+}
+
+void CWebBrowserApp::OnFocusedNodeChanged(
+    CefRefPtr<CefBrowser> browser,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefDOMNode> node)
+{
+  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+}
+
+bool CWebBrowserApp::OnProcessMessageReceived(
+    CefRefPtr<CefBrowser> browser,
+    CefProcessId source_process,
+    CefRefPtr<CefProcessMessage> message)
+{
+  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+  return false;
+}
+//}
+
+
+/*!
+ * @brief CefResourceBundle methods
+ */
+//{
+bool CWebBrowserApp::GetLocalizedString(
+    int                                   string_id,
+    CefString&                            string)
+{
+  fprintf(stderr, " -- %s - %i\n", __PRETTY_FUNCTION__, string_id);
+  return false;
+}
+
+bool CWebBrowserApp::GetDataResource(
+    int                                   resource_id,
+    void*&                                data,
+    size_t&                               data_size)
+{
+  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+  return false;
+}
+
+bool CWebBrowserApp::GetDataResourceForScale(
+    int                                   resource_id,
+    ScaleFactor                           scale_factor,
+    void*&                                data,
+    size_t&                               data_size)
+{
+  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+  return false;
+}
+//}
+
+
+
 int CWebBrowserManager::m_iUniqueClientId = 0;
 
 CWebBrowserManager::CWebBrowserManager() :
-  m_isActive(false)
+  m_isActive(false),
+  m_windowlessEnabled(true)
 {
 }
 
@@ -36,37 +354,57 @@ CWebBrowserManager::~CWebBrowserManager()
 
 bool CWebBrowserManager::Create()
 {
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser add-on process creation start", __FUNCTION__);
 
   SetCEFPaths();
+  if (!SetSandbox())
+    return false;
+
   m_setting.LoadSettings();
 
-  CefString(&m_CefSettings.cache_path) = m_strHTMLCacheDir;
-  CefString(&m_CefSettings.resources_dir_path) = m_strResourcesPath;
-  CefString(&m_CefSettings.locales_dir_path) = m_strLocalesPath;
+  /*!
+   * List of all aavailable settings to check during development
+   * Not used ones which stays empty need to remove on end
+   */
+  m_CefSettings.single_process                      = 0;
+  m_CefSettings.no_sandbox                          = 0;
+  m_CefSettings.multi_threaded_message_loop         = 0;
+  CefString(&m_CefSettings.cache_path)              = m_strHTMLCacheDir;
+  CefString(&m_CefSettings.resources_dir_path)      = m_strResourcesPath;
+  CefString(&m_CefSettings.locales_dir_path)        = m_strLocalesPath;
   CefString(&m_CefSettings.browser_subprocess_path) = m_strLibPath;
-  CefString(&m_CefSettings.kodi_addon_dir_path) = m_strLibPath;
-  CefString(&m_CefSettings.product_version) = "KODI";
-  m_CefSettings.windowless_rendering_enabled = true;
-//  m_CefSettings.single_process = 1;
-//  m_CefSettings.no_sandbox = 0;
-//  CefString(&m_CefSettings.log_file) =
-//  m_CefSettings.pack_loading_disabled = true;
-//  m_CefSettings.multi_threaded_message_loop = false;
-//  m_CefSettings.command_line_args_disabled = true;
+  CefString(&m_CefSettings.kodi_addon_dir_path)     = m_strLibPath;
+  CefString(&m_CefSettings.user_data_path)          = "";
+  CefString(&m_CefSettings.product_version)         = "KODI";
+  CefString(&m_CefSettings.user_agent)              = StringUtils::Format("Chrome/%d.%d.%d.%d", CHROME_VERSION_MAJOR, CHROME_VERSION_MINOR, CHROME_VERSION_BUILD, CHROME_VERSION_PATCH);
+  m_CefSettings.windowless_rendering_enabled        = m_windowlessEnabled ? 1 : 0;
+  m_CefSettings.log_severity                        = g_pWebManager->GetSettings()->LogLevelCEF();
+  CefString(&m_CefSettings.log_file)                = "";
+  m_CefSettings.command_line_args_disabled          = 0;
+  m_CefSettings.ignore_certificate_errors           = 0;
+  m_CefSettings.persist_session_cookies             = 0;
+  m_CefSettings.persist_user_preferences            = 0;
+  CefString(&m_CefSettings.locale)                  = "";
+  CefString(&m_CefSettings.javascript_flags)        = "";
+  m_CefSettings.pack_loading_disabled               = 0;
+  m_CefSettings.remote_debugging_port               = 0;
+  m_CefSettings.uncaught_exception_stack_size       = 0;
+  m_CefSettings.context_safety_implementation       = 0;
+  m_CefSettings.background_color                    = 0;
+  CefString(&m_CefSettings.accept_language_list)    = "";
+
+  DCHECK(m_threadChecker.CalledOnValidThread());
 
   CreateThread();
 
   LOG_INTERNAL_MESSAGE(LOG_INFO, "%s - Started web browser add-on process", __FUNCTION__);
 
   m_isActive = true;
-  return m_isActive;
+  return true;
 }
 
 void CWebBrowserManager::Destroy()
 {
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   m_isActive = false;
 
   StopThread();
@@ -76,12 +414,14 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
 
 void *CWebBrowserManager::Process()
 {
+  DCHECK(m_threadChecker.CalledOnValidThread());
+
   CefMainArgs args;
-  CefRefPtr<CefApp> app;
-  if (!CefInitialize(args, m_CefSettings, app, NULL))
+  CefRefPtr<CefApp> app(new CWebBrowserApp);
+  if (!CefInitialize(args, m_CefSettings, app, nullptr))
   {
     LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
-    return NULL;
+    return nullptr;
   }
 
   while (!IsStopped())
@@ -105,7 +445,8 @@ void *CWebBrowserManager::Process()
         sMainThreadData *queueData = m_processQueue.front();
         m_processQueue.pop();
         queueData->function(queueData);
-        queueData->event.Signal();
+        queueData->event.Broadcast();
+        CefDoMessageLoopWork();
       }
       m_processQueueMutex.Unlock();
 
@@ -114,7 +455,7 @@ void *CWebBrowserManager::Process()
       {
         if (itr->second->CurrentInactiveCountdown() < 0)
         {
-          LOG_MESSAGE(LOG_INFO, "%s - Web browser control inactive countdown reached end and closed", __FUNCTION__);
+          LOG_INTERNAL_MESSAGE(LOG_INFO, "%s - Web browser control inactive countdown reached end and closed", __FUNCTION__);
           delete itr->second;
           m_BrowserClientsInactive.erase(itr);
         }
@@ -122,9 +463,13 @@ void *CWebBrowserManager::Process()
     }
     usleep(100);
   }
+
+  CefDoMessageLoopWork();
   CefShutdown();
-  return NULL;
+
+  return nullptr;
 }
+
 
 WEB_ADDON_ERROR CWebBrowserManager::CreateControl(const WEB_ADDON_GUI_PROPS &props, unsigned int webType, ADDON_HANDLE handle)
 {
@@ -134,74 +479,86 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
    */
   if (webType != WEB_TYPE_ID_BROWSER || handle == nullptr)
   {
-    LOG_MESSAGE(LOG_ERROR, "%s - Called for not supported web type %i", __FUNCTION__, webType);
+    LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Called for not supported web type %i", __FUNCTION__, webType);
     return WEB_ADDON_ERROR_INVALID_PARAMETERS;
   }
 
-  LOG_MESSAGE(LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
+  CEF_REQUIRE_UI_THREAD();
 
-  sMainThreadData data;
-  data.manager = this;
-  data.handle = &handle;
-  data.function = CreateControl_Main;
-  data.data.CreateControl.props = &props;
-  data.data.CreateControl.webType = webType;
-  data.data.CreateControl.handle = &handle;
-  CreateControl_Main(&data);
-//  m_processQueueMutex.Lock();
-//  m_processQueue.push(&data);
-//  m_processQueueMutex.Unlock();
-//  if (!data.event.Wait(1000))
-//    LOG_MESSAGE(LOG_ERROR, "%s - Event signal not processed!", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
 
-  return data.ret.addonError;
-}
-
-void CWebBrowserManager::CreateControl_Main(sMainThreadData *data)
-{
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
-  data->ret.addonError = WEB_ADDON_ERROR_FAILED;
+  WEB_ADDON_ERROR addonError = WEB_ADDON_ERROR_FAILED;
   CWebBrowserClient *pBrowserClient;
 
-  std::map<std::string, CWebBrowserClient*>::iterator itr = data->manager->m_BrowserClientsInactive.find(data->data.CreateControl.props->strName);
-  if (itr != data->manager->m_BrowserClientsInactive.end())
+  std::map<std::string, CWebBrowserClient*>::iterator itr = m_BrowserClientsInactive.find(props.strName);
+  if (itr != m_BrowserClientsInactive.end())
   {
-    LOG_MESSAGE(LOG_INFO, "%s - Found control in inactive mode and setting active", __FUNCTION__);
+    LOG_INTERNAL_MESSAGE(LOG_INFO, "%s - Found control in inactive mode and setting active", __FUNCTION__);
     pBrowserClient = itr->second;
     pBrowserClient->SetActive();
-    data->manager->m_BrowserClientsInactive.erase(itr);
-    data->ret.addonError = WEB_ADDON_ERROR_NO_ERROR_REOPEN;
+    m_BrowserClientsInactive.erase(itr);
+    addonError = WEB_ADDON_ERROR_NO_ERROR_REOPEN;
   }
   else
   {
-    pBrowserClient = new CWebBrowserClient(data->manager->m_iUniqueClientId++, data->data.CreateControl.props);
+    pBrowserClient = new CWebBrowserClient(m_iUniqueClientId++, &props);
 
     CefWindowInfo info;
-    info.SetAsWindowless(0, true);
+    info.SetAsWindowless(m_windowlessEnabled ? 1 : 0, false);
 
     CefBrowserSettings settings;
-    settings.plugins = STATE_DISABLED;
-    settings.webgl = STATE_DISABLED;
-    settings.java = STATE_DISABLED;
+    settings.windowless_frame_rate              = 0;
+    CefString(&settings.standard_font_family)   = "";
+    CefString(&settings.fixed_font_family)      = "";
+    CefString(&settings.serif_font_family)      = "";
+    CefString(&settings.sans_serif_font_family) = "";
+    CefString(&settings.cursive_font_family)    = "";
+    CefString(&settings.fantasy_font_family)    = "";
+    settings.default_font_size                  = 0;
+    settings.default_fixed_font_size            = 0;
+    settings.minimum_font_size                  = 0;
+    settings.minimum_logical_font_size          = 0;
+    CefString(&settings.default_encoding)       = "";
+    settings.remote_fonts                       = STATE_DEFAULT;
+    settings.javascript                         = STATE_DEFAULT;
+    settings.javascript_open_windows            = STATE_DEFAULT;
+    settings.javascript_close_windows           = STATE_DEFAULT;
+    settings.javascript_access_clipboard        = STATE_DEFAULT;
+    settings.javascript_dom_paste               = STATE_DEFAULT;
+    settings.caret_browsing                     = STATE_DEFAULT;
+    settings.plugins                            = STATE_DISABLED;
+    settings.universal_access_from_file_urls    = STATE_DEFAULT;
+    settings.file_access_from_file_urls         = STATE_DEFAULT;
+    settings.web_security                       = STATE_DEFAULT;
+    settings.image_loading                      = STATE_DEFAULT;
+    settings.image_shrink_standalone_to_fit     = STATE_DEFAULT;
+    settings.text_area_resize                   = STATE_DEFAULT;
+    settings.tab_to_links                       = STATE_DEFAULT;
+    settings.local_storage                      = STATE_DEFAULT;
+    settings.databases                          = STATE_DEFAULT;
+    settings.application_cache                  = STATE_DEFAULT;
+    settings.webgl                              = STATE_DISABLED;//STATE_ENABLED
+    settings.background_color                   = 0;
+    CefString(&settings.accept_language_list)   = "";
 
     if (!CefBrowserHost::CreateBrowser(info, pBrowserClient, "", settings, nullptr))
     {
-      LOG_MESSAGE(LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);
+      LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);
       if (pBrowserClient)
         delete pBrowserClient;
-      return;
+      return addonError;
     }
-    data->ret.addonError = WEB_ADDON_ERROR_NO_ERROR;
+    addonError = WEB_ADDON_ERROR_NO_ERROR;
   }
 
   int uniqueId = pBrowserClient->GetUniqueId();
-  data->manager->m_BrowserClients[uniqueId]          = pBrowserClient;
-  data->data.CreateControl.handle[0]->callerAddress  = pBrowserClient;
-  data->data.CreateControl.handle[0]->dataIdentifier = uniqueId;
-  pBrowserClient->SetAddonHandle(data->data.CreateControl.handle[0]);
+  m_BrowserClients[uniqueId]  = pBrowserClient;
+  handle->callerAddress       = pBrowserClient;
+  handle->dataIdentifier      = uniqueId;
+  pBrowserClient->SetAddonHandle(handle);
 
-  LOG_MESSAGE(LOG_DEBUG, "%s - Web browser control id '%i' created", __FUNCTION__, uniqueId);
-  return;
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser control id '%i' created", __FUNCTION__, uniqueId);
+  return addonError;
 }
 
 bool CWebBrowserManager::DestroyControl(const ADDON_HANDLE handle)
@@ -210,35 +567,16 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   //! Check for wrongly passed empty handle.
   if (handle == NULL)
   {
-    LOG_MESSAGE(LOG_ERROR, "%s - Web browser control destroy called without handle!", __FUNCTION__);
+    LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Web browser control destroy called without handle!", __FUNCTION__);
     return false;
   }
 
-  sMainThreadData data;
-  data.manager = this;
-  data.handle = &handle;
-  data.function = DestroyControl_Main;
-  DestroyControl_Main(&data);
-//  m_processQueueMutex.Lock();
-//  m_processQueue.push(&data);
-//  m_processQueueMutex.Unlock();
-//  if (!data.event.Wait(1000))
-//    LOG_MESSAGE(LOG_ERROR, "%s - Event signal not processed!", __FUNCTION__);
-
-  return data.ret.booleanError;
-}
-
-void CWebBrowserManager::DestroyControl_Main(sMainThreadData *data)
-{
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   //! Find wanted control to destroy.
-  int identifier = data->handle[0]->dataIdentifier;
-  std::map<int, CWebBrowserClient*>::iterator itr = data->manager->m_BrowserClients.find(identifier);
-  if (itr == data->manager->m_BrowserClients.end())
+  std::map<int, CWebBrowserClient*>::iterator itr = m_BrowserClients.find(handle->dataIdentifier);
+  if (itr == m_BrowserClients.end())
   {
-    LOG_MESSAGE(LOG_ERROR, "%s - Web browser control destroy called for invalid id '%i'", __FUNCTION__, identifier);
-    data->ret.booleanError = false;
-    return;
+    LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Web browser control destroy called for invalid id '%i'", __FUNCTION__, handle->dataIdentifier);
+    return false;
   }
 
   //! Move to inactive list and remove it from active list
@@ -246,47 +584,23 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   if (client->SetInactive())
     delete client;
   else
-    data->manager->m_BrowserClientsInactive[client->GetIdName()] = client;
-  data->manager->m_BrowserClients.erase(itr);
+    m_BrowserClientsInactive[client->GetIdName()] = client;
+  m_BrowserClients.erase(itr);
 
-  LOG_MESSAGE(LOG_DEBUG, "%s - Web browser control id '%i' destroyed", __FUNCTION__, identifier);
-  data->ret.booleanError = true;
-  return;
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser control id '%i' destroyed", __FUNCTION__, handle->dataIdentifier);
+  return true;
 }
 
 bool CWebBrowserManager::SetLanguage(const char *language)
 {
-  LOG_MESSAGE(LOG_DEBUG, "%s - Web browser language set to '%s'", __FUNCTION__, language);
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser language set to '%s'", __FUNCTION__, language);
   return true;
 }
 
 bool CWebBrowserManager::OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus)
 {
-  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
-  sMainThreadData data;
-  data.manager = this;
-  data.handle = &handle;
-  data.function = OpenWebsite_Main;
-  data.data.OpenWebsite.strURL = strURL;
-  data.data.OpenWebsite.single = single;
-  data.data.OpenWebsite.allowMenus = allowMenus;
-//  OpenWebsite_Main(&data);
-  m_processQueueMutex.Lock();
-  m_processQueue.push(&data);
-  m_processQueueMutex.Unlock();
-  if (!data.event.Wait(1000))
-    LOG_MESSAGE(LOG_ERROR, "%s - Event signal not processed!", __FUNCTION__);
-
-  return data.ret.booleanError;
-}
-
-void CWebBrowserManager::OpenWebsite_Main(sMainThreadData *data)
-{
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
-  LOG_MESSAGE(LOG_DEBUG, "%s - Open URL '%s' called", __FUNCTION__, data->data.OpenWebsite.strURL);
-  data->ret.booleanError = ((CWebBrowserClient*)data->handle[0]->callerAddress)->OpenWebsite(data->data.OpenWebsite.strURL,
-                                                                                             data->data.OpenWebsite.single,
-                                                                                             data->data.OpenWebsite.allowMenus);
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Open URL '%s' called", __FUNCTION__, strURL);
+  return ((CWebBrowserClient*)handle->callerAddress)->OpenWebsite(strURL, single, allowMenus);
 }
 
 void CWebBrowserManager::CallSingleCommand(const ADDON_HANDLE handle, WEB_ADDON_SINGLE_COMMANDS command)
@@ -306,58 +620,121 @@ bool CWebBrowserManager::Dirty(const ADDON_HANDLE handle)
 
 void CWebBrowserManager::Stop(const ADDON_HANDLE handle)
 {
-  LOG_MESSAGE(LOG_DEBUG, "%s - Web browser control stopped", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser control stopped", __FUNCTION__);
 }
 
 bool CWebBrowserManager::OnInit(const ADDON_HANDLE handle)
 {
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
-  LOG_MESSAGE(LOG_DEBUG, "%s - Web browser control initialize", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser control initialize", __FUNCTION__);
   return true;
 }
 
 bool CWebBrowserManager::OnAction(const ADDON_HANDLE handle, int actionId, int &nextItem)
 {
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   return ((CWebBrowserClient*)handle->callerAddress)->OnAction(actionId, nextItem);
 }
 
 bool CWebBrowserManager::OnMouseEvent(const ADDON_HANDLE handle, int mouseId, double x, double y, double offsetX, double offsetY, int state)
 {
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   return ((CWebBrowserClient*)handle->callerAddress)->OnMouseEvent(mouseId, x, y, offsetX, offsetY, state);
 }
 
 bool CWebBrowserManager::LoadUserSettings(void)
 {
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "Load of user settings");
   return m_setting.LoadUserSettings();
 }
 
 bool CWebBrowserManager::SaveUserSettings(void)
 {
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "Save of user settings");
   return m_setting.SaveUserSettings();
 }
 
 void CWebBrowserManager::SetCEFPaths()
 {
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "Setup add-on CEF directories:");
   std::string path = g_strUserPath;
   if (path.at(path.size() - 1) != '\\' &&
       path.at(path.size() - 1) != '/')
     path.append("/");
-  path.append("cef/");
 
   m_strHTMLCacheDir = path + "pchHTMLCache";
   m_strCookiePath = path + "pchCookies";
 
-  path = g_strAddonPath;
+  path = g_strAddonLibPath;
   if (path.at(path.size() - 1) != '\\' &&
       path.at(path.size() - 1) != '/')
     path.append("/");
-  path.append("cef/");
 
   m_strLibPath = path + "kodichromium";
-  m_strLocalesPath = path + "locales";
-  m_strResourcesPath = path;
+  m_strSandboxBinary = path + "chrome-sandbox";
+
+  path = g_strAddonSharePath;
+  if (path.at(path.size() - 1) != '\\' &&
+      path.at(path.size() - 1) != '/')
+    path.append("/");
+
+  m_strLocalesPath = path + "cef/locales";
+  m_strResourcesPath = path + "cef/";
+
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, " - m_strHTMLCacheDir  %s", m_strHTMLCacheDir.c_str());
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, " - m_strCookiePath    %s", m_strCookiePath.c_str());
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, " - m_strLocalesPath   %s", m_strLocalesPath.c_str());
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, " - m_strResourcesPath %s", m_strResourcesPath.c_str());
+  LOG_INTERNAL_MESSAGE(LOG_DEBUG, " - m_strLibPath       %s", m_strLibPath.c_str());
 }
+
+/*!
+ * @note and @todo
+ *
+ * Function is initial version and support currently only 'sudo' which present on ubuntu.
+ * The super user way must be added with a better solution. Primary Idea is to add
+ * related support to Kodi itself to allow also for other add-ons used with Linux and to
+ * support it on all distribution types.
+ *
+ * Also need this easy sudo way to be tested on Mac OS X where it is also present.
+ */
+bool CWebBrowserManager::SetSandbox()
+{
+  struct stat st;
+  if (m_strSandboxBinary.empty() || stat(m_strSandboxBinary.c_str(), &st) != 0)
+  {
+    GUI->Dialog_OK_ShowAndGetInput(KODI->GetLocalizedString(30000), KODI->GetLocalizedString(30001));
+    LOG_MESSAGE(LOG_ERROR, "Web browser sandbox binary missing, add-on not usable!");
+    return false;
+  }
+
+  bool bCanceled;
+  if (access(m_strSandboxBinary.c_str(), X_OK) != 0 || (st.st_uid != 0) ||
+      ((st.st_mode & S_ISUID) == 0) || ((st.st_mode & S_IXOTH)) == 0)
+  {
+    if (!GUI->Dialog_YesNo_ShowAndGetInput(KODI->GetLocalizedString(30000), KODI->GetLocalizedString(30002), bCanceled))
+      return false;
+
+    std::string command;
+    char strPassword[255];
+    strPassword[0] = 0;
+
+    for (int i = 0; i < 3; i++)
+    {
+      if (GUI->Dialog_Keyboard_ShowAndGetNewPassword(*strPassword, sizeof(strPassword), KODI->GetLocalizedString(30003), true))
+      {
+        if (stat("/usr/bin/sudo", &st) == 0)
+          command = StringUtils::Format("echo %s | sudo -S bash -c \"chown root:root %s; sudo -- chmod 4755 %s\"", strPassword, m_strSandboxBinary.c_str(), m_strSandboxBinary.c_str());
+        else
+        {
+          LOG_MESSAGE(LOG_ERROR, "No super user application found to change chrome-sandbox rights!");
+          break;
+        }
+        if (system(command.c_str()) == 0)
+          return true;
+      }
+      else
+        break;
+    }
+    return false;
+  }
+  return true;
+}
+

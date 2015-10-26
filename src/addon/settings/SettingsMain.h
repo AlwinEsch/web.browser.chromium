@@ -18,6 +18,7 @@
  */
 
 #include <string>
+#include "include/base/cef_logging.h"
 
 class CSettingsMain
 {
@@ -31,19 +32,27 @@ public:
   bool LoadUserSettings(void);
   bool SaveUserSettings(void);
 
-  std::string GetStartURL() const;
   bool SetStartURL(std::string url);
+  std::string StartURL() const;
 
-  void SetGeolocationAllowance(bool allow) { m_AllowGeolocation = allow; }
-  bool GetGeolocationAllowance() { return m_AllowGeolocation; }
+  void SetGeolocationAllowance(bool allow) { m_allowGeolocation = allow; }
+  bool GeolocationAllowance() { return m_allowGeolocation; }
+
+  void SetCursorChangeDisabled(bool disabled) { m_mouseCursorChangeDisabled = disabled; }
+  bool CursorChangeDisabled() { return m_mouseCursorChangeDisabled; }
+
+  void SetLogLevelCEF(cef_log_severity_t level) { m_logLevelCEF = level; }
+  cef_log_severity_t LogLevelCEF() { return m_logLevelCEF; }
 
 private:
   std::string GetSettingsFile() const;
   std::string GetUserSettingsFile() const;
 
-  std::string     m_baseSettingsFile;
-  std::string     m_currentUserSettingsFile;
+  std::string         m_baseSettingsFile;
+  std::string         m_currentUserSettingsFile;
 
-  std::string     m_startURL;
-  bool            m_AllowGeolocation;
+  std::string         m_startURL;
+  bool                m_allowGeolocation;
+  bool                m_mouseCursorChangeDisabled;
+  cef_log_severity_t  m_logLevelCEF;
 };

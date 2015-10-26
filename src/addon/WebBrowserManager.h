@@ -17,10 +17,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define NDEBUG 1
+
 #include <map>
 
 #include "include/cef_app.h"
 #include "include/cef_client.h"
+#include "include/base/cef_thread_checker.h"
 #include "platform/threads/threads.h"
 
 #include "SettingsMain.h"
@@ -61,6 +64,7 @@ protected:
 
 private:
   void SetCEFPaths();
+  bool SetSandbox();
 
   static int        m_iUniqueClientId;
 
@@ -71,6 +75,7 @@ private:
   std::string       m_strResourcesPath;
   std::string       m_strLocalesPath;
   std::string       m_strLibPath;
+  std::string       m_strSandboxBinary;
 
   struct sMainThreadData;
   typedef void (*MainThreadFunction)(struct sMainThreadData *data);
@@ -93,6 +98,24 @@ private:
         bool single;
         bool allowMenus;
       } OpenWebsite;
+      struct
+      {
+        int actionId;
+        int *nextItem;
+      } OnAction;
+      struct
+      {
+        WEB_ADDON_SINGLE_COMMANDS command;
+      } CallSingleCommand;
+      struct
+      {
+        int mouseId;
+        double x;
+        double y;
+        double offsetX;
+        double offsetY;
+        int state;
+      } OnMouseEvent;
     } data;
     union ret_t
     {
@@ -105,6 +128,9 @@ private:
   static void CreateControl_Main(sMainThreadData *data);
   static void DestroyControl_Main(sMainThreadData *data);
   static void OpenWebsite_Main(sMainThreadData *data);
+  static void OnAction_Main(sMainThreadData *data);
+  static void OnMouseEvent_Main(sMainThreadData *data);
+  static void CallSingleCommand_Main(sMainThreadData *data);
 
   std::queue <sMainThreadData*> m_processQueue;
   PLATFORM::CMutex m_processQueueMutex;
@@ -114,4 +140,11 @@ private:
 
   CSettingsMain     m_setting;
   bool              m_isActive;
+  bool              m_windowlessEnabled;
+
+  // Used to verify that methods are called on the correct thread.
+  base::ThreadChecker     m_threadChecker;
+
+  CefRefPtr<CefBrowser>         m_pBrowser;
+  CefRefPtr<CWebBrowserClient>  m_pBrowserClient;
 };
