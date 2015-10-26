@@ -60,8 +60,10 @@ endmacro()
 # @param target Project name to use
 # @param prefix Included project parts
 # @param libs which required for it
-# @param additional folders to install
-macro (build_web_addon target prefix libs additionals_lib additionals_share)
+# @param binary Binary executable
+# @param additionals_lib folders to install
+# @param additionals_share folders to install
+macro (build_web_addon target prefix libs binary additionals_lib additionals_share)
   add_library(${target} ${${prefix}_SOURCES})
   target_link_libraries(${target} ${${libs}})
   addon_version(${target} ${prefix})
@@ -116,7 +118,8 @@ macro (build_web_addon target prefix libs additionals_lib additionals_share)
       string(REPLACE "$(Configuration)" "${CMAKE_BUILD_TYPE}" LIBRARY_LOCATION "${LIBRARY_LOCATION}")
 
       # install the generated DLL file
-      install(PROGRAMS ${LIBRARY_LOCATION} DESTINATION ${target}
+      install(PROGRAMS ${LIBRARY_LOCATION} ${binary}
+              DESTINATION ${target}
               COMPONENT ${target}-${${prefix}_VERSION})
 
       if(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -125,21 +128,18 @@ macro (build_web_addon target prefix libs additionals_lib additionals_share)
         install(FILES ${dll_directory}/${target}.pdb
                 DESTINATION ${target}
                 COMPONENT ${target}-${${prefix}_VERSION})
-        install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cef
-                DESTINATION ${target}
-                COMPONENT ${target}-${${prefix}_VERSION})
       endif()
     else(WIN32)
-      install(TARGETS ${target}
-              DESTINATION ${target}
-              COMPONENT ${target}-${${prefix}_VERSION})
-      install(DIRECTORY ${additionals_lib}
-              DESTINATION ${target}
-              COMPONENT ${target}-${${prefix}_VERSION})
-      install(DIRECTORY ${additionals_lib}
+      install(TARGETS ${target} ${binary}
               DESTINATION ${target}
               COMPONENT ${target}-${${prefix}_VERSION})
     endif(WIN32)
+    install(DIRECTORY ${additionals_lib}
+            DESTINATION ${target}
+            COMPONENT ${target}-${${prefix}_VERSION})
+    install(DIRECTORY ${additionals_share}
+            DESTINATION ${target}
+            COMPONENT ${target}-${${prefix}_VERSION})
     add_cpack_workaround(${target} ${${prefix}_VERSION} ${ext})
   else(PACKAGE_ZIP OR PACKAGE_TGZ)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -157,10 +157,10 @@ macro (build_web_addon target prefix libs additionals_lib additionals_share)
     else()
       set(CMAKE_INSTALL_LIBDIR "lib/${APP_NAME_LC}")
     endif()
-    install(TARGETS ${target} DESTINATION ${CMAKE_INSTALL_LIBDIR}/addons/${target})
+    install(TARGETS ${target} ${binary} DESTINATION ${CMAKE_INSTALL_LIBDIR}/addons/${target})
     install(DIRECTORY ${target} DESTINATION share/${APP_NAME_LC}/addons PATTERN "addon.xml.in" EXCLUDE)
-    install(DIRECTORY ${additionals_lib} DESTINATION ${CMAKE_INSTALL_LIBDIR}/addons/${target})
-    install(DIRECTORY ${additionals_share} DESTINATION share/${APP_NAME_LC}/addons/${target})
+    install(DIRECTORY ${additionals_lib} DESTINATION ${CMAKE_INSTALL_LIBDIR}/addons/${target} USE_SOURCE_PERMISSIONS)
+    install(DIRECTORY ${additionals_share} DESTINATION share/${APP_NAME_LC}/addons/${target} USE_SOURCE_PERMISSIONS)
   endif(PACKAGE_ZIP OR PACKAGE_TGZ)
 endmacro()
 

@@ -28,7 +28,31 @@ set(CMAKE_MODULE_PATH
   ${PROJECT_SOURCE_DIR}
 )
 
+# When building, don't use the install RPATH already
+# (but later on when installing)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+
+# Add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 enable_language(CXX)
+
+# ----------------------------------------------------------------------------
+# Break in case of popular CMake configuration mistakes
+# ----------------------------------------------------------------------------
+if(NOT CMAKE_SIZEOF_VOID_P GREATER 0)
+  message(FATAL_ERROR "CMake fails to deterimine the bitness of target platform.
+  Please check your CMake and compiler installation. If you are crosscompiling then ensure that your CMake toolchain file correctly sets the compiler details.")
+endif()
+
+# 64-bit system?
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(BITSIZE "64")
+else()
+  set(BITSIZE "32")
+endif()
 
 find_package(kodi REQUIRED)
 find_package(kodiplatform REQUIRED)
@@ -53,11 +77,33 @@ elseif(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# 64-bit system?
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(BITSIZE "64")
+# -----------------------------------------------------------------------------
+# Determine the target processor
+# -----------------------------------------------------------------------------
+# if CMAKE_SYSTEM_NAME is here already set, either it comes from a toolchain file
+# or it was set via -DCMAKE_SYSTEM_NAME=...
+# if that's the case, assume we are crosscompiling
+if(CMAKE_SYSTEM_PROCESSOR)
+  if(NOT DEFINED CMAKE_CROSSCOMPILING)
+    set(CMAKE_CROSSCOMPILING TRUE)
+  endif(NOT DEFINED CMAKE_CROSSCOMPILING)
+else(CMAKE_SYSTEM_PROCESSOR)
+  set(CMAKE_SYSTEM_NAME      "${CMAKE_HOST_SYSTEM_NAME}")
+  set(CMAKE_SYSTEM_VERSION   "${CMAKE_HOST_SYSTEM_VERSION}")
+  set(CMAKE_SYSTEM_PROCESSOR "${CMAKE_HOST_SYSTEM_PROCESSOR}")
+  set(CMAKE_CROSSCOMPILING FALSE)
+endif(CMAKE_SYSTEM_PROCESSOR)
+string(TOLOWER ${CMAKE_SYSTEM_PROCESSOR} LOWERCASE_CMAKE_SYSTEM_PROCESSOR)
+if(LOWERCASE_CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
+  set(ARCH "arm")
+elseif(LOWERCASE_CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64|amd64)")
+  set(ARCH "x86_64")
+elseif(LOWERCASE_CMAKE_SYSTEM_PROCESSOR MATCHES "(i[3-6]86|x86)")
+  set(ARCH "x86")
+elseif(LOWERCASE_CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  set(ARCH "aarch64")
 else()
-  set(BITSIZE "32")
+  message(FATAL_ERROR "Unknown CPU '${CMAKE_SYSTEM_PROCESSOR}'")
 endif()
 
 message(STATUS "${BoldWhite}======================================================================${ColourReset}")
@@ -69,6 +115,82 @@ message(STATUS "${BoldWhite}====================================================
 message(STATUS "${BoldWhite}|                 |                               |                  ${BoldWhite}|${ColourReset}")
 message(STATUS "${BoldWhite}|                 |  CMake build command options  |                  ${BoldWhite}|${ColourReset}")
 message(STATUS "${BoldWhite}|                 *_______________________________*                  ${BoldWhite}|${ColourReset}")
+message(STATUS "${BoldWhite}|                                                                    ${BoldWhite}|${ColourReset}")
+# Detect OS and define macros appropriately
+if(${CORE_SYSTEM_NAME} STREQUAL windows)
+  add_definitions(-DTARGET_WINDOWS)
+  set(OS_WINDOWS 1)
+  if(WIN32)
+    add_definitions(-DWINDOWS)
+    if(MSVC)
+      message(STATUS "${BoldWhite}| Compiling on Windows with MSVC                                     ${BoldWhite}|${ColourReset}")
+    else()
+      message(STATUS "${BoldWhite}| Compiling on Windows                                               ${BoldWhite}|${ColourReset}")
+    endif()
+  elseif(CYGWIN)
+    message(STATUS "${BoldWhite}| Compiling on Cygwin                                                ${BoldWhite}|${ColourReset}")
+    add_definitions(-DCYGWIN)
+    set(CMAKE_INSTALL_RPATH "\$ORIGIN/lib")
+  endif()
+elseif(${CORE_SYSTEM_NAME} STREQUAL linux)
+  add_definitions(-DTARGET_POSIX)
+  add_definitions(-DTARGET_LINUX)
+  add_definitions(-D_LINUX)
+  message(STATUS "${BoldWhite}| Compiling on Linux                                                 ${BoldWhite}|${ColourReset}")
+  set(OS_LINUX 1)
+  set(OS_POSIX 1)
+  set(CMAKE_INSTALL_RPATH "\$ORIGIN")
+elseif(${CORE_SYSTEM_NAME} STREQUAL darwin)
+  add_definitions(-DTARGET_POSIX)
+  add_definitions(-DTARGET_DARWIN)
+  add_definitions(-DTARGET_DARWIN_OSX)
+  add_definitions(-D_LINUX)
+  message(STATUS "${BoldWhite}| Compiling on Mac OS X                                              ${BoldWhite}|${ColourReset}")
+  set(OS_POSIX 1)
+  set(OS_DARWIN 1)
+  set(OS_DARWIN_OSX 1)
+  set(CMAKE_INSTALL_RPATH "@rpath/lib")
+elseif(${CORE_SYSTEM_NAME} STREQUAL freebsd)
+  add_definitions(-DTARGET_POSIX)
+  add_definitions(-DTARGET_FREEBSD)
+  add_definitions(-D_LINUX)
+  message(STATUS "${BoldWhite}| Compiling on FreeBSD                                               ${BoldWhite}|${ColourReset}")
+  set(OS_POSIX 1)
+  set(OS_LINUX 1)
+  set(OS_FREEBSD 1)
+  set(CMAKE_INSTALL_RPATH "\$ORIGIN")
+elseif(${CORE_SYSTEM_NAME} STREQUAL ios)
+  add_definitions(-DTARGET_POSIX)
+  add_definitions(-DTARGET_DARWIN)
+  add_definitions(-DTARGET_DARWIN_IOS)
+  add_definitions(-D_LINUX)
+  message(STATUS "${BoldWhite}| Compiling on iOS                                                   ${BoldWhite}|${ColourReset}")
+  set(OS_POSIX 1)
+  set(OS_DARWIN 1)
+  set(OS_DARWIN_IOS 1)
+  set(CMAKE_INSTALL_RPATH "@rpath/lib")
+elseif(${CORE_SYSTEM_NAME} STREQUAL rbpi)
+  add_definitions(-DTARGET_POSIX)
+  add_definitions(-DTARGET_LINUX)
+  add_definitions(-DTARGET_RASPBERRY_PI)
+  add_definitions(-D_LINUX)
+  add_definitions(-D_ARMEL)
+  message(STATUS "${BoldWhite}| Compiling on Raspberry PI                                          ${BoldWhite}|${ColourReset}")
+  set(OS_POSIX 1)
+  set(OS_LINUX 1)
+  set(OS_ARMEL 1)
+  set(OS_RASPBERRY_PI 1)
+  set(CMAKE_INSTALL_RPATH "\$ORIGIN")
+elseif(${CORE_SYSTEM_NAME} STREQUAL android)
+  add_definitions(-DTARGET_POSIX)
+  add_definitions(-DTARGET_LINUX)
+  add_definitions(-DTARGET_ANDROID)
+  add_definitions(-D_LINUX)
+  message(STATUS "${BoldWhite}| Compiling on Android                                               ${BoldWhite}|${ColourReset}")
+  set(OS_POSIX 1)
+  set(OS_LINUX 1)
+  set(OS_ANDROID 1)
+endif()
 message(STATUS "${BoldWhite}|                                                                    ${BoldWhite}|${ColourReset}")
 message(STATUS "${BoldWhite}|${ColourReset} ${Green} -DCMAKE_INSTALL_PREFIX:PATH=<path>  \t\t\t\t${BoldWhite}|${ColourReset}")
 message(STATUS "${BoldWhite}|${ColourReset}\t\t\t< path to define install directory              ${BoldWhite}|${ColourReset}")
@@ -91,28 +213,6 @@ message(STATUS "${BoldWhite}| codedir, this can be easily deleted after performe
 message(STATUS "${BoldWhite}| problem on it.                                                     ${BoldWhite}|${ColourReset}")
 message(STATUS "${BoldWhite}|                                                                    ${BoldWhite}|${ColourReset}")
 message(STATUS "${BoldWhite}======================================================================${ColourReset}")
-
-# Determine the platform.
-if(${CORE_SYSTEM_NAME} STREQUAL windows)
-  set(CEF_OS_NAME "windows")
-  set(OS_WINDOWS 1)
-elseif(${CORE_SYSTEM_NAME} STREQUAL linux)
-  set(CEF_OS_NAME "linux")
-  set(OS_LINUX 1)
-  set(OS_POSIX 1)
-elseif(${CORE_SYSTEM_NAME} STREQUAL darwin)
-  set(CEF_OS_NAME "macosx")
-  set(OS_MACOSX 1)
-  set(OS_POSIX 1)
-elseif(${CORE_SYSTEM_NAME} STREQUAL freebsd)
-  message(FATAL_ERROR "${BoldWhite}OS ${BoldRed}${CORE_SYSTEM_NAME} ${BoldWhite}currently not supported !!!${ColourReset}")
-elseif(${CORE_SYSTEM_NAME} STREQUAL ios)
-  message(FATAL_ERROR "${BoldWhite}OS ${BoldRed}${CORE_SYSTEM_NAME} ${BoldWhite}currently not supported !!!${ColourReset}")
-elseif(${CORE_SYSTEM_NAME} STREQUAL rbpi)
-  message(FATAL_ERROR "${BoldWhite}OS ${BoldRed}${CORE_SYSTEM_NAME} ${BoldWhite}currently not supported !!!${ColourReset}")
-elseif(${CORE_SYSTEM_NAME} STREQUAL android)
-  message(FATAL_ERROR "${BoldWhite}OS ${BoldRed}${CORE_SYSTEM_NAME} ${BoldWhite}currently not supported !!!${ColourReset}")
-endif()
 
 if(NOT WIN32)
   find_package(OpenGL)
@@ -154,8 +254,8 @@ add_project(cef-binary REQUIRED)
 get_include_dir(cef-binary TEMP)
 list(APPEND INCLUDES ${TEMP})
 
-link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-                 ${CMAKE_CURRENT_BINARY_DIR})
+link_directories(${CMAKE_CURRENT_BINARY_DIR}
+                 ${CMAKE_CURRENT_BINARY_DIR}/lib/cef)
 
 include_directories(${INCLUDES}
                     ${kodiplatform_INCLUDE_DIRS}
@@ -181,6 +281,7 @@ list(APPEND DEPLIBS ${platform_LIBRARIES}
                     ${kodiplatform_LIBRARIES}
                     cef
                     cef_dll_wrapper)
+
 if(WIN32)
   list(APPEND DEPLIBS ws2_32)
 endif()
@@ -188,13 +289,12 @@ endif()
 add_executable(kodichromium ${KODICHROMIUM_BIN_SOURCES})
 target_link_libraries(kodichromium ${DEPLIBS})
 
-add_custom_command(TARGET kodichromium POST_BUILD
-  # Move binary to cef folder
-  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/kodichromium${CMAKE_EXECUTABLE_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/kodichromium${CMAKE_EXECUTABLE_SUFFIX}
-)
-
-build_web_addon(web.browser.chromium KODICHROMIUM DEPLIBS ${CMAKE_CURRENT_BINARY_DIR}/lib/cef ${CMAKE_CURRENT_BINARY_DIR}/share/cef)
+build_web_addon(web.browser.chromium
+                KODICHROMIUM
+                DEPLIBS
+                kodichromium
+                ${CMAKE_CURRENT_BINARY_DIR}/lib/cef/
+                ${CMAKE_CURRENT_BINARY_DIR}/share/cef)
 
 if(PACKAGE_ZIP EQUAL 1)
   # needed for project installing

@@ -33,28 +33,36 @@ execute_process(
 )
 
 if(NOT CEF_BINARY)
-  if(${CORE_SYSTEM_NAME} STREQUAL linux AND ${BITSIZE} STREQUAL 32)
-    set(CEF_BINARY i686-linux-gnu)
-  elseif(${CORE_SYSTEM_NAME} STREQUAL linux AND ${BITSIZE} STREQUAL 64)
-    set(CEF_BINARY x86_64-linux-gnu)
-  elseif(${CORE_SYSTEM_NAME} STREQUAL osx AND ${BITSIZE} STREQUAL 32)
-    set(CEF_BINARY i386-apple-darwin)
-  elseif(${CORE_SYSTEM_NAME} STREQUAL osx AND ${BITSIZE} STREQUAL 64)
-    set(CEF_BINARY x86_64-apple-darwin)
-  elseif(${CORE_SYSTEM_NAME} STREQUAL ios)
-    set(CEF_BINARY arm-apple-darwin)
-  elseif(${CORE_SYSTEM_NAME} STREQUAL windows AND ${BITSIZE} STREQUAL 32)
-    set(CEF_BINARY i686-windows)
-  elseif(${CORE_SYSTEM_NAME} STREQUAL windows AND ${BITSIZE} STREQUAL 64)
-    set(CEF_BINARY x86_64-windows)
-  elseif(${CORE_SYSTEM_NAME} STREQUAL rbpi)
-    set(CEF_BINARY arm-linux-gnueabihf)
+  if(OS_LINUX)
+    if(OS_ANDROID)
+      if(${ARCH} STREQUAL "arm")
+        set(CEF_BINARY arm-linux-androideabi)
+      elseif(${ARCH} STREQUAL "x86")
+        set(CEF_BINARY i686-linux-android)
+      endif()
+    elseif(OS_RASPBERRY_PI)
+      set(CEF_BINARY arm-linux-gnueabi)
+    elseif(${BITSIZE} STREQUAL 32)
+      set(CEF_BINARY i686-linux-gnu)
+    elseif(${BITSIZE} STREQUAL 64)
+      set(CEF_BINARY x86_64-linux-gnu)
+    endif()
+  elseif(OS_DARWIN)
+    if(OS_DARWIN_IOS)
+      set(CEF_BINARY arm-apple-darwin)
+    elseif(OS_DARWIN_OSX AND ${BITSIZE} STREQUAL 32)
+      set(CEF_BINARY i386-apple-darwin)
+    elseif(OS_DARWIN_OSX AND ${BITSIZE} STREQUAL 64)
+      set(CEF_BINARY x86_64-apple-darwin)
+    endif()
+  elseif(OS_WINDOWS)
+    if(${BITSIZE} STREQUAL 32)
+      set(CEF_BINARY i686-windows)
+    elseif(${BITSIZE} STREQUAL 64)
+      set(CEF_BINARY x86_64-windows)
+    endif()
   endif()
 endif()
-
-#set(CEF_BINARY arm-linux-androideabi)
-#set(CEF_BINARY arm-linux-gnueabi)
-#set(CEF_BINARY i686-linux-android)
 
 if(NOT CEF_BINARY)
   message(FATAL_ERROR "${BoldWhite}Missing 'CEF_BINARY' value !!!${ColourReset}")
@@ -84,25 +92,17 @@ add_custom_command(TARGET cef-binary
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/cef/locales
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${BINARY_DIR}/Resources/locales            ${CMAKE_CURRENT_BINARY_DIR}/share/cef/locales
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/Resources/locales            ${CMAKE_CURRENT_BINARY_DIR}/share/cef/locales
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef.pak                      ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_100_percent.pak          ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_200_percent.pak          ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_extensions.pak           ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_resources.pak            ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/devtools_resources.pak       ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/icudtl.dat                   ${CMAKE_CURRENT_BINARY_DIR}/share/cef
 
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}cef${CMAKE_SHARED_LIBRARY_SUFFIX}        ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-#  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}ffmpegsumo${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}cef${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/chrome-sandbox     ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/natives_blob.bin   ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/snapshot_blob.bin  ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-
-  # TODO: Fix installed library load
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}cef${CMAKE_SHARED_LIBRARY_SUFFIX}        ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-#  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}ffmpegsumo${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/chrome-sandbox     ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/natives_blob.bin   ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/snapshot_blob.bin  ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/icudtl.dat                   ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
 )
