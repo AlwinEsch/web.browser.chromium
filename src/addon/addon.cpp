@@ -209,7 +209,7 @@ WEB_ADDON_ERROR SaveUserSettings()
   return WEB_ADDON_ERROR_FAILED;
 }
 
-WEB_ADDON_ERROR CreateControl(const WEB_ADDON_GUI_PROPS &props, unsigned int webType, ADDON_HANDLE handle)
+WEB_ADDON_ERROR CreateControl(const WEB_ADDON_GUI_PROPS &props, const char *webType, ADDON_HANDLE handle)
 {
   return g_pWebManager->CreateControl(props, webType, handle);
 }

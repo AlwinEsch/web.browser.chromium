@@ -30,12 +30,15 @@
 
 #include "Dialogs/WebGUIDialogContextMenu.h"
 
-#define TMSG_SET_OPENED_ADDRESS       100
-#define TMSG_SET_OPENED_TITLE         101
-#define TMSG_SET_ICON_URL             102
-#define TMSG_BROWSER_CLOSE            103
-#define TMSG_SET_LOADING_STATE        104
-#define TMSG_HANDLE_ON_PAINT          105
+#define TMSG_SET_CONTROL_READY        100
+#define TMSG_SET_OPENED_ADDRESS       101
+#define TMSG_SET_OPENED_TITLE         102
+#define TMSG_SET_ICON_URL             103
+#define TMSG_BROWSER_CLOSE            104
+#define TMSG_SET_LOADING_STATE        105
+#define TMSG_SET_TOOLTIP              106
+#define TMSG_SET_STATUS_MESSAGE       107
+#define TMSG_HANDLE_ON_PAINT          108
 
 struct MessageCallback
 {
@@ -799,4 +802,6 @@ private:
   typedef std::list< CefRefPtr<CefBrowser> > browserList;
   browserList                   m_popupBrowsers;          /* List of any popup browser windows. Only accessed on the CEF UI thread. */
 
+  std::string                   m_lastTooltip;
+  std::string                   m_lastStatusMsg;
 };

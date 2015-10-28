@@ -40,7 +40,7 @@ public:
 
   bool IsActive() const { return m_isActive; }
 
-  WEB_ADDON_ERROR CreateControl(const WEB_ADDON_GUI_PROPS &props, unsigned int webType, ADDON_HANDLE handle);
+  WEB_ADDON_ERROR CreateControl(const WEB_ADDON_GUI_PROPS &props, const char *webType, ADDON_HANDLE handle);
   bool DestroyControl(const ADDON_HANDLE handle);
   bool SetLanguage(const char *language);
   void Render(const ADDON_HANDLE handle);

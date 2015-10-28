@@ -1449,6 +1449,10 @@ void CWebBrowserClientBase::HandleMessages()
     lock.Unlock(); // <- see the large comment in SendMessage ^
     switch (pMsg->dwMessage)
     {
+      case TMSG_SET_CONTROL_READY:
+        LOG_INTERNAL_MESSAGE(LOG_DEBUG, "Web control %s", pMsg->param1 ? "ready" : "failed");
+        WEB->Control_SetControlReady(&m_addonHandle, pMsg->param1);
+        break;
       case TMSG_SET_OPENED_ADDRESS:
         LOG_INTERNAL_MESSAGE(LOG_DEBUG, "Opened web site url '%s'", pMsg->strParam.c_str());
         WEB->Control_SetOpenedAddress(&m_addonHandle, pMsg->strParam.c_str());
@@ -1463,6 +1467,12 @@ void CWebBrowserClientBase::HandleMessages()
         break;
       case TMSG_SET_LOADING_STATE:
         WEB->Control_SetLoadingState(&m_addonHandle, pMsg->param1, pMsg->param2, pMsg->param3);
+        break;
+      case TMSG_SET_TOOLTIP:
+        WEB->Control_SetTooltip(&m_addonHandle, pMsg->strParam.c_str());
+        break;
+      case TMSG_SET_STATUS_MESSAGE:
+        WEB->Control_SetStatusMessage(&m_addonHandle, pMsg->strParam.c_str());
         break;
       case TMSG_HANDLE_ON_PAINT:
       {
@@ -1802,7 +1812,16 @@ bool CWebBrowserClientBase::OnTooltip(
     CefRefPtr<CefBrowser>                 browser,
     CefString&                            text)
 {
-    LOG_MESSAGE(LOG_DEBUG, "%s - %s", __FUNCTION__, text.ToString().c_str());
+  if (m_lastTooltip != text.ToString().c_str())
+  {
+    m_lastTooltip = text.ToString().c_str();
+
+    Message tMsg = {TMSG_SET_TOOLTIP};
+    tMsg.strParam = m_lastTooltip.c_str();
+    SendMessage(tMsg, false);
+//    return true;
+  }
+
   return false;
 }
 
@@ -1810,7 +1829,14 @@ void CWebBrowserClientBase::OnStatusMessage(
     CefRefPtr<CefBrowser>                 browser,
     const CefString&                      value)
 {
-    LOG_MESSAGE(LOG_DEBUG, "%s - %s", __FUNCTION__, value.ToString().c_str());
+  if (m_lastStatusMsg != value.ToString().c_str())
+  {
+    m_lastStatusMsg = value.ToString().c_str();
+
+    Message tMsg = {TMSG_SET_STATUS_MESSAGE};
+    tMsg.strParam = m_lastStatusMsg.c_str();
+    SendMessage(tMsg, false);
+  }
 }
 
 bool CWebBrowserClientBase::OnConsoleMessage(
@@ -2017,6 +2043,10 @@ void CWebBrowserClientBase::OnAfterCreated(CefRefPtr<CefBrowser> browser)
     LOG_MESSAGE(LOG_DEBUG, "---------------------------------------------------------%s", __FUNCTION__);
     m_Browser   = browser;
     m_BrowserId = browser->GetIdentifier();
+
+    Message tMsg = {TMSG_SET_CONTROL_READY};
+    tMsg.param1 = true;
+    SendMessage(tMsg, false);
   }
   else if(browser->IsPopup())
     m_popupBrowsers.push_back(browser); /* Add to the list of popup browsers */

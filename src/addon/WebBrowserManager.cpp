@@ -471,13 +471,13 @@ void *CWebBrowserManager::Process()
 }
 
 
-WEB_ADDON_ERROR CWebBrowserManager::CreateControl(const WEB_ADDON_GUI_PROPS &props, unsigned int webType, ADDON_HANDLE handle)
+WEB_ADDON_ERROR CWebBrowserManager::CreateControl(const WEB_ADDON_GUI_PROPS &props, const char *webType, ADDON_HANDLE handle)
 {
 fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   /*!
    * Paranoia ;-), prevent not wanted creation calls (normally not done)
    */
-  if (webType != WEB_TYPE_ID_BROWSER || handle == nullptr)
+  if ((strcmp(webType, "browser") != 0) || handle == nullptr)
   {
     LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Called for not supported web type %i", __FUNCTION__, webType);
     return WEB_ADDON_ERROR_INVALID_PARAMETERS;
