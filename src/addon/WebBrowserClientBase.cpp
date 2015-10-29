@@ -1377,8 +1377,9 @@ CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDO
   m_fMouseYScaleFactor  = float(m_iYPos + m_iHeight) / float(m_iSkinYPos + m_iSkinHeight);
   m_strTempStoreA       = (char*)malloc(TEMP_STORE_SIZE);
   m_strTempStoreB       = (char*)malloc(TEMP_STORE_SIZE);
-//  m_resourceManager     = new CefResourceManager();
 
+  /*!> CEF related sub classes to manage web parts */
+  m_resourceManager     = new CefResourceManager();
 }
 
 CWebBrowserClientBase::~CWebBrowserClientBase()
@@ -1476,7 +1477,6 @@ void CWebBrowserClientBase::HandleMessages()
         break;
       case TMSG_HANDLE_ON_PAINT:
       {
-        LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
         OnPaintMessage *data = static_cast<OnPaintMessage*>(pMsg->lpVoid);
         data->client.callback(pMsg->lpVoid);
         m_bIsDirty = true;
@@ -1730,10 +1730,29 @@ bool CWebBrowserClientBase::OnProcessMessageReceived(
 }
 //}
 
+/*! @brief CefDialogHandler methods */
+//{
+bool CWebBrowserClientBase::OnFileDialog(
+    CefRefPtr<CefBrowser>                 browser,
+    FileDialogMode                        mode,
+    const CefString&                      title,
+    const CefString&                      default_file_path,
+    const std::vector<CefString>&         accept_filters,
+    int                                   selected_accept_filter,
+    CefRefPtr<CefFileDialogCallback>      callback)
+{
+  LOG_MESSAGE(LOG_DEBUG, "%s - Title: %s - default_file_path: %s - selected_accept_filter: %i - mode: %i",
+    __FUNCTION__, title.ToString().c_str(), default_file_path.ToString().c_str(), selected_accept_filter, (int)mode);
+  for (unsigned int i = 0; i < accept_filters.size(); i++)
+    LOG_MESSAGE(LOG_DEBUG, "  - %02i: %s", i, accept_filters[i].ToString().c_str());
+  return false;
+}
+//}
+
 /*!
  * @brief CefContextMenuHandler methods
  */
-/*//{
+//{
 void CWebBrowserClientBase::OnBeforeContextMenu(
     CefRefPtr<CefBrowser>                 browser,
     CefRefPtr<CefFrame>                   frame,
@@ -1741,9 +1760,47 @@ void CWebBrowserClientBase::OnBeforeContextMenu(
     CefRefPtr<CefMenuModel>               model)
 {
     LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-    m_contextMenu.Open(browser, frame, params, model);
-    model->Clear();
+
+    LOG_MESSAGE(LOG_DEBUG, "CefContextMenuParams");
+    LOG_MESSAGE(LOG_DEBUG, "- %ix%i - TypeFlags: 0x%X - ImageContents: %s - MediaType: %i - MediaStateFlags %i - EditStateFlags %i", params->GetXCoord(),
+        params->GetYCoord(), (int)params->GetTypeFlags(), params->HasImageContents() ? "yes" : "no",
+        (int)params->GetMediaType(), (int)params->GetMediaStateFlags(), (int)params->GetEditStateFlags());
+    LOG_MESSAGE(LOG_DEBUG, "- LinkUrl:                %s", params->GetLinkUrl().ToString().c_str());
+    LOG_MESSAGE(LOG_DEBUG, "- UnfilteredLinkUrl:      %s", params->GetUnfilteredLinkUrl().ToString().c_str());
+    LOG_MESSAGE(LOG_DEBUG, "- SourceUrl:              %s", params->GetSourceUrl().ToString().c_str());
+    LOG_MESSAGE(LOG_DEBUG, "- PageUrl:                %s", params->GetPageUrl().ToString().c_str());
+    LOG_MESSAGE(LOG_DEBUG, "- FrameUrl :              %s", params->GetFrameUrl().ToString().c_str());
+    LOG_MESSAGE(LOG_DEBUG, "- FrameCharset :          %s", params->GetFrameCharset().ToString().c_str());
+    LOG_MESSAGE(LOG_DEBUG, "- SelectionText :         %s", params->GetSelectionText().ToString().c_str());
+    LOG_MESSAGE(LOG_DEBUG, "- MisspelledWord :        %s", params->GetMisspelledWord().ToString().c_str());
+    std::vector<CefString> suggestions;
+    LOG_MESSAGE(LOG_DEBUG, "- DictionarySuggestions : %s", params->GetDictionarySuggestions(suggestions) ? "OK" : "fail");
+    for (unsigned int i = 0; i < suggestions.size(); i++)
+      LOG_MESSAGE(LOG_DEBUG, "  - %02i: %s", i, suggestions[i].ToString().c_str());
+    LOG_MESSAGE(LOG_DEBUG, "- IsEditable :            %s", params->IsEditable() ? "yes" : "no");
+    LOG_MESSAGE(LOG_DEBUG, "- IsSpellCheckEnabled :   %s", params->IsSpellCheckEnabled() ? "yes" : "no");
+    LOG_MESSAGE(LOG_DEBUG, "- IsCustomMenu :          %s", params->IsCustomMenu() ? "yes" : "no");
+    LOG_MESSAGE(LOG_DEBUG, "- IsPepperMenu :          %s", params->IsPepperMenu() ? "yes" : "no");
+    LOG_MESSAGE(LOG_DEBUG, "CefMenuModel");
+    LOG_MESSAGE(LOG_DEBUG, "- Count:                  %i", model->GetCount());
+    for (unsigned int i = 0; i < model->GetCount(); i++)
+      LOG_MESSAGE(LOG_DEBUG, "  - %02i: %s", i, model->GetLabelAt(i).ToString().c_str());
+
+
+
+//    m_contextMenu.Open(browser, frame, params, model);
+//    model->Clear();
 //    model = new CWebGUIDialogContextMenu;
+}
+
+bool CWebBrowserClientBase::RunContextMenu(
+    CefRefPtr<CefBrowser>                 browser,
+    CefRefPtr<CefFrame>                   frame,
+    CefRefPtr<CefContextMenuParams>       params,
+    CefRefPtr<CefMenuModel>               model,
+    CefRefPtr<CefRunContextMenuCallback>  callback)
+{
+    LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
 
 bool CWebBrowserClientBase::OnContextMenuCommand(
@@ -1763,7 +1820,7 @@ void CWebBrowserClientBase::OnContextMenuDismissed(
 {
     LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
 }
-//}*/
+//}
 
 /*!
  * @brief CefDisplayHandler methods
@@ -1786,9 +1843,14 @@ void CWebBrowserClientBase::OnTitleChange(
     CefRefPtr<CefBrowser>                 browser,
     const CefString&                      title)
 {
-  Message tMsg = {TMSG_SET_OPENED_TITLE};
-  tMsg.strParam = title.ToString().c_str();
-  SendMessage(tMsg, false);
+  if (m_lastTitle != title.ToString().c_str())
+  {
+    m_lastTitle = title.ToString().c_str();
+
+    Message tMsg = {TMSG_SET_OPENED_TITLE};
+    tMsg.strParam = m_lastTitle.c_str();
+    SendMessage(tMsg, false);
+  }
 }
 
 void CWebBrowserClientBase::OnFaviconURLChange(
@@ -1819,7 +1881,6 @@ bool CWebBrowserClientBase::OnTooltip(
     Message tMsg = {TMSG_SET_TOOLTIP};
     tMsg.strParam = m_lastTooltip.c_str();
     SendMessage(tMsg, false);
-//    return true;
   }
 
   return false;
@@ -2229,11 +2290,19 @@ CefRequestHandler::ReturnValue CWebBrowserClientBase::OnBeforeResourceLoad(
     CefRefPtr<CefRequest>                 request,
     CefRefPtr<CefRequestCallback>         callback)
 {
-  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-
   CEF_REQUIRE_IO_THREAD();
 
-  return RV_CONTINUE;//m_resourceManager->OnBeforeResourceLoad(browser, frame, request, callback);
+  return m_resourceManager->OnBeforeResourceLoad(browser, frame, request, callback);
+}
+
+CefRefPtr<CefResourceHandler> CWebBrowserClientBase::GetResourceHandler(
+    CefRefPtr<CefBrowser>                 browser,
+    CefRefPtr<CefFrame>                   frame,
+    CefRefPtr<CefRequest>                 request)
+{
+  CEF_REQUIRE_IO_THREAD();
+
+  return m_resourceManager->GetResourceHandler(browser, frame, request);
 }
 
 void CWebBrowserClientBase::OnResourceRedirect(
@@ -2267,16 +2336,6 @@ bool CWebBrowserClientBase::GetAuthCredentials(
 {
     LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
   return false;
-}
-
-CefRefPtr<CefResourceHandler> CWebBrowserClientBase::GetResourceHandler(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefFrame>                   frame,
-    CefRefPtr<CefRequest>                 request)
-{
-  LOG_MESSAGE(LOG_DEBUG, "%s", __FUNCTION__);
-
-  return nullptr;
 }
 
 bool CWebBrowserClientBase::OnQuotaRequest(

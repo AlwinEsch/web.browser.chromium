@@ -75,6 +75,7 @@ typedef struct
 
 class CWebBrowserClientBase :
     public CefClient,
+    public CefDialogHandler,
     public CefDisplayHandler,
     public CefDragHandler,
     public CefGeolocationHandler,
@@ -84,7 +85,7 @@ class CWebBrowserClientBase :
     public CefLoadHandler,
     /*public CefKeyboardHandler,*/
     /*public CefDownloadHandler,*/
-    /*public CefContextMenuHandler,*/
+    public CefContextMenuHandler,
     public CefLifeSpanHandler,
     public CefRenderHandler,
     public CefRequestHandler,
@@ -184,12 +185,30 @@ public:
                         OVERRIDE;                                     ///
   //}
   /*!
+   * @brief CefDialogHandler methods
+   * ./cef/include/cef_dialog_handler.h
+   *
+   * Implement this interface to handle dialog events. The methods of this class
+   * will be called on the browser process UI thread.
+   */
+  //{
+  virtual bool OnFileDialog(
+      CefRefPtr<CefBrowser>                 browser,
+      FileDialogMode                        mode,
+      const CefString&                      title,
+      const CefString&                      default_file_path,
+      const std::vector<CefString>&         accept_filters,
+      int                                   selected_accept_filter,
+      CefRefPtr<CefFileDialogCallback>      callback)
+                        OVERRIDE;
+  //}
+  /*!
    * @brief CefContextMenuHandler methods
    *
    * Implement this interface to handle context menu events. The methods of this
    * class will be called on the UI thread.
    */
-  /*//{
+  //{
   virtual CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() OVERRIDE { return this; }
 
   virtual void OnBeforeContextMenu(                                ///<-- Called before a context menu is displayed. |params| provides information
@@ -198,6 +217,14 @@ public:
       CefRefPtr<CefContextMenuParams>       params,                   /// modified to show a custom menu. Do not keep references to |params| or
       CefRefPtr<CefMenuModel>               model)                    /// |model| outside of this callback.
                         OVERRIDE;                                     ///
+
+  virtual bool RunContextMenu(
+      CefRefPtr<CefBrowser>                 browser,
+      CefRefPtr<CefFrame>                   frame,
+      CefRefPtr<CefContextMenuParams>       params,
+      CefRefPtr<CefMenuModel>               model,
+      CefRefPtr<CefRunContextMenuCallback>  callback)
+                        OVERRIDE;
 
   virtual bool OnContextMenuCommand(                               ///<-- Called to execute a command selected from the context menu. Return true if
       CefRefPtr<CefBrowser>                 browser,                  /// the command was handled or false for the default implementation. See
@@ -211,7 +238,7 @@ public:
       CefRefPtr<CefBrowser>                 browser,                  /// was empty or a command was selected.
       CefRefPtr<CefFrame>                   frame)                    ///
                         OVERRIDE;                                     ///
-  //}*/
+  //}
   /*!
    * @brief CefDisplayHandler methods
    *
@@ -794,14 +821,23 @@ private:
 
 
 
-  // Manages the registration and delivery of resources.
-  CefRefPtr<CefResourceManager> m_resourceManager;
-
-
   bool                          m_isClosing;
   typedef std::list< CefRefPtr<CefBrowser> > browserList;
   browserList                   m_popupBrowsers;          /* List of any popup browser windows. Only accessed on the CEF UI thread. */
 
-  std::string                   m_lastTooltip;
-  std::string                   m_lastStatusMsg;
+  /*!
+   * Compare values to prevent call backs with same values.
+   */
+  //{
+  std::string                     m_lastTitle;              /*!< Last sended website title string */
+  std::string                     m_lastTooltip;            /*!< Last sended tooltip string */
+  std::string                     m_lastStatusMsg;          /*!< Last sended status message string */
+  //}
+
+  /*!
+   * CEF related sub classes to manage web parts
+   */
+  //{
+  CefRefPtr<CefResourceManager>   m_resourceManager;        /*!< Manages the registration and delivery of resources. */
+  //}
 };
