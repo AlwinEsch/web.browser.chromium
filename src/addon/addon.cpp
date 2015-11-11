@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "kodi/kodi_web_dll.h"
+#include "kodi/guilib/GUILib.h"
 #include "platform/util/util.h"
 #include "platform/util/StdString.h"
 
