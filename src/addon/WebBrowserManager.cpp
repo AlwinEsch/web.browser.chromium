@@ -27,9 +27,9 @@
 #include "WebBrowserManager.h"
 #include "Utils.h"
 
-#include "kodi/guilib/GUIDialogKeyboard.h"
-#include "kodi/guilib/GUIDialogOK.h"
-#include "kodi/guilib/GUIDialogYesNo.h"
+#include "kodi/guilib-v2/GUIDialogKeyboard.h"
+#include "kodi/guilib-v2/GUIDialogOK.h"
+#include "kodi/guilib-v2/GUIDialogYesNo.h"
 
 using namespace std;
 using namespace ADDON;

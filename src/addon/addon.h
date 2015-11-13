@@ -19,7 +19,7 @@
 
 #include "kodi/libXBMC_addon.h"
 #include "kodi/libKODI_web.h"
-#include "kodi/guilib/GUILib.h"
+#include "kodi/guilib-v2/GUILib.h"
 
 class CWebBrowserManager;
 

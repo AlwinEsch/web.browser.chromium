@@ -18,11 +18,11 @@
 
 #include <string>
 
-#include "kodi/guilib/GUILib.h"
+#include "addon.h"
+#include "kodi/kodi_web_dll.h"
 #include "platform/util/util.h"
 #include "platform/util/StdString.h"
 
-#include "addon.h"
 #include "WebBrowserManager.h"
 #include "Utils.h"
 
@@ -57,6 +57,7 @@ ADDON_STATUS ADDON_Create(void* hdl, void* props)
   if (!KODI->RegisterMe(hdl))
   {
     SAFE_DELETE(KODI);
+    KODI->Log(LOG_DEBUG, "%s - Failed to register libKODI_addon", __FUNCTION__);
     return ADDON_STATUS_PERMANENT_FAILURE;
   }
 
@@ -65,6 +66,7 @@ ADDON_STATUS ADDON_Create(void* hdl, void* props)
   {
     SAFE_DELETE(GUI);
     SAFE_DELETE(KODI);
+    KODI->Log(LOG_DEBUG, "%s - Failed to register libKODI_guilib", __FUNCTION__);
     return ADDON_STATUS_PERMANENT_FAILURE;
   }
 
@@ -74,6 +76,7 @@ ADDON_STATUS ADDON_Create(void* hdl, void* props)
     SAFE_DELETE(WEB);
     SAFE_DELETE(GUI);
     SAFE_DELETE(KODI);
+    KODI->Log(LOG_DEBUG, "%s - Failed to register libKODI_web", __FUNCTION__);
     return ADDON_STATUS_PERMANENT_FAILURE;
   }
 

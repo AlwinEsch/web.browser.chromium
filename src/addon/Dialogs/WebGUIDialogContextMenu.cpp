@@ -76,7 +76,7 @@ bool CWebGUIDialogContextMenu::Open(
   m_model = model;
 
   /* Load the Window as Dialog */
-  m_window = GUI->Window_create("DialogContextMenu.xml", "Confluence", false, true);
+/*  m_window = GUI->Window_create("DialogContextMenu.xml", "Confluence", false, true);
   m_window->m_cbhdl   = this;
   m_window->CBOnInit  = OnInitCB;
   m_window->CBOnFocus = OnFocusCB;
@@ -85,7 +85,7 @@ bool CWebGUIDialogContextMenu::Open(
   m_window->DoModal();
 
   GUI->Window_destroy(m_window);
-
+*/
   return true;
 }
 
