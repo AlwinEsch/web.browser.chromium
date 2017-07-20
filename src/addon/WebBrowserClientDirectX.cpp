@@ -66,7 +66,7 @@ void CWebBrowserClientDirectX::Cleanup()
 
 bool CWebBrowserClientDirectX::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
   CEF_REQUIRE_UI_THREAD();
 
   // The simulated screen and view rectangle are the same. This is necessary
@@ -79,7 +79,7 @@ bool CWebBrowserClientDirectX::GetViewRect(CefRefPtr<CefBrowser> browser, CefRec
 
 bool CWebBrowserClientDirectX::GetRootScreenRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
   CEF_REQUIRE_UI_THREAD();
 
   rect.x = rect.y = 0;
@@ -90,7 +90,7 @@ bool CWebBrowserClientDirectX::GetRootScreenRect(CefRefPtr<CefBrowser> browser, 
 
 bool CWebBrowserClientDirectX::GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY)
 {
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
   CEF_REQUIRE_UI_THREAD();
 
   screenX = m_iXPos + viewX;
@@ -136,7 +136,7 @@ void CWebBrowserClientDirectX::OnPaint(sPaintData *data)
 
 void CWebBrowserClientDirectX::Render()
 {
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
 
   if (m_iViewWidth == 0 || m_iViewHeight == 0)
     return;
@@ -151,7 +151,7 @@ bool CWebBrowserClientDirectX::Dirty()
    * Handle from chromium given data, must be done on kodi's renderer thread (also on DirectX???),
    * thats why passed here
    */
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
 
   m_processQueueMutex.Lock();
   while (!m_processQueue.empty())

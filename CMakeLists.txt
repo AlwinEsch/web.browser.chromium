@@ -54,9 +54,9 @@ else()
   set(BITSIZE "32")
 endif()
 
-find_package(kodi REQUIRED)
+find_package(Kodi REQUIRED)
 find_package(kodiplatform REQUIRED)
-find_package(platform REQUIRED)
+find_package(p8-platform REQUIRED)
 
 include(color-defaults)
 include(KitModules)
@@ -219,6 +219,7 @@ if(NOT WIN32)
   if(OPENGL_FOUND)
     add_definitions(-DHAVE_GL)
     set(KODICHROMIUM_SOURCES src/addon/WebBrowserClientOpenGL.cpp)
+    set(KODICHROMIUM_HEADERS src/addon/WebBrowserClientOpenGL.h)
     set(INCLUDES ${OPENGL_INCLUDE_DIR})
     set(DEPLIBS ${OPENGL_LIBRARIES})
     message(STATUS "Web Browser support enabled via ${BoldGreen}OpenGL${ColourReset}")
@@ -230,6 +231,10 @@ if(NOT WIN32)
                                src/addon/EGLHelpers/VisGUIShader.cpp
                                src/addon/EGLHelpers/VisMatrixGLES.cpp
                                src/addon/EGLHelpers/VisShader.cpp)
+      set(KODICHROMIUM_HEADERS src/addon/WebBrowserClientOpenGLES.h
+                               src/addon/EGLHelpers/VisGUIShader.h
+                               src/addon/EGLHelpers/VisMatrixGLES.h
+                               src/addon/EGLHelpers/VisShader.h)
       set(INCLUDES ${OPENGLES2_INCLUDE_DIRS})
       set(DEPLIBS ${OPENGLES2_LIBRARIES})
       message(STATUS "Web Browser support enabled via ${BoldGreen}OpenGLES${ColourReset}")
@@ -242,6 +247,7 @@ else()
   if(D3DX9_FOUND)
     add_definitions(-DHAS_DX)
     set(KODICHROMIUM_SOURCES src/addon/WebBrowserClientDirectX.cpp)
+    set(KODICHROMIUM_HEADERS src/addon/WebBrowserClientDirectX.h)
     set(INCLUDES ${D3DX9_INCLUDE_DIR})
     set(DEPLIBS ${D3DX9_LIBRARIES})
     message(STATUS "Web Browser support enabled via ${BoldGreen}DirectX${ColourReset}")
@@ -259,7 +265,7 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR}
 
 include_directories(${INCLUDES}
                     ${kodiplatform_INCLUDE_DIRS}
-                    ${platform_INCLUDE_DIRS}
+                    ${p8-platform_INCLUDE_DIRS}
                     ${KODI_INCLUDE_DIR}
                     ${PROJECT_SOURCE_DIR}/src/addon/
                     ${PROJECT_SOURCE_DIR}/src/addon/Dialogs/
@@ -275,12 +281,21 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/settings/SettingsMain.cpp
                                  src/addon/utils/Utils.cpp)
 
+list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
+                                 src/addon/URICheckHandler.h
+                                 src/addon/WebBrowserClientBase.h
+                                 src/addon/WebBrowserManager.h
+                                 src/addon/Dialogs/WebGUIDialogBrowser.h
+                                 src/addon/Dialogs/WebGUIDialogContextMenu.h
+                                 src/addon/settings/SettingsMain.h
+                                 src/addon/utils/Utils.h)
+
 list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main.cpp)
 
-list(APPEND DEPLIBS ${platform_LIBRARIES}
+list(APPEND DEPLIBS ${p8-platform_LIBRARIES}
                     ${kodiplatform_LIBRARIES}
-                    cef
-                    cef_dll_wrapper)
+                    cef_dll_wrapper
+                    cef)
 
 if(WIN32)
   list(APPEND DEPLIBS ws2_32)
@@ -288,7 +303,7 @@ endif()
 
 add_executable(kodichromium ${KODICHROMIUM_BIN_SOURCES})
 target_link_libraries(kodichromium ${DEPLIBS})
-
+message(STATUS "------------${CMAKE_CURRENT_BINARY_DIR}")
 build_web_addon(web.browser.chromium
                 KODICHROMIUM
                 DEPLIBS

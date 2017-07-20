@@ -19,9 +19,9 @@
 #include <string>
 
 #include "addon.h"
-#include "kodi/kodi_web_dll.h"
-#include "platform/util/util.h"
-#include "platform/util/StdString.h"
+#include "kodi_web_dll.h"
+#include "p8-platform/util/util.h"
+#include "p8-platform/util/StdString.h"
 
 #include "WebBrowserManager.h"
 #include "Utils.h"
@@ -51,8 +51,8 @@ ADDON_STATUS ADDON_Create(void* hdl, void* props)
   if (!hdl || !props)
     return ADDON_STATUS_UNKNOWN;
 
-  WEB_ADDON_PROPERTIES* webProps = (WEB_ADDON_PROPERTIES*)props;
-
+  AddonProps_WebAddon* webProps = (AddonProps_WebAddon*)props;
+  fprintf(stderr, "-m_struct.propsllllllllllllll----------------.strAddonSharePath %s\n", webProps->strAddonSharePath);
   KODI = new CHelper_libXBMC_addon;
   if (!KODI->RegisterMe(hdl))
   {
@@ -122,57 +122,14 @@ void ADDON_Destroy()
   m_CurStatus = ADDON_STATUS_UNKNOWN;
 }
 
-bool ADDON_HasSettings()
-{
-  return false;
-}
-
-unsigned int ADDON_GetSettings(ADDON_StructSetting ***sSet)
-{
-  return 0;
-}
-
 ADDON_STATUS ADDON_SetSetting(const char *settingName, const void *settingValue)
 {
   return ADDON_STATUS_OK;
 }
 
-void ADDON_Stop()
-{
-}
-
-void ADDON_FreeSettings()
-{
-
-}
-
-void ADDON_Announce(const char *flag, const char *sender, const char *message, const void *data)
-{
-}
-
 const char* GetWebAddonName(void)
 {
   return "KODIChromiumBrowser";
-}
-
-const char* GetWebAPIVersion(void)
-{
-  return KODI_WEB_ADDON_API_VERSION;
-}
-
-const char* GetMinimumWebAPIVersion(void)
-{
-  return KODI_WEB_ADDON_MIN_API_VERSION;
-}
-
-const char* GetGUIAPIVersion(void)
-{
-  return KODI_GUILIB_API_VERSION;
-}
-
-const char* GetMinimumGUIAPIVersion(void)
-{
-  return KODI_GUILIB_MIN_API_VERSION;
 }
 
 WEB_ADDON_ERROR GetAddonCapabilities(WEB_ADDON_CAPABILITIES *pCapabilities)

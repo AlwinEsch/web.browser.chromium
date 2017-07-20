@@ -26,7 +26,7 @@
 #include "include/cef_render_handler.h"
 #include "include/wrapper/cef_message_router.h"
 #include "include/wrapper/cef_resource_manager.h"
-#include "platform/threads/threads.h"
+#include "p8-platform/threads/threads.h"
 
 #include "Dialogs/WebGUIDialogContextMenu.h"
 
@@ -68,7 +68,7 @@ typedef struct
   int param3;
   std::string strParam;
   std::vector<std::string> params;
-  std::shared_ptr<PLATFORM::CEvent> waitEvent;
+  std::shared_ptr<P8PLATFORM::CEvent> waitEvent;
   void* lpVoid;
 } Message;
 
@@ -817,7 +817,7 @@ private:
   void HandleMessages();
 
   std::queue <Message*> m_processQueue;
-  PLATFORM::CMutex m_Mutex;
+  P8PLATFORM::CMutex m_Mutex;
 
 
 

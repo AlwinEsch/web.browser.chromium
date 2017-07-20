@@ -36,7 +36,7 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
 
-#include "platform/util/StringUtils.h"
+#include "p8-platform/util/StringUtils.h"
 
 #include "addon.h"
 #include "WebGUIDialogContextMenu.h"
@@ -408,7 +408,7 @@
 
 using namespace std;
 using namespace ADDON;
-using namespace PLATFORM;
+using namespace P8PLATFORM;
 
 // From ui/events/keycodes/keyboard_codes_posix.h.
 enum KeyboardCode

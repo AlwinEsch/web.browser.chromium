@@ -110,14 +110,14 @@ bool CWebBrowserClientOpenGL::OpenWebsite(const char* strURL, bool single, bool 
 
 void CWebBrowserClientOpenGL::Cleanup()
 {
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
   if (m_iTextureId != 0)
     glDeleteTextures(1, &m_iTextureId);
 }
 
 void CWebBrowserClientOpenGL::Render()
 {
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
 
   if (m_iViewWidth == 0 || m_iViewHeight == 0)
     return;
@@ -247,7 +247,7 @@ void CWebBrowserClientOpenGL::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 
 bool CWebBrowserClientOpenGL::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
   CEF_REQUIRE_UI_THREAD();
 
   // The simulated screen and view rectangle are the same. This is necessary
@@ -260,7 +260,7 @@ bool CWebBrowserClientOpenGL::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect
 
 bool CWebBrowserClientOpenGL::GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY)
 {
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
   CEF_REQUIRE_UI_THREAD();
 
   screenX = m_iXPos + viewX;

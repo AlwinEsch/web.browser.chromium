@@ -24,12 +24,12 @@
 #include "include/cef_app.h"
 #include "include/cef_client.h"
 #include "include/base/cef_thread_checker.h"
-#include "platform/threads/threads.h"
+#include "p8-platform/threads/threads.h"
 
 #include "SettingsMain.h"
 #include "WebBrowserClient.h"
 
-class CWebBrowserManager : public PLATFORM::CThread
+class CWebBrowserManager : public P8PLATFORM::CThread
 {
 public:
   CWebBrowserManager();
@@ -122,7 +122,7 @@ private:
       bool booleanError;
       WEB_ADDON_ERROR addonError;
     } ret;
-    PLATFORM::CEvent event;
+    P8PLATFORM::CEvent event;
   } sMainThreadData;
 
   static void CreateControl_Main(sMainThreadData *data);
@@ -133,8 +133,8 @@ private:
   static void CallSingleCommand_Main(sMainThreadData *data);
 
   std::queue <sMainThreadData*> m_processQueue;
-  PLATFORM::CMutex m_processQueueMutex;
-  PLATFORM::CMutex  m_Mutex;
+  P8PLATFORM::CMutex m_processQueueMutex;
+  P8PLATFORM::CMutex  m_Mutex;
   std::map<int, CWebBrowserClient*> m_BrowserClients;
   std::map<std::string, CWebBrowserClient*> m_BrowserClientsInactive;
 

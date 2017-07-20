@@ -17,7 +17,7 @@
  */
 
 #include "Utils.h"
-#include "platform/util/StringUtils.h"
+#include "p8-platform/util/StringUtils.h"
 
 static unsigned int logCount = 0;
 static std::string logFile;

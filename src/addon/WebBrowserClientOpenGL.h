@@ -71,7 +71,7 @@ private:
   CefRect         m_popupRect;
   CefRect         m_updateRect;
   OnPaintMessage  m_onPaintMessage;
-  PLATFORM::CMutex m_Mutex;
+  P8PLATFORM::CMutex m_Mutex;
 
   static void OnPaint(void *msg);
 };

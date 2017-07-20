@@ -17,9 +17,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "kodi/libXBMC_addon.h"
-#include "kodi/libKODI_web.h"
-#include "kodi/guilib-v2/GUILib.h"
+#include "libXBMC_addon.h"
+#include "libKODI_web.h"
+#include "libKODI_guilib.h"
 
 class CWebBrowserManager;
 

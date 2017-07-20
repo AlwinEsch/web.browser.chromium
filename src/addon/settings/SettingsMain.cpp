@@ -17,9 +17,9 @@
  */
 
 #include "kodi/util/XMLUtils.h"
-#include "platform/util/StdString.h"
-#include "platform/util/util.h"
-#include "platform/util/timeutils.h"
+#include "p8-platform/util/StdString.h"
+#include "p8-platform/util/util.h"
+#include "p8-platform/util/timeutils.h"
 
 #include "include/internal/cef_types.h"
 
@@ -27,7 +27,7 @@
 #include "addon.h"
 
 using namespace ADDON;
-using namespace PLATFORM;
+using namespace P8PLATFORM;
 
 CSettingsMain::CSettingsMain() :
   m_startURL(""),

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon
+  id="web.browser.chromium"
+  version="0.0.7"
+  name="KODI Chromium Internet Browser"
+  provider-name="Team KODI">
+  <requires>@ADDON_DEPENDS@</requires>
+  <extension
+    point="kodi.web"
+    library_@PLATFORM@="@LIBRARY_FILENAME@"/>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Internet browser based upon Google Chromium project</summary>
+    <description lang="en">KODIChromiumBrowser web browser line based on the modern, cross-platform architecture provided by the Chromium project.
+NOTE: This add-on is still in development and everything is currently possible (also add-on name) to become changed!</description>
+    <disclaimer lang="en">This is a open source web browser handler for Google Chromium and only be possible to use on Kodi</disclaimer>
+    <platform>all</platform>
+    <license>GNU GENERAL PUBLIC LICENSE. Version 3, June 2007</license>
+    <forum></forum>
+    <website>http://esmasol.de/open-source/kodi-add-on-s/chromium-web-browser/</website>
+    <email></email>
+    <source>https://github.com/AlwinEsch/web.browser.chromium</source>
+  </extension>
+</addon>

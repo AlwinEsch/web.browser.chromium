@@ -18,7 +18,7 @@
 
 #include <vector>
 
-#include "platform/util/StringUtils.h"
+#include "p8-platform/util/StringUtils.h"
 #include "include/cef_app.h"
 #include "include/cef_version.h"
 #include "include/wrapper/cef_helpers.h"
@@ -27,9 +27,9 @@
 #include "WebBrowserManager.h"
 #include "Utils.h"
 
-#include "kodi/guilib-v2/GUIDialogKeyboard.h"
-#include "kodi/guilib-v2/GUIDialogOK.h"
-#include "kodi/guilib-v2/GUIDialogYesNo.h"
+// #include "kodi/guilib-v2/GUIDialogKeyboard.h"
+// #include "kodi/guilib-v2/GUIDialogOK.h"
+// #include "kodi/guilib-v2/GUIDialogYesNo.h"
 
 using namespace std;
 using namespace ADDON;
@@ -441,7 +441,7 @@ void *CWebBrowserManager::Process()
      * them.
      */
     {
-      PLATFORM::CLockObject lock(m_Mutex);
+      P8PLATFORM::CLockObject lock(m_Mutex);
 
       m_processQueueMutex.Lock();
       while (!m_processQueue.empty())
@@ -704,8 +704,8 @@ bool CWebBrowserManager::SetSandbox()
   struct stat st;
   if (m_strSandboxBinary.empty() || stat(m_strSandboxBinary.c_str(), &st) != 0)
   {
-    CAddonGUIDialogOK::ShowAndGetInput(GUI, KODI->GetLocalizedString(30000),
-                                            KODI->GetLocalizedString(30001));
+//     CAddonGUIDialogOK::ShowAndGetInput(GUI, KODI->GetLocalizedString(30000),
+//                                             KODI->GetLocalizedString(30001));
     LOG_MESSAGE(LOG_ERROR, "Web browser sandbox binary missing, add-on not usable!");
     return false;
   }
@@ -714,7 +714,7 @@ bool CWebBrowserManager::SetSandbox()
   if (access(m_strSandboxBinary.c_str(), X_OK) != 0 || (st.st_uid != 0) ||
       ((st.st_mode & S_ISUID) == 0) || ((st.st_mode & S_IXOTH)) == 0)
   {
-    if (!CAddonGUIDialogYesNo::ShowAndGetInput(GUI, KODI->GetLocalizedString(30000),
+    if (!GUI->Dialog_YesNo_ShowAndGetInput(KODI->GetLocalizedString(30000),
                                                     KODI->GetLocalizedString(30002),
                                                     bCanceled))
     {
@@ -722,16 +722,14 @@ bool CWebBrowserManager::SetSandbox()
     }
 
     std::string command;
-    std::string strPassword;
+    char strPassword[100];
     for (int i = 0; i < 3; i++)
     {
-      if (CAddonGUIDialogKeyboard::ShowAndGetNewPassword(GUI, strPassword,
-                                                         KODI->GetLocalizedString(30003),
-                                                         true))
+      if (GUI->Dialog_Keyboard_ShowAndGetNewPassword(*strPassword, 100, KODI->GetLocalizedString(30003), true))
       {
         if (stat("/usr/bin/sudo", &st) == 0)
           command = StringUtils::Format("echo %s | sudo -S bash -c \"chown root:root %s; sudo -- chmod 4755 %s\"",
-                                            strPassword.c_str(),
+                                            strPassword,
                                             m_strSandboxBinary.c_str(),
                                             m_strSandboxBinary.c_str());
         else

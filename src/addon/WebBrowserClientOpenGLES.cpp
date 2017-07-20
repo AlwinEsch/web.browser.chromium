@@ -66,7 +66,7 @@ void CWebBrowserClientOpenGLES::Cleanup()
 
 bool CWebBrowserClientOpenGLES::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
   CEF_REQUIRE_UI_THREAD();
 
   // The simulated screen and view rectangle are the same. This is necessary
@@ -79,7 +79,7 @@ bool CWebBrowserClientOpenGLES::GetViewRect(CefRefPtr<CefBrowser> browser, CefRe
 
 bool CWebBrowserClientOpenGLES::GetRootScreenRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
   CEF_REQUIRE_UI_THREAD();
 
   rect.x = rect.y = 0;
@@ -90,7 +90,7 @@ bool CWebBrowserClientOpenGLES::GetRootScreenRect(CefRefPtr<CefBrowser> browser,
 
 bool CWebBrowserClientOpenGLES::GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY)
 {
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
   CEF_REQUIRE_UI_THREAD();
 
   screenX = m_iXPos + viewX;
@@ -136,7 +136,7 @@ void CWebBrowserClientOpenGLES::OnPaint(sPaintData *data)
 
 void CWebBrowserClientOpenGLES::Render()
 {
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
 
   if (m_iViewWidth == 0 || m_iViewHeight == 0)
     return;
@@ -151,7 +151,7 @@ bool CWebBrowserClientOpenGLES::Dirty()
    * Handle from chromium given data, must be done on kodi's renderer thread (also on OpenGLES???),
    * thats why passed here
    */
-  PLATFORM::CLockObject lock(m_Mutex);
+  P8PLATFORM::CLockObject lock(m_Mutex);
 
   m_processQueueMutex.Lock();
   while (!m_processQueue.empty())

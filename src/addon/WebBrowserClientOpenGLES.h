@@ -86,12 +86,12 @@ private:
     int width;
     int height;
     GUIFunction function;
-    PLATFORM::CEvent event;
+    P8PLATFORM::CEvent event;
   } sPaintData;
 
   std::queue <sPaintData*> m_processQueue;
-  PLATFORM::CMutex m_processQueueMutex;
-  PLATFORM::CMutex m_Mutex;
+  P8PLATFORM::CMutex m_processQueueMutex;
+  P8PLATFORM::CMutex m_Mutex;
 
   static void OnPaint(sPaintData *data);
 };
