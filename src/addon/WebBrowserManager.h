@@ -20,6 +20,7 @@
 #define NDEBUG 1
 
 #include <map>
+#include <kodi/addon-instance/Web.h>
 
 #include "include/cef_app.h"
 #include "include/cef_client.h"
@@ -32,7 +33,7 @@
 class CWebBrowserManager : public P8PLATFORM::CThread
 {
 public:
-  CWebBrowserManager();
+  CWebBrowserManager(kodi::addon::CInstanceWeb* instance);
   virtual ~CWebBrowserManager();
 
   bool Create();
@@ -147,4 +148,5 @@ private:
 
   CefRefPtr<CefBrowser>         m_pBrowser;
   CefRefPtr<CWebBrowserClient>  m_pBrowserClient;
+  kodi::addon::CInstanceWeb* m_instance;
 };

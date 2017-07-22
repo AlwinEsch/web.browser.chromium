@@ -26,29 +26,29 @@
  * @brief Static creation functions
  */
 //{
-bool CWebGUIDialogContextMenu::OnInitCB(GUIHANDLE cbhdl)
-{
-  CWebGUIDialogContextMenu* menu = static_cast<CWebGUIDialogContextMenu*>(cbhdl);
-  return menu->OnInit();
-}
-
-bool CWebGUIDialogContextMenu::OnClickCB(GUIHANDLE cbhdl, int controlId)
-{
-  CWebGUIDialogContextMenu* menu = static_cast<CWebGUIDialogContextMenu*>(cbhdl);
-  return menu->OnClick(controlId);
-}
-
-bool CWebGUIDialogContextMenu::OnFocusCB(GUIHANDLE cbhdl, int controlId)
-{
-  CWebGUIDialogContextMenu* menu = static_cast<CWebGUIDialogContextMenu*>(cbhdl);
-  return menu->OnFocus(controlId);
-}
-
-bool CWebGUIDialogContextMenu::OnActionCB(GUIHANDLE cbhdl, int actionId)
-{
-  CWebGUIDialogContextMenu* menu = static_cast<CWebGUIDialogContextMenu*>(cbhdl);
-  return menu->OnAction(actionId);
-}
+// bool CWebGUIDialogContextMenu::OnInitCB(GUIHANDLE cbhdl)
+// {
+//   CWebGUIDialogContextMenu* menu = static_cast<CWebGUIDialogContextMenu*>(cbhdl);
+//   return menu->OnInit();
+// }
+//
+// bool CWebGUIDialogContextMenu::OnClickCB(GUIHANDLE cbhdl, int controlId)
+// {
+//   CWebGUIDialogContextMenu* menu = static_cast<CWebGUIDialogContextMenu*>(cbhdl);
+//   return menu->OnClick(controlId);
+// }
+//
+// bool CWebGUIDialogContextMenu::OnFocusCB(GUIHANDLE cbhdl, int controlId)
+// {
+//   CWebGUIDialogContextMenu* menu = static_cast<CWebGUIDialogContextMenu*>(cbhdl);
+//   return menu->OnFocus(controlId);
+// }
+//
+// bool CWebGUIDialogContextMenu::OnActionCB(GUIHANDLE cbhdl, int actionId)
+// {
+//   CWebGUIDialogContextMenu* menu = static_cast<CWebGUIDialogContextMenu*>(cbhdl);
+//   return menu->OnAction(actionId);
+// }
 //}
 
 /*!

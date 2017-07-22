@@ -21,7 +21,6 @@
 #include "WebBrowserClientOpenGL.h"
 
 using namespace std;
-using namespace ADDON;
 
 #if defined(OS_MACOSX)
 #include <OpenGL/gl.h>
@@ -55,8 +54,8 @@ using namespace ADDON;
 #define VERIFY_NO_ERROR
 #endif
 
-CWebBrowserClientOpenGL::CWebBrowserClientOpenGL(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props) :
-  CWebBrowserClientBase(iUniqueClientId, props),
+CWebBrowserClientOpenGL::CWebBrowserClientOpenGL(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, kodi::addon::CInstanceWeb* instance) :
+  CWebBrowserClientBase(iUniqueClientId, props, instance),
   m_bInitialized(false),
   m_iTextureId(0),
   m_iViewWidth(0),

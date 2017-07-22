@@ -302,14 +302,20 @@ if(WIN32)
 endif()
 
 add_executable(kodichromium ${KODICHROMIUM_BIN_SOURCES})
+add_dependencies(kodichromium cef-binary)
 target_link_libraries(kodichromium ${DEPLIBS})
-message(STATUS "------------${CMAKE_CURRENT_BINARY_DIR}")
-build_web_addon(web.browser.chromium
+
+set(KODICHROMIUM_CUSTOM_DATA "${CMAKE_CURRENT_BINARY_DIR}/share/cef")
+set(KODICHROMIUM_ADDITIONAL_BINARY "${CMAKE_CURRENT_BINARY_DIR}/kodichromium"
+                                   "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/chrome-sandbox"
+                                   "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/libcef.so")
+set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/icudtl.dat"
+                                         "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/natives_blob.bin"
+                                         "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/snapshot_blob.bin")
+
+build_addon(web.browser.chromium
                 KODICHROMIUM
-                DEPLIBS
-                kodichromium
-                ${CMAKE_CURRENT_BINARY_DIR}/lib/cef/
-                ${CMAKE_CURRENT_BINARY_DIR}/share/cef)
+                DEPLIBS)
 
 if(PACKAGE_ZIP EQUAL 1)
   # needed for project installing

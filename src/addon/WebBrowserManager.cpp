@@ -18,6 +18,11 @@
 
 #include <vector>
 
+#include <kodi/General.h>
+#include <kodi/gui/dialogs/OK.h>
+#include <kodi/gui/dialogs/YesNo.h>
+#include <kodi/gui/dialogs/Keyboard.h>
+
 #include "p8-platform/util/StringUtils.h"
 #include "include/cef_app.h"
 #include "include/cef_version.h"
@@ -27,12 +32,7 @@
 #include "WebBrowserManager.h"
 #include "Utils.h"
 
-// #include "kodi/guilib-v2/GUIDialogKeyboard.h"
-// #include "kodi/guilib-v2/GUIDialogOK.h"
-// #include "kodi/guilib-v2/GUIDialogYesNo.h"
-
 using namespace std;
-using namespace ADDON;
 
 class CWebBrowserApp : public CefApp,
                        public CefBrowserProcessHandler,
@@ -346,9 +346,10 @@ bool CWebBrowserApp::GetDataResourceForScale(
 
 int CWebBrowserManager::m_iUniqueClientId = 0;
 
-CWebBrowserManager::CWebBrowserManager() :
+CWebBrowserManager::CWebBrowserManager(kodi::addon::CInstanceWeb* instance) :
   m_isActive(false),
-  m_windowlessEnabled(true)
+  m_windowlessEnabled(true),
+  m_instance(instance)
 {
 }
 
@@ -358,7 +359,7 @@ CWebBrowserManager::~CWebBrowserManager()
 
 bool CWebBrowserManager::Create()
 {
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser add-on process creation start", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser add-on process creation start", __FUNCTION__);
 
   SetCEFPaths();
   if (!SetSandbox())
@@ -401,7 +402,7 @@ bool CWebBrowserManager::Create()
 
   CreateThread();
 
-  LOG_INTERNAL_MESSAGE(LOG_INFO, "%s - Started web browser add-on process", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_INFO, "%s - Started web browser add-on process", __FUNCTION__);
 
   m_isActive = true;
   return true;
@@ -413,7 +414,7 @@ void CWebBrowserManager::Destroy()
 
   StopThread();
   m_setting.SaveSettings();
-  LOG_INTERNAL_MESSAGE(LOG_INFO, "%s - Stopped web browser add-on process", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_INFO, "%s - Stopped web browser add-on process", __FUNCTION__);
 }
 
 void *CWebBrowserManager::Process()
@@ -424,7 +425,7 @@ void *CWebBrowserManager::Process()
   CefRefPtr<CefApp> app(new CWebBrowserApp);
   if (!CefInitialize(args, m_CefSettings, app, nullptr))
   {
-    LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
+    LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
     return nullptr;
   }
 
@@ -459,7 +460,7 @@ void *CWebBrowserManager::Process()
       {
         if (itr->second->CurrentInactiveCountdown() < 0)
         {
-          LOG_INTERNAL_MESSAGE(LOG_INFO, "%s - Web browser control inactive countdown reached end and closed", __FUNCTION__);
+          LOG_INTERNAL_MESSAGE(ADDON_LOG_INFO, "%s - Web browser control inactive countdown reached end and closed", __FUNCTION__);
           delete itr->second;
           m_BrowserClientsInactive.erase(itr);
         }
@@ -483,13 +484,13 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
    */
   if ((strcmp(webType, "browser") != 0) || handle == nullptr)
   {
-    LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Called for not supported web type %i", __FUNCTION__, webType);
+    LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Called for not supported web type %i", __FUNCTION__, webType);
     return WEB_ADDON_ERROR_INVALID_PARAMETERS;
   }
 
   CEF_REQUIRE_UI_THREAD();
 
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
 
   WEB_ADDON_ERROR addonError = WEB_ADDON_ERROR_FAILED;
   CWebBrowserClient *pBrowserClient;
@@ -497,7 +498,7 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   std::map<std::string, CWebBrowserClient*>::iterator itr = m_BrowserClientsInactive.find(props.strName);
   if (itr != m_BrowserClientsInactive.end())
   {
-    LOG_INTERNAL_MESSAGE(LOG_INFO, "%s - Found control in inactive mode and setting active", __FUNCTION__);
+    LOG_INTERNAL_MESSAGE(ADDON_LOG_INFO, "%s - Found control in inactive mode and setting active", __FUNCTION__);
     pBrowserClient = itr->second;
     pBrowserClient->SetActive();
     m_BrowserClientsInactive.erase(itr);
@@ -505,7 +506,7 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   }
   else
   {
-    pBrowserClient = new CWebBrowserClient(m_iUniqueClientId++, &props);
+    pBrowserClient = new CWebBrowserClient(m_iUniqueClientId++, &props, m_instance);
 
     CefWindowInfo info;
     info.SetAsWindowless(m_windowlessEnabled ? 1 : 0, false);
@@ -547,7 +548,7 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
 
     if (!CefBrowserHost::CreateBrowser(info, pBrowserClient, "", settings, nullptr))
     {
-      LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);
+      LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);
       if (pBrowserClient)
         delete pBrowserClient;
       return addonError;
@@ -561,7 +562,7 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   handle->dataIdentifier      = uniqueId;
   pBrowserClient->SetAddonHandle(handle);
 
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser control id '%i' created", __FUNCTION__, uniqueId);
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control id '%i' created", __FUNCTION__, uniqueId);
   return addonError;
 }
 
@@ -571,7 +572,7 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   //! Check for wrongly passed empty handle.
   if (handle == NULL)
   {
-    LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Web browser control destroy called without handle!", __FUNCTION__);
+    LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser control destroy called without handle!", __FUNCTION__);
     return false;
   }
 
@@ -579,7 +580,7 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
   std::map<int, CWebBrowserClient*>::iterator itr = m_BrowserClients.find(handle->dataIdentifier);
   if (itr == m_BrowserClients.end())
   {
-    LOG_INTERNAL_MESSAGE(LOG_ERROR, "%s - Web browser control destroy called for invalid id '%i'", __FUNCTION__, handle->dataIdentifier);
+    LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser control destroy called for invalid id '%i'", __FUNCTION__, handle->dataIdentifier);
     return false;
   }
 
@@ -591,19 +592,19 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
     m_BrowserClientsInactive[client->GetIdName()] = client;
   m_BrowserClients.erase(itr);
 
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser control id '%i' destroyed", __FUNCTION__, handle->dataIdentifier);
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control id '%i' destroyed", __FUNCTION__, handle->dataIdentifier);
   return true;
 }
 
 bool CWebBrowserManager::SetLanguage(const char *language)
 {
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser language set to '%s'", __FUNCTION__, language);
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser language set to '%s'", __FUNCTION__, language);
   return true;
 }
 
 bool CWebBrowserManager::OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus)
 {
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Open URL '%s' called", __FUNCTION__, strURL);
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Open URL '%s' called", __FUNCTION__, strURL);
   return ((CWebBrowserClient*)handle->callerAddress)->OpenWebsite(strURL, single, allowMenus);
 }
 
@@ -624,12 +625,12 @@ bool CWebBrowserManager::Dirty(const ADDON_HANDLE handle)
 
 void CWebBrowserManager::Stop(const ADDON_HANDLE handle)
 {
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser control stopped", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control stopped", __FUNCTION__);
 }
 
 bool CWebBrowserManager::OnInit(const ADDON_HANDLE handle)
 {
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "%s - Web browser control initialize", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control initialize", __FUNCTION__);
   return true;
 }
 
@@ -645,20 +646,21 @@ bool CWebBrowserManager::OnMouseEvent(const ADDON_HANDLE handle, int mouseId, do
 
 bool CWebBrowserManager::LoadUserSettings(void)
 {
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "Load of user settings");
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Load of user settings");
   return m_setting.LoadUserSettings();
 }
 
 bool CWebBrowserManager::SaveUserSettings(void)
 {
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "Save of user settings");
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Save of user settings");
   return m_setting.SaveUserSettings();
 }
 
 void CWebBrowserManager::SetCEFPaths()
 {
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, "Setup add-on CEF directories:");
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Setup add-on CEF directories:");
   std::string path = g_strUserPath;
+  fprintf(stderr, "--------------<------------<: %s\n", path.c_str());
   if (path.at(path.size() - 1) != '\\' &&
       path.at(path.size() - 1) != '/')
     path.append("/");
@@ -679,14 +681,14 @@ void CWebBrowserManager::SetCEFPaths()
       path.at(path.size() - 1) != '/')
     path.append("/");
 
-  m_strLocalesPath = path + "cef/locales";
-  m_strResourcesPath = path + "cef/";
+  m_strLocalesPath = path + "resources/cef/locales";
+  m_strResourcesPath = path + "resources/cef/";
 
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, " - m_strHTMLCacheDir  %s", m_strHTMLCacheDir.c_str());
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, " - m_strCookiePath    %s", m_strCookiePath.c_str());
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, " - m_strLocalesPath   %s", m_strLocalesPath.c_str());
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, " - m_strResourcesPath %s", m_strResourcesPath.c_str());
-  LOG_INTERNAL_MESSAGE(LOG_DEBUG, " - m_strLibPath       %s", m_strLibPath.c_str());
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strHTMLCacheDir  %s", m_strHTMLCacheDir.c_str());
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strCookiePath    %s", m_strCookiePath.c_str());
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strLocalesPath   %s", m_strLocalesPath.c_str());
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strResourcesPath %s", m_strResourcesPath.c_str());
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strLibPath       %s", m_strLibPath.c_str());
 }
 
 /*!
@@ -704,9 +706,9 @@ bool CWebBrowserManager::SetSandbox()
   struct stat st;
   if (m_strSandboxBinary.empty() || stat(m_strSandboxBinary.c_str(), &st) != 0)
   {
-//     CAddonGUIDialogOK::ShowAndGetInput(GUI, KODI->GetLocalizedString(30000),
-//                                             KODI->GetLocalizedString(30001));
-    LOG_MESSAGE(LOG_ERROR, "Web browser sandbox binary missing, add-on not usable!");
+    kodi::gui::dialogs::OK::ShowAndGetInput(kodi::GetLocalizedString(30000),
+                                            kodi::GetLocalizedString(30001));
+    LOG_MESSAGE(ADDON_LOG_ERROR, "Web browser sandbox binary missing, add-on not usable!");
     return false;
   }
 
@@ -714,27 +716,27 @@ bool CWebBrowserManager::SetSandbox()
   if (access(m_strSandboxBinary.c_str(), X_OK) != 0 || (st.st_uid != 0) ||
       ((st.st_mode & S_ISUID) == 0) || ((st.st_mode & S_IXOTH)) == 0)
   {
-    if (!GUI->Dialog_YesNo_ShowAndGetInput(KODI->GetLocalizedString(30000),
-                                                    KODI->GetLocalizedString(30002),
+    if (!kodi::gui::dialogs::YesNo::ShowAndGetInput(kodi::GetLocalizedString(30000),
+                                                    kodi::GetLocalizedString(30002),
                                                     bCanceled))
     {
       return false;
     }
 
     std::string command;
-    char strPassword[100];
+    std::string strPassword;
     for (int i = 0; i < 3; i++)
     {
-      if (GUI->Dialog_Keyboard_ShowAndGetNewPassword(*strPassword, 100, KODI->GetLocalizedString(30003), true))
+      if (kodi::gui::dialogs::Keyboard::ShowAndGetNewPassword(strPassword, kodi::GetLocalizedString(30003), true))
       {
         if (stat("/usr/bin/sudo", &st) == 0)
           command = StringUtils::Format("echo %s | sudo -S bash -c \"chown root:root %s; sudo -- chmod 4755 %s\"",
-                                            strPassword,
+                                            strPassword.c_str(),
                                             m_strSandboxBinary.c_str(),
                                             m_strSandboxBinary.c_str());
         else
         {
-          LOG_MESSAGE(LOG_ERROR, "No super user application found to change chrome-sandbox rights!");
+          LOG_MESSAGE(ADDON_LOG_ERROR, "No super user application found to change chrome-sandbox rights!");
           break;
         }
         if (system(command.c_str()) == 0)

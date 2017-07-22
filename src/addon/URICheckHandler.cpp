@@ -18,6 +18,8 @@
 
 #include <sstream>
 
+#include <kodi/Filesystem.h>
+
 #include "include/base/cef_bind.h"
 #include "include/cef_parser.h"
 #include "include/cef_task.h"
@@ -29,8 +31,6 @@
 #include "addon.h"
 #include "WebBrowserManager.h"
 #include "URICheckHandler.h"
-
-using namespace ADDON;
 
 const char kTestOrigin[] = "http://tests/";
 
@@ -247,7 +247,7 @@ CefRefPtr<CefStreamReader> CURICheck::GetBinaryResourceReader(const char* resour
   path.append("/");
   path.append(resource_name);
 
-  if (!KODI->FileExists(path.c_str(), true))
+  if (!kodi::vfs::FileExists(path, true))
     return NULL;
 
   return CefStreamReader::CreateForFile(path);

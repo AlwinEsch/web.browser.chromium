@@ -20,6 +20,7 @@
  #define NDEBUG 1
 
 #include <queue>
+#include <kodi/addon-instance/Web.h>
 
 #include "include/cef_app.h"
 #include "include/cef_client.h"
@@ -92,7 +93,7 @@ class CWebBrowserClientBase :
     public CefRequestContextHandler
 {
 public:
-  CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props);
+  CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, kodi::addon::CInstanceWeb* instance);
   virtual ~CWebBrowserClientBase();
 
   void SetBrowser(CefRefPtr<CefBrowser> browser);
@@ -750,6 +751,8 @@ public:
                         OVERRIDE;                                     ///
   //}
   IMPLEMENT_REFCOUNTING(CWebBrowserClientBase);
+
+  kodi::addon::CInstanceWeb* m_instance;
 
 protected:
   void SendMessage(Message& message, bool wait);

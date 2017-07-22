@@ -38,10 +38,10 @@ public:
   bool OnInit();
   bool OnAction(int actionId);
 
-  static bool OnClickCB(GUIHANDLE cbhdl, int controlId);
-  static bool OnFocusCB(GUIHANDLE cbhdl, int controlId);
-  static bool OnInitCB(GUIHANDLE cbhdl);
-  static bool OnActionCB(GUIHANDLE cbhdl, int actionId);
+//   static bool OnClickCB(GUIHANDLE cbhdl, int controlId);
+//   static bool OnFocusCB(GUIHANDLE cbhdl, int controlId);
+//   static bool OnInitCB(GUIHANDLE cbhdl);
+//   static bool OnActionCB(GUIHANDLE cbhdl, int actionId);
 
   /**
   //{//@{
@@ -233,7 +233,7 @@ public:
 //}//@}
 */
 private:
-  CAddonGUIWindow*                m_window;
+//   CAddonGUIWindow*                m_window;
 
   CefRefPtr<CefBrowser>           m_browser;
   CefRefPtr<CefFrame>             m_frame;

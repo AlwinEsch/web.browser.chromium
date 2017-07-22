@@ -19,7 +19,7 @@
 #include <string>
 
 #include "addon.h"
-#include "kodi_web_dll.h"
+#include <kodi/addon-instance/Web.h>
 #include "p8-platform/util/util.h"
 #include "p8-platform/util/StdString.h"
 
@@ -27,7 +27,6 @@
 #include "Utils.h"
 
 using namespace std;
-using namespace ADDON;
 
 /* User adjustable settings are saved here.
  * Default values are defined inside addon.h
@@ -39,100 +38,61 @@ std::string               g_strUserPath       = "";
 std::string               g_strAddonLibPath   = "";
 std::string               g_strAddonSharePath = "";
 CWebBrowserManager       *g_pWebManager       = NULL;
-CHelper_libXBMC_addon    *KODI                = NULL;
-CHelper_libKODI_web      *WEB                 = NULL;
-CHelper_libKODI_guilib   *GUI                 = NULL;
-ADDON_STATUS              m_CurStatus         = ADDON_STATUS_UNKNOWN;
 
-extern "C" {
-
-ADDON_STATUS ADDON_Create(void* hdl, void* props)
+class CWebBrowser : public kodi::addon::CInstanceWeb
 {
-  if (!hdl || !props)
-    return ADDON_STATUS_UNKNOWN;
+public:
+  CWebBrowser(KODI_HANDLE instance);
+  virtual ~CWebBrowser();
 
-  AddonProps_WebAddon* webProps = (AddonProps_WebAddon*)props;
-  fprintf(stderr, "-m_struct.propsllllllllllllll----------------.strAddonSharePath %s\n", webProps->strAddonSharePath);
-  KODI = new CHelper_libXBMC_addon;
-  if (!KODI->RegisterMe(hdl))
-  {
-    SAFE_DELETE(KODI);
-    KODI->Log(LOG_DEBUG, "%s - Failed to register libKODI_addon", __FUNCTION__);
-    return ADDON_STATUS_PERMANENT_FAILURE;
-  }
+  virtual WEB_ADDON_ERROR GetCapabilities(WEB_ADDON_CAPABILITIES *pCapabilities) override;
+  virtual bool SetLanguage(const char *language) override;
+  virtual WEB_ADDON_ERROR GetVariousTypes(const WEB_ADDON_VARIOUS_TYPE *prevType, WEB_ADDON_VARIOUS_TYPE *type) override;
+  virtual WEB_ADDON_ERROR CreateControl(const WEB_ADDON_GUI_PROPS &props, const char *webType, ADDON_HANDLE handle) override;
+  virtual bool DestroyControl(const ADDON_HANDLE handle) override;
+  virtual void Render(const ADDON_HANDLE handle) override;
+  virtual void Stop(const ADDON_HANDLE handle) override;
+  virtual bool Dirty(const ADDON_HANDLE handle) override;
+  virtual bool OnInit(const ADDON_HANDLE handle) override;
+  virtual bool OnAction(const ADDON_HANDLE handle, int actionId, int &nextItem) override;
+  virtual bool OnMouseEvent(const ADDON_HANDLE handle, int id, double x, double y, double offsetX, double offsetY, int state) override;
+  virtual bool OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus) override;
+  virtual void CallSingleCommand(const ADDON_HANDLE handle, WEB_ADDON_SINGLE_COMMANDS command) override;
+};
 
-  GUI = new CHelper_libKODI_guilib;
-  if (!GUI->RegisterMe(hdl))
-  {
-    SAFE_DELETE(GUI);
-    SAFE_DELETE(KODI);
-    KODI->Log(LOG_DEBUG, "%s - Failed to register libKODI_guilib", __FUNCTION__);
-    return ADDON_STATUS_PERMANENT_FAILURE;
-  }
+CWebBrowser::CWebBrowser(KODI_HANDLE instance)
+  : CInstanceWeb(instance)
+{
+  kodi::Log(ADDON_LOG_DEBUG, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
 
-  WEB = new CHelper_libKODI_web;
-  if (!WEB->RegisterMe(hdl))
-  {
-    SAFE_DELETE(WEB);
-    SAFE_DELETE(GUI);
-    SAFE_DELETE(KODI);
-    KODI->Log(LOG_DEBUG, "%s - Failed to register libKODI_web", __FUNCTION__);
-    return ADDON_STATUS_PERMANENT_FAILURE;
-  }
-
-  KODI->Log(LOG_DEBUG, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
-
-  m_CurStatus           = ADDON_STATUS_UNKNOWN;
-  g_strTempPath         = webProps->strTempPath;
-  g_strLogPath          = webProps->strLogPath;
-  g_strUserPath         = webProps->strUserPath;
-  g_strAddonLibPath     = webProps->strAddonLibPath;
-  g_strAddonSharePath   = webProps->strAddonSharePath;
-  g_pWebManager         = new CWebBrowserManager;
+  g_strTempPath         = TempPath();
+  g_strLogPath          = LogPath();
+  g_strUserPath         = UserPath();
+  g_strAddonLibPath     = AddonLibPath();
+  g_strAddonSharePath   = AddonSharePath();
+  g_pWebManager         = new CWebBrowserManager(this);
 
   if (!g_pWebManager->Create())
   {
-    KODI->Log(LOG_DEBUG, "%s - Creation of web manager failed", __FUNCTION__);
-    return ADDON_STATUS_PERMANENT_FAILURE;
+    kodi::Log(ADDON_LOG_DEBUG, "%s - Creation of web manager failed", __FUNCTION__);
+    return;
   }
 
   g_pWebManager->LoadUserSettings(); //!< @todo
-
-  m_CurStatus = ADDON_STATUS_OK;
-
-  return m_CurStatus;
+  fprintf(stderr, "--------------xxxxxxxxxxxxxxxxxxxxxxxxxxxxx------------> %s\n", __func__);
 }
 
-ADDON_STATUS ADDON_GetStatus()
+CWebBrowser::~CWebBrowser()
 {
-  return m_CurStatus;
-}
-
-void ADDON_Destroy()
-{
+  fprintf(stderr, "-------------yyyyyyyyyyyyyyy-------------> %s\n", __func__);
   g_pWebManager->SaveUserSettings(); //!< @todo
 
   g_pWebManager->Destroy();
 
   SAFE_DELETE(g_pWebManager);
-  SAFE_DELETE(WEB);
-  SAFE_DELETE(GUI);
-  SAFE_DELETE(KODI);
-
-  m_CurStatus = ADDON_STATUS_UNKNOWN;
 }
 
-ADDON_STATUS ADDON_SetSetting(const char *settingName, const void *settingValue)
-{
-  return ADDON_STATUS_OK;
-}
-
-const char* GetWebAddonName(void)
-{
-  return "KODIChromiumBrowser";
-}
-
-WEB_ADDON_ERROR GetAddonCapabilities(WEB_ADDON_CAPABILITIES *pCapabilities)
+WEB_ADDON_ERROR CWebBrowser::GetCapabilities(WEB_ADDON_CAPABILITIES *pCapabilities)
 {
   pCapabilities->bSupportsWeb       = true;
   pCapabilities->bSupportsMail      = false;
@@ -141,7 +101,7 @@ WEB_ADDON_ERROR GetAddonCapabilities(WEB_ADDON_CAPABILITIES *pCapabilities)
   return WEB_ADDON_ERROR_NO_ERROR;
 }
 
-WEB_ADDON_ERROR GetVariousTypes(const WEB_ADDON_VARIOUS_TYPE *prevType, WEB_ADDON_VARIOUS_TYPE *type)
+WEB_ADDON_ERROR CWebBrowser::GetVariousTypes(const WEB_ADDON_VARIOUS_TYPE *prevType, WEB_ADDON_VARIOUS_TYPE *type)
 {
   if (prevType == NULL)
   {
@@ -153,8 +113,9 @@ WEB_ADDON_ERROR GetVariousTypes(const WEB_ADDON_VARIOUS_TYPE *prevType, WEB_ADDO
   return WEB_ADDON_ERROR_REJECTED;
 }
 
+/*
 //! @todo add to addon interface
-WEB_ADDON_ERROR LoadUserSettings()
+WEB_ADDON_ERROR CWebBrowser::LoadUserSettings()
 {
   if (g_pWebManager->LoadUserSettings())
     return WEB_ADDON_ERROR_NO_ERROR;
@@ -162,66 +123,79 @@ WEB_ADDON_ERROR LoadUserSettings()
 }
 
 //! @todo add to addon interface
-WEB_ADDON_ERROR SaveUserSettings()
+WEB_ADDON_ERROR CWebBrowser::SaveUserSettings()
 {
   if (g_pWebManager->SaveUserSettings())
     return WEB_ADDON_ERROR_NO_ERROR;
   return WEB_ADDON_ERROR_FAILED;
 }
+*/
 
-WEB_ADDON_ERROR CreateControl(const WEB_ADDON_GUI_PROPS &props, const char *webType, ADDON_HANDLE handle)
+WEB_ADDON_ERROR CWebBrowser::CreateControl(const WEB_ADDON_GUI_PROPS &props, const char *webType, ADDON_HANDLE handle)
 {
   return g_pWebManager->CreateControl(props, webType, handle);
 }
 
-bool DestroyControl(const ADDON_HANDLE handle)
+bool CWebBrowser::DestroyControl(const ADDON_HANDLE handle)
 {
   return g_pWebManager->DestroyControl(handle);
 }
 
-bool SetLanguage(const char *language)
+bool CWebBrowser::SetLanguage(const char *language)
 {
   return g_pWebManager->SetLanguage(language);
 }
 
-void Render(const ADDON_HANDLE handle)
+void CWebBrowser::Render(const ADDON_HANDLE handle)
 {
   g_pWebManager->Render(handle);
 }
 
-void Stop(const ADDON_HANDLE handle)
+void CWebBrowser::Stop(const ADDON_HANDLE handle)
 {
   g_pWebManager->Stop(handle);
 }
 
-bool Dirty(const ADDON_HANDLE handle)
+bool CWebBrowser::Dirty(const ADDON_HANDLE handle)
 {
   return g_pWebManager->Dirty(handle);
 }
 
-bool OnInit(const ADDON_HANDLE handle)
+bool CWebBrowser::OnInit(const ADDON_HANDLE handle)
 {
   return g_pWebManager->OnInit(handle);
 }
 
-bool OnAction(const ADDON_HANDLE handle, int actionId, int &nextItem)
+bool CWebBrowser::OnAction(const ADDON_HANDLE handle, int actionId, int &nextItem)
 {
   return g_pWebManager->OnAction(handle, actionId, nextItem);
 }
 
-bool OnMouseEvent(const ADDON_HANDLE handle, int id, double x, double y, double offsetX, double offsetY, int state)
+bool CWebBrowser::OnMouseEvent(const ADDON_HANDLE handle, int id, double x, double y, double offsetX, double offsetY, int state)
 {
   return g_pWebManager->OnMouseEvent(handle, id, x, y, offsetX, offsetY, state);
 }
 
-bool OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus)
+bool CWebBrowser::OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus)
 {
   return g_pWebManager->OpenWebsite(handle, strURL, single, allowMenus);
 }
 
-void CallSingleCommand(const ADDON_HANDLE handle, WEB_ADDON_SINGLE_COMMANDS command)
+void CWebBrowser::CallSingleCommand(const ADDON_HANDLE handle, WEB_ADDON_SINGLE_COMMANDS command)
 {
   g_pWebManager->CallSingleCommand(handle, command);
 }
 
-} // extern "C"
+
+class CMyAddon : public kodi::addon::CAddonBase
+{
+public:
+  CMyAddon() { }
+  virtual ADDON_STATUS CreateInstance(int instanceType, std::string instanceID, KODI_HANDLE instance, KODI_HANDLE& addonInstance) override
+  {
+    addonInstance = new CWebBrowser(instance);
+    return ADDON_STATUS_OK;
+  }
+};
+
+ADDONCREATOR(CMyAddon)

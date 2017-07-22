@@ -16,6 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <kodi/General.h>
+#include <kodi/Filesystem.h>
+
 #include "kodi/util/XMLUtils.h"
 #include "p8-platform/util/StdString.h"
 #include "p8-platform/util/util.h"
@@ -26,7 +29,6 @@
 #include "SettingsMain.h"
 #include "addon.h"
 
-using namespace ADDON;
 using namespace P8PLATFORM;
 
 CSettingsMain::CSettingsMain() :
@@ -51,7 +53,7 @@ bool CSettingsMain::LoadSettings(void)
   {
     if (!SaveSettings())
     {
-      KODI->Log(LOG_ERROR, "invalid web browser data (no/invalid data file found at '%s')", m_baseSettingsFile.c_str());
+      kodi::Log(ADDON_LOG_ERROR, "invalid web browser data (no/invalid data file found at '%s')", m_baseSettingsFile.c_str());
       return false;
     }
   }
@@ -59,7 +61,7 @@ bool CSettingsMain::LoadSettings(void)
   TiXmlElement *pRootElement = xmlDoc.RootElement();
   if (strcmp(pRootElement->Value(), "main") != 0)
   {
-    KODI->Log(LOG_ERROR, "invalid web browser data (no <radio> tag found)");
+    kodi::Log(ADDON_LOG_ERROR, "invalid web browser data (no <radio> tag found)");
     return false;
   }
 
@@ -89,7 +91,7 @@ bool CSettingsMain::SaveSettings(void)
   XMLUtils::SetInt(pRoot, "loglevelcef", (int&)m_logLevelCEF);
   if (!xmlDoc.SaveFile(m_baseSettingsFile))
   {
-    KODI->Log(LOG_ERROR, "failed to write web browser settings data");
+    kodi::Log(ADDON_LOG_ERROR, "failed to write web browser settings data");
     return false;
   }
 
@@ -103,7 +105,7 @@ bool CSettingsMain::LoadUserSettings(void)
   {
     if (!SaveUserSettings())
     {
-      KODI->Log(LOG_ERROR, "invalid web browser data (no/invalid data file found at '%s')", m_currentUserSettingsFile.c_str());
+      kodi::Log(ADDON_LOG_ERROR, "invalid web browser data (no/invalid data file found at '%s')", m_currentUserSettingsFile.c_str());
       return false;
     }
   }
@@ -111,7 +113,7 @@ bool CSettingsMain::LoadUserSettings(void)
   TiXmlElement *pRootElement = xmlDoc.RootElement();
   if (strcmp(pRootElement->Value(), "user") != 0)
   {
-    KODI->Log(LOG_ERROR, "invalid web browser data (no <radio> tag found)");
+    kodi::Log(ADDON_LOG_ERROR, "invalid web browser data (no <radio> tag found)");
     return false;
   }
 
@@ -122,11 +124,11 @@ bool CSettingsMain::LoadUserSettings(void)
 
 bool CSettingsMain::SaveUserSettings(void)
 {
-  if (!KODI->DirectoryExists(g_strUserPath.c_str()))
+  if (!kodi::vfs::DirectoryExists(g_strUserPath))
   {
-    if (!KODI->CreateDirectory(g_strUserPath.c_str()))
+    if (!kodi::vfs::CreateDirectory(g_strUserPath))
     {
-      KODI->Log(LOG_ERROR, "failed to create user folder '%s' for web browser settings data", g_strUserPath.c_str());
+      kodi::Log(ADDON_LOG_ERROR, "failed to create user folder '%s' for web browser settings data", g_strUserPath.c_str());
       return false;
     }
   }
@@ -141,7 +143,7 @@ bool CSettingsMain::SaveUserSettings(void)
 
   if (!xmlDoc.SaveFile(m_currentUserSettingsFile))
   {
-    KODI->Log(LOG_ERROR, "failed to write web browser settings data");
+    kodi::Log(ADDON_LOG_ERROR, "failed to write web browser settings data");
     return false;
   }
 

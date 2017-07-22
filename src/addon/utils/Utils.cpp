@@ -16,6 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <kodi/Filesystem.h>
+
+#include "addon.h"
 #include "Utils.h"
 #include "p8-platform/util/StringUtils.h"
 
@@ -33,28 +36,29 @@ static const char* const levelNames[] =
   "NONE"
 };
 
-void LOG_INTERNAL_MESSAGE(const ADDON::addon_log_t loglevel, const char *format, ...)
+void LOG_INTERNAL_MESSAGE(const AddonLog loglevel, const char *format, ...)
 {
   if (logCount == 0)
   {
     logFile = g_strLogPath + "kodi-chromium.log";
-    LOG_MESSAGE(LOG_NOTICE, "Own add-on log file becomes stored at '%s'", logFile.c_str());
-    if (KODI->FileExists(logFile.c_str(), false))
+    LOG_MESSAGE(ADDON_LOG_NOTICE, "Own add-on log file becomes stored at '%s'", logFile.c_str());
+    if (kodi::vfs::FileExists(logFile, false))
     {
       char buffer[16384];
-      void* oldFile = KODI->OpenFile(logFile.c_str(), 0);
-      void* backupFile = KODI->OpenFileForWrite(std::string(g_strLogPath + "kodi-chromium.old.log").c_str(), true);
-      if (oldFile)
-      {
-        ssize_t fileSize = KODI->ReadFile(oldFile, &buffer, sizeof(buffer));
-        KODI->CloseFile(oldFile);
-        KODI->DeleteFile(logFile.c_str());
+      kodi::vfs::CFile file;
 
-        if (backupFile)
+      bool ret = file.OpenFile(logFile, 0);
+      if (ret)
+      {
+        ssize_t fileSize = file.Read(&buffer, sizeof(buffer));
+        file.Close();
+        kodi::vfs::DeleteFile(logFile);
+
+        ret = file.OpenFileForWrite(g_strLogPath + "kodi-chromium.old.log", true);
+        if (ret)
         {
           if (fileSize > 0)
-            KODI->WriteFile(backupFile, &buffer, fileSize);
-          KODI->CloseFile(backupFile);
+            file.Write(&buffer, fileSize);
         }
       }
     }
@@ -73,11 +77,10 @@ void LOG_INTERNAL_MESSAGE(const ADDON::addon_log_t loglevel, const char *format,
 #endif // TEST_BUILD
   va_end(args);
 
-  void* file = KODI->OpenFileForWrite(logFile.c_str(), false);
-  if (file)
+  kodi::vfs::CFile file;
+  if (file.OpenFileForWrite(logFile, false))
   {
-    KODI->SeekFile(file, KODI->GetFileLength(file), 0);
-    KODI->WriteFile(file, logMessage.c_str(), logMessage.size());
-    KODI->CloseFile(file);
+    file.Seek(file.GetLength(), 0);
+    file.Write(logMessage.c_str(), logMessage.size());
   }
 }

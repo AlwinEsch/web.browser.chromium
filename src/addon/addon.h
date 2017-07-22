@@ -17,9 +17,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "libXBMC_addon.h"
-#include "libKODI_web.h"
-#include "libKODI_guilib.h"
+#include <string>
 
 class CWebBrowserManager;
 
@@ -29,6 +27,3 @@ extern std::string                   g_strUserPath;
 extern std::string                   g_strAddonLibPath;
 extern std::string                   g_strAddonSharePath;
 extern CWebBrowserManager           *g_pWebManager;
-extern ADDON::CHelper_libXBMC_addon *KODI;
-extern CHelper_libKODI_guilib       *GUI;
-extern CHelper_libKODI_web          *WEB;

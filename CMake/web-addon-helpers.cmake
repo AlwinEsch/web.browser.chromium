@@ -121,9 +121,9 @@ macro (build_web_addon target prefix libs binary additionals_lib additionals_sha
     foreach(loop_var ${BIN_ADDON_PARTS})
       # Only pass strings with "#define ADDON_" from versions.h
       if(loop_var MATCHES "#define ADDON_")
-        string(REGEX REPLACE "\\\n" " " loop_var ${loop_var}) # remove header line breaks
+        string(REGEX REPLACE "\\\n" " " loop_var ${loop_var}) # remove header line breaks.
         string(REGEX REPLACE "#define " "" loop_var ${loop_var}) # remove the #define name from string
-        string(REGEX MATCHALL "[a-zA-Z0-9._]+" loop_var "${loop_var}") # separate the define values to a list
+        string(REGEX MATCHALL "[//a-zA-Z0-9._-]+" loop_var "${loop_var}") # separate the define values to a list
 
         # Get the definition name
         list(GET loop_var 0 include_name)
@@ -147,8 +147,8 @@ macro (build_web_addon target prefix libs binary additionals_lib additionals_sha
                 if("${matchres}" EQUAL 0)
                   string(REPLACE " " ";" loop_var "${loop_var}")
                   list(GET loop_var 1 include_name)
-                  string(REGEX REPLACE "[<>\"]" "" include_name "${include_name}")
-                  if(include_name STREQUAL ${depend_header})
+                  string(REGEX REPLACE "[<>\"]|kodi/" "" include_name "${include_name}")
+                  if(include_name MATCHES ${depend_header})
                     set(ADDON_DEPENDS "${ADDON_DEPENDS}\n<import addon=\"${${xml_entry_name}}\" version=\"${${depends_name}}\"/>")
                     # Inform with them the addon header about used type
                     add_definitions(-D${used_type_name})
@@ -391,7 +391,7 @@ function (kodi_find_path var_name filename search_path strip_file)
 endfunction()
 
 # Cmake build options
-include(addoptions)
+include(AddOptions)
 include(TestCXXAcceptsFlag)
 option(PACKAGE_ZIP "Package Zip file?" OFF)
 option(PACKAGE_TGZ "Package TGZ file?" OFF)

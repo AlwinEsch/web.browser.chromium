@@ -18,8 +18,7 @@
  */
 
 #include <string>
-#include "addon.h"
-
+#include <kodi/General.h>
 
 #define TEST_BUILD 1
 #ifdef TEST_BUILD
@@ -31,8 +30,8 @@ do { \
 #else
 #define LOG_MESSAGE(loglevel, a...) \
 do { \
-  KODI->Log(loglevel, "KODIChromium - " a); \
+  kodi::Log(loglevel, "KODIChromium - " a); \
 } while(0)
 #endif
 
-void LOG_INTERNAL_MESSAGE(const ADDON::addon_log_t loglevel, const char *format, ...);
+void LOG_INTERNAL_MESSAGE(const AddonLog loglevel, const char *format, ...);
