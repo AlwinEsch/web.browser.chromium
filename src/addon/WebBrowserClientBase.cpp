@@ -1979,7 +1979,6 @@ bool CWebBrowserClientBase::OnRequestGeolocationPermission(
 
 void CWebBrowserClientBase::OnCancelGeolocationPermission(
     CefRefPtr<CefBrowser>                 browser,
-    const CefString&                      requesting_url,
     int                                   request_id)
 {
     LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
@@ -1993,7 +1992,6 @@ void CWebBrowserClientBase::OnCancelGeolocationPermission(
 bool CWebBrowserClientBase::OnJSDialog(
     CefRefPtr<CefBrowser>                 browser,
     const CefString&                      origin_url,
-    const CefString&                      accept_lang,
     JSDialogType                          dialog_type,
     const CefString&                      message_text,
     const CefString&                      default_prompt_text,
@@ -2117,11 +2115,11 @@ void CWebBrowserClientBase::OnAfterCreated(CefRefPtr<CefBrowser> browser)
   m_iBrowserCount++;
 }
 
-bool CWebBrowserClientBase::RunModal(CefRefPtr<CefBrowser> browser)
-{
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-  return false;
-}
+// bool CWebBrowserClientBase::RunModal(CefRefPtr<CefBrowser> browser)
+// {
+//     LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+//   return false;
+// }
 
 bool CWebBrowserClientBase::DoClose(CefRefPtr<CefBrowser> browser)
 {
@@ -2311,6 +2309,7 @@ void CWebBrowserClientBase::OnResourceRedirect(
     CefRefPtr<CefBrowser>                 browser,
     CefRefPtr<CefFrame>                   frame,
     CefRefPtr<CefRequest>                 request,
+    CefRefPtr<CefResponse>                response,
     CefString&                            new_url)
 {
     LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
@@ -2442,6 +2441,7 @@ CefRefPtr<CefCookieManager> CWebBrowserClientBase::GetCookieManager()
 bool CWebBrowserClientBase::OnBeforePluginLoad(
     const CefString&                      mime_type,
     const CefString&                      plugin_url,
+    bool                                  is_main_frame,
     const CefString&                      top_origin_url,
     CefRefPtr<CefWebPluginInfo>           plugin_info,
     PluginPolicy*                         plugin_policy)

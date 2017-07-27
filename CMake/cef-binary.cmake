@@ -86,7 +86,7 @@ set_libraries(cef-binary cef)
 
 add_custom_command(TARGET cef-binary
   # Static libs which becomes added
-  COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/libcef_dll/${CMAKE_STATIC_LIBRARY_PREFIX}cef_dll_wrapper${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}
+  COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/libcef_dll_wrapper/${CMAKE_STATIC_LIBRARY_PREFIX}cef_dll_wrapper${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}
 
   # Shared libs and parts which need present on add-on
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
@@ -97,7 +97,7 @@ add_custom_command(TARGET cef-binary
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_100_percent.pak          ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_200_percent.pak          ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_extensions.pak           ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_resources.pak            ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+#  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_resources.pak            ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/devtools_resources.pak       ${CMAKE_CURRENT_BINARY_DIR}/share/cef
 
   COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}cef${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/lib/cef

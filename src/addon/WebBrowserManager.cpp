@@ -56,7 +56,7 @@ public:
                         OVERRIDE;                                     ///
 
   virtual void OnRegisterCustomSchemes(                            ///<--
-      CefRefPtr<CefSchemeRegistrar> registrar)                        ///
+      CefRawPtr<CefSchemeRegistrar> registrar)                        ///
                         OVERRIDE;                                     ///
   //}
 
@@ -197,7 +197,7 @@ void CWebBrowserApp::OnBeforeCommandLineProcessing(
 }
 
 void CWebBrowserApp::OnRegisterCustomSchemes(
-    CefRefPtr<CefSchemeRegistrar> registrar)
+    CefRawPtr<CefSchemeRegistrar> registrar)
 {
   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
 }
@@ -394,7 +394,8 @@ bool CWebBrowserManager::Create()
   m_CefSettings.pack_loading_disabled               = 0;
   m_CefSettings.remote_debugging_port               = 0;
   m_CefSettings.uncaught_exception_stack_size       = 0;
-  m_CefSettings.context_safety_implementation       = 0;
+  m_CefSettings.ignore_certificate_errors           = 0;
+  m_CefSettings.enable_net_security_expiration      = 0;
   m_CefSettings.background_color                    = 0;
   CefString(&m_CefSettings.accept_language_list)    = "";
 
@@ -509,7 +510,7 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
     pBrowserClient = new CWebBrowserClient(m_iUniqueClientId++, &props, m_instance);
 
     CefWindowInfo info;
-    info.SetAsWindowless(m_windowlessEnabled ? 1 : 0, false);
+//     info.SetAsWindowless(m_windowlessEnabled ? 1 : 0, false);
 
     CefBrowserSettings settings;
     settings.windowless_frame_rate              = 0;
@@ -526,11 +527,9 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
     CefString(&settings.default_encoding)       = "";
     settings.remote_fonts                       = STATE_DEFAULT;
     settings.javascript                         = STATE_DEFAULT;
-    settings.javascript_open_windows            = STATE_DEFAULT;
     settings.javascript_close_windows           = STATE_DEFAULT;
     settings.javascript_access_clipboard        = STATE_DEFAULT;
     settings.javascript_dom_paste               = STATE_DEFAULT;
-    settings.caret_browsing                     = STATE_DEFAULT;
     settings.plugins                            = STATE_DISABLED;
     settings.universal_access_from_file_urls    = STATE_DEFAULT;
     settings.file_access_from_file_urls         = STATE_DEFAULT;

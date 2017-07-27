@@ -338,8 +338,7 @@ public:
 
   virtual void OnCancelGeolocationPermission(                         /// Called when a geolocation access request is canceled. |requesting_url| is
       CefRefPtr<CefBrowser>                 browser,                  /// the URL that originally requested permission and |request_id| is the unique
-      const CefString&                      requesting_url,           /// ID for the permission request.
-      int                                   request_id)               ///
+      int                                   request_id)               /// ID for the permission request.
                         OVERRIDE;                                     ///
   //}
 
@@ -355,7 +354,6 @@ public:
   virtual bool OnJSDialog(                                         ///<--
       CefRefPtr<CefBrowser>                 browser,                  ///
       const CefString&                      origin_url,               ///
-      const CefString&                      accept_lang,              ///
       JSDialogType                          dialog_type,              ///
       const CefString&                      message_text,             ///
       const CefString&                      default_prompt_text,      ///
@@ -472,9 +470,9 @@ public:
       CefRefPtr<CefBrowser>                 browser)                  ///
                         OVERRIDE;                                     ///
 
-  virtual bool RunModal(                                              /// Called when a modal window is about to display and the modal loop should
-      CefRefPtr<CefBrowser>                 browser)                  /// begin running. Return false to use the default modal loop implementation or
-                        OVERRIDE;                                     /// true to use a custom implementation.
+//   virtual bool RunModal(                                              /// Called when a modal window is about to display and the modal loop should
+//       CefRefPtr<CefBrowser>                 browser)                  /// begin running. Return false to use the default modal loop implementation or
+//                         OVERRIDE;                                     /// true to use a custom implementation.
 
   virtual bool DoClose(                                               /// Called when a browser has recieved a request to close. This may result directly from a call to
       CefRefPtr<CefBrowser>                 browser)                  /// CefBrowserHost::CloseBrowser() or indirectly if the browser is a top-level OS window created by
@@ -673,6 +671,7 @@ public:
       CefRefPtr<CefBrowser>                 browser,                  /// parameter will contain the old URL and other request-related information.
       CefRefPtr<CefFrame>                   frame,                    /// The |new_url| parameter will contain the new URL and can be changed if
       CefRefPtr<CefRequest>                 request,                  /// desired. The |request| object cannot be modified in this callback.
+      CefRefPtr<CefResponse>                response,                 ///
       CefString&                            new_url)                  ///
                         OVERRIDE;                                     ///
 
@@ -745,6 +744,7 @@ public:
   virtual bool OnBeforePluginLoad(                                 ///<--
       const CefString&                      mime_type,                ///
       const CefString&                      plugin_url,               ///
+      bool                                  is_main_frame,            ///
       const CefString&                      top_origin_url,           ///
       CefRefPtr<CefWebPluginInfo>           plugin_info,              ///
       PluginPolicy*                         plugin_policy)            ///
