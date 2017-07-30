@@ -1,0 +1,48 @@
+<settings version="1">
+  <section id="addon" label="-1" help="-1">
+    <category id="main" label="128" help="-1">
+      <group id="1" label="30007">
+        <setting id="zoomlevel" type="integer" label="30004" help="-1">
+          <default>20</default>
+          <constraints>
+            <minimum>40</minimum>
+            <step>10</step>
+            <maximum>500</maximum>
+          </constraints>
+          <control type="spinner" format="string">
+            <formatlabel>30005</formatlabel>
+          </control>
+        </setting>
+        <setting id="zoom_step_size" type="integer" label="30006" help="-1">
+          <visible>false</visible>
+          <default>10</default>
+          <constraints>
+            <minimum>5</minimum>
+            <step>5</step>
+            <maximum>50</maximum>
+          </constraints>
+          <control type="spinner" format="string" />
+        </setting>
+      </group>
+    </category>
+    <category id="security" label="30008" help="-1">
+    </category>
+    <category id="downloads" label="30009" help="-1">
+      <group id="1" label="-1">
+        <setting id="downloads.path" type="path" label="30011" help="-1">
+          <default></default>
+          <constraints>
+            <allowempty>true</allowempty>
+          </constraints>
+          <control type="button" format="path">
+            <heading>657</heading>
+          </control>
+        </setting>
+        <setting id="downloads.askfolder" type="boolean" label="30010" help="-1">
+          <default>true</default>
+          <control type="toggle" />
+        </setting>
+      </group>
+    </category>
+  </section>
+</settings>

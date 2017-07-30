@@ -18,6 +18,8 @@
 
 #include "include/cef_app.h"
 #include "main.h"
+#include "client_app_renderer.h"
+#include "client_app_other.h"
 
 namespace client {
 
@@ -27,8 +29,22 @@ int RunMain(int argc, char* argv[])
   // Provide CEF with command-line arguments.
   CefMainArgs main_args(argc, argv);
 
+  // Parse command-line arguments.
+  CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+  command_line->InitFromArgv(argc, argv);
+
+  // Create a ClientApp of the correct type.
+  CefRefPtr<CefApp> app;
+  ClientApp::ProcessType process_type = ClientApp::GetProcessType(command_line);
+  if (process_type == ClientApp::RendererProcess)
+    app = new ClientAppRenderer();
+  else if (process_type == ClientApp::OtherProcess)
+    app = new ClientAppOther();
+
+fprintf(stderr, "111111111111111111111 --------------------------- process_type %i\n", process_type);
+
   // Execute the sub-process.
-  return CefExecuteProcess(main_args, NULL, NULL);
+  return CefExecuteProcess(main_args, app, NULL);
 }
 
 }  // namespace client

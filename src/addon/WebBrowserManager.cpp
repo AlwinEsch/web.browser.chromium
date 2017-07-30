@@ -22,6 +22,7 @@
 #include <kodi/gui/dialogs/OK.h>
 #include <kodi/gui/dialogs/YesNo.h>
 #include <kodi/gui/dialogs/Keyboard.h>
+#include <kodi/gui/dialogs/FileBrowser.h>
 
 #include "p8-platform/util/StringUtils.h"
 #include "include/cef_app.h"
@@ -34,10 +35,137 @@
 
 using namespace std;
 
+
+
+
+
+
+
+// /*
+//
+//
+// class CWebBrowserRender : public CefApp, public CefRenderProcessHandler
+// {
+// public:
+//   CWebBrowserRender()
+//     : m_last_node_is_editable(false)
+//   {
+//     printf("NEW Render Process\n");
+//   }
+// //   virtual ~CWebBrowserRender();
+//
+//
+//   virtual bool OnBeforeNavigation(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+//                                   CefRefPtr<CefRequest> request, NavigationType navigation_type,
+//                                   bool is_redirect) OVERRIDE;
+//
+//   virtual void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+//                                 CefRefPtr<CefV8Context> context) OVERRIDE;
+//
+//   virtual void OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+//                                  CefRefPtr<CefV8Context> context) OVERRIDE;
+//
+//   virtual void OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+//                                    CefRefPtr<CefV8Context> context, CefRefPtr<CefV8Exception> exception,
+//                                    CefRefPtr<CefV8StackTrace> stackTrace) OVERRIDE;
+//
+//   virtual void OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+//                                     CefRefPtr<CefDOMNode> node) OVERRIDE;
+//
+//   virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process,
+//                                         CefRefPtr<CefProcessMessage> message) OVERRIDE;
+//
+//   virtual CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() OVERRIDE { fprintf(stderr, " -aaaaaaaaaaaaaaaaaaaaa- %s\n", __PRETTY_FUNCTION__); return this; }
+//
+// private:
+//   bool m_last_node_is_editable;
+//
+//   IMPLEMENT_REFCOUNTING(CWebBrowserRender);
+//   DISALLOW_COPY_AND_ASSIGN(CWebBrowserRender);
+// };
+//
+// bool CWebBrowserRender::OnBeforeNavigation(
+//     CefRefPtr<CefBrowser> browser,
+//     CefRefPtr<CefFrame> frame,
+//     CefRefPtr<CefRequest> request,
+//     NavigationType navigation_type,
+//     bool is_redirect)
+// {
+// fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+//   return false;
+// }
+//
+// void CWebBrowserRender::OnContextCreated(
+//     CefRefPtr<CefBrowser> browser,
+//     CefRefPtr<CefFrame> frame,
+//     CefRefPtr<CefV8Context> context)
+// {
+// fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// }
+//
+// void CWebBrowserRender::OnContextReleased(
+//     CefRefPtr<CefBrowser> browser,
+//     CefRefPtr<CefFrame> frame,
+//     CefRefPtr<CefV8Context> context)
+// {
+// fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// }
+//
+// void CWebBrowserRender::OnUncaughtException(
+//     CefRefPtr<CefBrowser> browser,
+//     CefRefPtr<CefFrame> frame,
+//     CefRefPtr<CefV8Context> context,
+//     CefRefPtr<CefV8Exception> exception,
+//     CefRefPtr<CefV8StackTrace> stackTrace)
+// {
+// fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// }
+//
+// void CWebBrowserRender::OnFocusedNodeChanged(
+//     CefRefPtr<CefBrowser> browser,
+//     CefRefPtr<CefFrame> frame,
+//     CefRefPtr<CefDOMNode> node)
+// {
+//   bool is_editable = (node.get() && node->IsEditable());
+//   if (is_editable != m_last_node_is_editable) {
+//     // Notify the browser of the change in focused element type.
+//     m_last_node_is_editable = is_editable;
+//     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("ClientRenderer.FocusedNodeChanged");
+//     message->GetArgumentList()->SetBool(0, is_editable);
+//     message->GetArgumentList()->SetString(1, node->GetName());
+//     message->GetArgumentList()->SetString(2, node->GetValue());
+//     message->GetArgumentList()->SetString(3, node->GetFormControlElementType());
+//     message->GetArgumentList()->SetInt(4, node->GetType());
+//     browser->SendProcessMessage(PID_BROWSER, message);
+//   }
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// }
+//
+// bool CWebBrowserRender::OnProcessMessageReceived(
+//     CefRefPtr<CefBrowser> browser,
+//     CefProcessId source_process,
+//     CefRefPtr<CefProcessMessage> message)
+// {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+//
+//   return false;
+// }*/
+
+
+
+
+
+
+
+
+
+
+
+
 class CWebBrowserApp : public CefApp,
-                       public CefBrowserProcessHandler,
-                       public CefRenderProcessHandler,
-                       public CefResourceBundleHandler
+                       /*public CefMessageRouterBrowserSide,*/
+                       public CefRenderProcessHandler/*,
+                       public CefResourceBundleHandler*/
 {
 public:
   CWebBrowserApp();
@@ -60,80 +188,205 @@ public:
                         OVERRIDE;                                     ///
   //}
 
-  /*!
-   * @brief CefBrowserProcessHandler methods
-   */
-  //{
-  virtual void OnContextInitialized()                              ///<--
-                        OVERRIDE;                                     ///
-  //}
+  virtual bool OnBeforeNavigation(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                  CefRefPtr<CefRequest> request, NavigationType navigation_type,
+                                  bool is_redirect) OVERRIDE;
 
-  /*!
-   * @brief CefRenderProcessHandler methods
-   *
-   * Class used to implement render process callbacks. The methods of this class
-   * will be called on the render process main thread (TID_RENDERER) unless
-   * otherwise indicated.
-   */
-  //{
-  virtual void OnRenderThreadCreated(                              ///<--
-      CefRefPtr<CefListValue> extra_info)                             ///
-                        OVERRIDE;                                     ///
+  virtual void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                CefRefPtr<CefV8Context> context) OVERRIDE;
 
-  virtual void OnWebKitInitialized()                               ///<--
-                        OVERRIDE;                                     ///
+  virtual void OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                 CefRefPtr<CefV8Context> context) OVERRIDE;
 
-  virtual void OnBrowserCreated(                                   ///<--
-      CefRefPtr<CefBrowser> browser)                                  ///
-                        OVERRIDE;                                     ///
+  virtual void OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                   CefRefPtr<CefV8Context> context, CefRefPtr<CefV8Exception> exception,
+                                   CefRefPtr<CefV8StackTrace> stackTrace) OVERRIDE;
 
-  virtual void OnBrowserDestroyed(                                 ///<--
-      CefRefPtr<CefBrowser> browser)                                  ///
-                        OVERRIDE;                                     ///
+  virtual void OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                    CefRefPtr<CefDOMNode> node) OVERRIDE;
 
-  virtual CefRefPtr<CefLoadHandler> GetLoadHandler()               ///<--
-                        OVERRIDE;                                     ///
+  virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process,
+                                        CefRefPtr<CefProcessMessage> message) OVERRIDE;
 
-  virtual bool OnBeforeNavigation(                                 ///<--
-      CefRefPtr<CefBrowser> browser,                                  ///
-      CefRefPtr<CefFrame> frame,                                      ///
-      CefRefPtr<CefRequest> request,                                  ///
-      NavigationType navigation_type,                                 ///
-      bool is_redirect)                                               ///
-                        OVERRIDE;                                     ///
-
-  virtual void OnContextCreated(                                   ///<--
-      CefRefPtr<CefBrowser> browser,                                  ///
-      CefRefPtr<CefFrame> frame,                                      ///
-      CefRefPtr<CefV8Context> context)                                ///
-                        OVERRIDE;                                     ///
-
-  virtual void OnContextReleased(                                  ///<--
-      CefRefPtr<CefBrowser> browser,                                  ///
-      CefRefPtr<CefFrame> frame,                                      ///
-      CefRefPtr<CefV8Context> context)                                ///
-                        OVERRIDE;                                     ///
-
-  virtual void OnUncaughtException(                                ///<--
-      CefRefPtr<CefBrowser> browser,                                  ///
-      CefRefPtr<CefFrame> frame,                                      ///
-      CefRefPtr<CefV8Context> context,                                ///
-      CefRefPtr<CefV8Exception> exception,                            ///
-      CefRefPtr<CefV8StackTrace> stackTrace)                          ///
-                        OVERRIDE;                                     ///
-
-  virtual void OnFocusedNodeChanged(                               ///<--
-      CefRefPtr<CefBrowser> browser,                                  ///
-      CefRefPtr<CefFrame> frame,                                      ///
-      CefRefPtr<CefDOMNode> node)                                     ///
-                        OVERRIDE;                                     ///
-
-  virtual bool OnProcessMessageReceived(                           ///<--
-      CefRefPtr<CefBrowser> browser,                                  ///
-      CefProcessId source_process,                                    ///
-      CefRefPtr<CefProcessMessage> message)                           ///
-                        OVERRIDE;                                     ///
-  //}
+//   /*!
+//    * @brief CefBrowserProcessHandler methods
+//    */
+//   //{
+// /*  virtual void OnContextInitialized()                              ///<--
+//                         OVERRIDE; */                                    ///
+//   //}
+//
+// //   /*!
+// //    * @brief CefRenderProcessHandler methods
+// //    *
+// //    * Class used to implement render process callbacks. The methods of this class
+// //    * will be called on the render process main thread (TID_RENDERER) unless
+// //    * otherwise indicated.
+// //    */
+// //   //{
+// //   virtual void OnRenderThreadCreated(                              ///<--
+// //       CefRefPtr<CefListValue> extra_info)                             ///
+// //                         OVERRIDE;                                     ///
+// //
+// //   virtual void OnWebKitInitialized()                               ///<--
+// //                         OVERRIDE;                                     ///
+// //
+// //   virtual void OnBrowserCreated(                                   ///<--
+// //       CefRefPtr<CefBrowser> browser)                                  ///
+// //                         OVERRIDE;                                     ///
+// //
+// //   virtual void OnBrowserDestroyed(                                 ///<--
+// //       CefRefPtr<CefBrowser> browser)                                  ///
+// //                         OVERRIDE;                                     ///
+// //
+// //   virtual CefRefPtr<CefLoadHandler> GetLoadHandler()               ///<--
+// //                         OVERRIDE;                                     ///
+// //
+// /*  virtual bool OnBeforeNavigation(                                 ///<--
+//       CefRefPtr<CefBrowser> browser,                                  ///
+//       CefRefPtr<CefFrame> frame,                                      ///
+//       CefRefPtr<CefRequest> request,                                  ///
+//       NavigationType navigation_type,                                 ///
+//       bool is_redirect)                                               ///
+//                         OVERRIDE
+// {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+//   return false;
+// };  */                                   ///
+//
+// //   virtual void OnContextCreated(                                   ///<--
+// //       CefRefPtr<CefBrowser> browser,                                  ///
+// //       CefRefPtr<CefFrame> frame,                                      ///
+// //       CefRefPtr<CefV8Context> context)                                ///
+// //                         OVERRIDE
+// // {
+// //   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// // };                                     ///
+// //
+// //   virtual void OnContextReleased(                                  ///<--
+// //       CefRefPtr<CefBrowser> browser,                                  ///
+// //       CefRefPtr<CefFrame> frame,                                      ///
+// //       CefRefPtr<CefV8Context> context)                                ///
+// //                         OVERRIDE
+// // {
+// //   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// // };                                     ///
+// //
+// //   virtual void OnUncaughtException(                                ///<--
+// //       CefRefPtr<CefBrowser> browser,                                  ///
+// //       CefRefPtr<CefFrame> frame,                                      ///
+// //       CefRefPtr<CefV8Context> context,                                ///
+// //       CefRefPtr<CefV8Exception> exception,                            ///
+// //       CefRefPtr<CefV8StackTrace> stackTrace)                          ///
+// //                         OVERRIDE
+// // {
+// //   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// // };                                     ///
+//
+// /*  virtual void OnFocusedNodeChanged(                               ///<--
+//       CefRefPtr<CefBrowser> browser,                                  ///
+//       CefRefPtr<CefFrame> frame,                                      ///
+//       CefRefPtr<CefDOMNode> node)                                     ///
+//                         OVERRIDE
+// {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// };        */                             ///
+//
+//   virtual bool AddHandler(Handler* handler, bool first)
+// {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+//   return false;
+// };
+//
+//   ///
+//   // Remove an existing query handler. Any pending queries associated with the
+//   // handler will be canceled. Handler::OnQueryCanceled will be called and the
+//   // associated JavaScript onFailure callback will be executed with an error
+//   // code of -1. Returns true if the handler is removed successfully or false
+//   // if the handler is not found. Must be called on the browser process UI
+//   // thread.
+//   ///
+//   virtual bool RemoveHandler(Handler* handler)
+// {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+//   return false;
+// };
+//
+//   ///
+//   // Cancel all pending queries associated with either |browser| or |handler|.
+//   // If both |browser| and |handler| are NULL all pending queries will be
+//   // canceled. Handler::OnQueryCanceled will be called and the associated
+//   // JavaScript onFailure callback will be executed in all cases with an error
+//   // code of -1.
+//   ///
+//   virtual void CancelPending(CefRefPtr<CefBrowser> browser,
+//                              Handler* handler)
+//   {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// };
+//
+//   ///
+//   // Returns the number of queries currently pending for the specified |browser|
+//   // and/or |handler|. Either or both values may be empty. Must be called on the
+//   // browser process UI thread.
+//   ///
+//   virtual int GetPendingCount(CefRefPtr<CefBrowser> browser,
+//                               Handler* handler)
+// {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+//   return 0;
+// };
+//
+//   // The below methods should be called from other CEF handlers. They must be
+//   // called exactly as documented for the router to function correctly.
+//
+//   ///
+//   // Call from CefLifeSpanHandler::OnBeforeClose. Any pending queries associated
+//   // with |browser| will be canceled and Handler::OnQueryCanceled will be
+//   // called. No JavaScript callbacks will be executed since this indicates
+//   // destruction of the browser.
+//   ///
+//   virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser)
+// {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// };
+//
+//   ///
+//   // Call from CefRequestHandler::OnRenderProcessTerminated. Any pending queries
+//   // associated with |browser| will be canceled and Handler::OnQueryCanceled
+//   // will be called. No JavaScript callbacks will be executed since this
+//   // indicates destruction of the context.
+//   ///
+//   virtual void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser)
+//   {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// };
+//
+//   ///
+//   // Call from CefRequestHandler::OnBeforeBrowse only if the navigation is
+//   // allowed to proceed. If |frame| is the main frame then any pending queries
+//   // associated with |browser| will be canceled and Handler::OnQueryCanceled
+//   // will be called. No JavaScript callbacks will be executed since this
+//   // indicates destruction of the context.
+//   ///
+//   virtual void OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
+//                               CefRefPtr<CefFrame> frame)                           ///
+//                         OVERRIDE
+// {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// };                                     ///
+//
+//
+//   virtual bool OnProcessMessageReceived(                           ///<--
+//       CefRefPtr<CefBrowser> browser,                                  ///
+//       CefProcessId source_process,                                    ///
+//       CefRefPtr<CefProcessMessage> message)                           ///
+//                         OVERRIDE
+// {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+//   return false;
+// };                                     ///
+// //   //}
 
   /*!
    * @brief CefResourceBundleHandler methods
@@ -143,36 +396,39 @@ public:
    * this class may be called on multiple threads.
    */
   //{
-  virtual bool GetLocalizedString(                                 ///<--
-      int                                   string_id,                ///
-      CefString&                            string)                   ///
-                        OVERRIDE;                                     ///
-
-  virtual bool GetDataResource(                                    ///<--
-      int                                   resource_id,              ///
-      void*&                                data,                     ///
-      size_t&                               data_size)                ///
-                        OVERRIDE;                                     ///
-
-  virtual bool GetDataResourceForScale(                            ///<--
-      int                                   resource_id,              ///
-      ScaleFactor                           scale_factor,             ///
-      void*&                                data,                     ///
-      size_t&                               data_size)                ///
-                        OVERRIDE;                                     ///
+//   virtual bool GetLocalizedString(                                 ///<--
+//       int                                   string_id,                ///
+//       CefString&                            string)                   ///
+//                         OVERRIDE;                                     ///
+//
+//   virtual bool GetDataResource(                                    ///<--
+//       int                                   resource_id,              ///
+//       void*&                                data,                     ///
+//       size_t&                               data_size)                ///
+//                         OVERRIDE;                                     ///
+//
+//   virtual bool GetDataResourceForScale(                            ///<--
+//       int                                   resource_id,              ///
+//       ScaleFactor                           scale_factor,             ///
+//       void*&                                data,                     ///
+//       size_t&                               data_size)                ///
+//                         OVERRIDE;                                     ///
   //}
 
-  virtual CefRefPtr<CefResourceBundleHandler> GetResourceBundleHandler() OVERRIDE { return this; }
-  virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() OVERRIDE { return this; }
-  virtual CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() OVERRIDE { return this; }
+//   virtual CefRefPtr<CefResourceBundleHandler> GetResourceBundleHandler() OVERRIDE { return this; }
+//   virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() OVERRIDE { return this; }
+
+  virtual CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() OVERRIDE { fprintf(stderr, " -bbbbbbbbbbbbbbbbbbbbbb- %s\n", __PRETTY_FUNCTION__); return this; }
 
 protected:
   // Schemes that will be registered with the global cookie manager.
   std::vector<CefString>  m_cookieableSchemes;
 
 private:
-  // Include the default reference counting implementation.
+  bool m_last_node_is_editable;
+
   IMPLEMENT_REFCOUNTING(CWebBrowserApp);
+  DISALLOW_COPY_AND_ASSIGN(CWebBrowserApp);
 };
 
 CWebBrowserApp::CWebBrowserApp()
@@ -199,60 +455,10 @@ void CWebBrowserApp::OnBeforeCommandLineProcessing(
 void CWebBrowserApp::OnRegisterCustomSchemes(
     CefRawPtr<CefSchemeRegistrar> registrar)
 {
+//   registrar->AddCustomScheme("te4", true, true, false, false, false, false);
   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
 }
 //}
-
-/*!
- * @brief CefBrowserProcessHandler methods
- */
-//{
-void CWebBrowserApp::OnContextInitialized()
-{
-  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
-
-  CEF_REQUIRE_UI_THREAD();
-
-  // Register cookieable schemes with the global cookie manager.
-  CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
-  DCHECK(manager.get());
-  manager->SetSupportedSchemes(m_cookieableSchemes, NULL);
-
-}
-//}
-
-/*!
- * @brief CefRenderProcessHandler methods
- */
-//{
-void CWebBrowserApp::OnRenderThreadCreated(
-    CefRefPtr<CefListValue> extra_info)
-{
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
-}
-
-void CWebBrowserApp::OnWebKitInitialized()
-{
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
-}
-
-void CWebBrowserApp::OnBrowserCreated(
-    CefRefPtr<CefBrowser> browser)
-{
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
-}
-
-void CWebBrowserApp::OnBrowserDestroyed(
-    CefRefPtr<CefBrowser> browser)
-{
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
-}
-
-CefRefPtr<CefLoadHandler> CWebBrowserApp::GetLoadHandler()
-{
-fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
-  return nullptr;
-}
 
 bool CWebBrowserApp::OnBeforeNavigation(
     CefRefPtr<CefBrowser> browser,
@@ -296,6 +502,21 @@ void CWebBrowserApp::OnFocusedNodeChanged(
     CefRefPtr<CefFrame> frame,
     CefRefPtr<CefDOMNode> node)
 {
+  bool is_editable = (node.get() && node->IsEditable());
+  if (is_editable != m_last_node_is_editable) {
+    // Notify the browser of the change in focused element type.
+    m_last_node_is_editable = is_editable;
+    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create("ClientRenderer.FocusedNodeChanged");
+    message->GetArgumentList()->SetBool(0, is_editable);
+    if (is_editable)
+    {
+      message->GetArgumentList()->SetString(1, node->GetName());
+      message->GetArgumentList()->SetString(2, node->GetValue());
+      message->GetArgumentList()->SetString(3, node->GetFormControlElementType());
+      message->GetArgumentList()->SetInt(4, node->GetType());
+    }
+    browser->SendProcessMessage(PID_BROWSER, message);
+  }
   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
 }
 
@@ -305,8 +526,76 @@ bool CWebBrowserApp::OnProcessMessageReceived(
     CefRefPtr<CefProcessMessage> message)
 {
   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+
   return false;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*!
+ * @brief CefBrowserProcessHandler methods
+ */
+//{
+// void CWebBrowserApp::OnContextInitialized()
+// {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+//
+//   CEF_REQUIRE_UI_THREAD();
+//
+//   // Register cookieable schemes with the global cookie manager.
+//   CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(NULL);
+//   DCHECK(manager.get());
+//   manager->SetSupportedSchemes(m_cookieableSchemes, NULL);
+//
+// }
+//}
+
+/*!
+ * @brief CefRenderProcessHandler methods
+ */
+//{
+// void CWebBrowserApp::OnRenderThreadCreated(
+//     CefRefPtr<CefListValue> extra_info)
+// {
+// fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// }
+//
+// void CWebBrowserApp::OnWebKitInitialized()
+// {
+// fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// }
+//
+// void CWebBrowserApp::OnBrowserCreated(
+//     CefRefPtr<CefBrowser> browser)
+// {
+// fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// }
+//
+// void CWebBrowserApp::OnBrowserDestroyed(
+//     CefRefPtr<CefBrowser> browser)
+// {
+// fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+// }
+//
+// CefRefPtr<CefLoadHandler> CWebBrowserApp::GetLoadHandler()
+// {
+// fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+//   return nullptr;
+// }
+
+
 //}
 
 
@@ -314,32 +603,32 @@ bool CWebBrowserApp::OnProcessMessageReceived(
  * @brief CefResourceBundle methods
  */
 //{
-bool CWebBrowserApp::GetLocalizedString(
-    int                                   string_id,
-    CefString&                            string)
-{
-  fprintf(stderr, " -- %s - %i\n", __PRETTY_FUNCTION__, string_id);
-  return false;
-}
-
-bool CWebBrowserApp::GetDataResource(
-    int                                   resource_id,
-    void*&                                data,
-    size_t&                               data_size)
-{
-  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
-  return false;
-}
-
-bool CWebBrowserApp::GetDataResourceForScale(
-    int                                   resource_id,
-    ScaleFactor                           scale_factor,
-    void*&                                data,
-    size_t&                               data_size)
-{
-  fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
-  return false;
-}
+// bool CWebBrowserApp::GetLocalizedString(
+//     int                                   string_id,
+//     CefString&                            string)
+// {
+//   fprintf(stderr, " -- %s - %i\n", __PRETTY_FUNCTION__, string_id);
+//   return false;
+// }
+//
+// bool CWebBrowserApp::GetDataResource(
+//     int                                   resource_id,
+//     void*&                                data,
+//     size_t&                               data_size)
+// {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+//   return false;
+// }
+//
+// bool CWebBrowserApp::GetDataResourceForScale(
+//     int                                   resource_id,
+//     ScaleFactor                           scale_factor,
+//     void*&                                data,
+//     size_t&                               data_size)
+// {
+//   fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
+//   return false;
+// }
 //}
 
 
@@ -361,6 +650,16 @@ bool CWebBrowserManager::Create()
 {
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser add-on process creation start", __FUNCTION__);
 
+  std::string language = kodi::GetLanguage(LANG_FMT_ISO_639_1, true);
+
+//#if defined(OS_LINUX)
+  // When calling native char conversion functions (e.g wrctomb) we need to
+  // have the locale set. In the absence of such a call the "C" locale is the
+  // default. In the gtk code (below) gtk_init() implicitly sets a locale.
+  setlocale(LC_ALL, language.c_str());
+  setenv("LANG", language.c_str(), 0);
+//#endif  // defined(OS_LINUX)
+
   SetCEFPaths();
   if (!SetSandbox())
     return false;
@@ -371,7 +670,7 @@ bool CWebBrowserManager::Create()
    * List of all aavailable settings to check during development
    * Not used ones which stays empty need to remove on end
    */
-  m_CefSettings.single_process                      = 0;
+  m_CefSettings.single_process                      = 1;
   m_CefSettings.no_sandbox                          = 0;
   m_CefSettings.multi_threaded_message_loop         = 0;
   CefString(&m_CefSettings.cache_path)              = m_strHTMLCacheDir;
@@ -389,15 +688,14 @@ bool CWebBrowserManager::Create()
   m_CefSettings.ignore_certificate_errors           = 0;
   m_CefSettings.persist_session_cookies             = 0;
   m_CefSettings.persist_user_preferences            = 0;
-  CefString(&m_CefSettings.locale)                  = "";
+  CefString(&m_CefSettings.locale)                  = language;
   CefString(&m_CefSettings.javascript_flags)        = "";
   m_CefSettings.pack_loading_disabled               = 0;
   m_CefSettings.remote_debugging_port               = 0;
   m_CefSettings.uncaught_exception_stack_size       = 0;
-  m_CefSettings.ignore_certificate_errors           = 0;
   m_CefSettings.enable_net_security_expiration      = 0;
   m_CefSettings.background_color                    = 0;
-  CefString(&m_CefSettings.accept_language_list)    = "";
+  CefString(&m_CefSettings.accept_language_list)    = language;
 
   DCHECK(m_threadChecker.CalledOnValidThread());
 
@@ -422,9 +720,22 @@ void *CWebBrowserManager::Process()
 {
   DCHECK(m_threadChecker.CalledOnValidThread());
 
+  if (kodi::GetSettingString("downloads.path").empty())
+  {
+    kodi::gui::dialogs::OK::ShowAndGetInput(kodi::GetLocalizedString(30080), kodi::GetLocalizedString(30081));
+
+    std::string path;
+    while (path.empty() && !IsStopped())
+      kodi::gui::dialogs::FileBrowser::ShowAndGetDirectory("local", kodi::GetLocalizedString(30081), path, true);
+    if (IsStopped())
+      return nullptr;
+
+    kodi::SetSettingString("downloads.path", path);
+  }
+
   CefMainArgs args;
-  CefRefPtr<CefApp> app(new CWebBrowserApp);
-  if (!CefInitialize(args, m_CefSettings, app, nullptr))
+  CefRefPtr<CWebBrowserApp> app(new CWebBrowserApp);
+  if (!CefInitialize(args, m_CefSettings, app.get(), nullptr))
   {
     LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
     return nullptr;
@@ -510,7 +821,7 @@ fprintf(stderr, " -- %s\n", __PRETTY_FUNCTION__);
     pBrowserClient = new CWebBrowserClient(m_iUniqueClientId++, &props, m_instance);
 
     CefWindowInfo info;
-//     info.SetAsWindowless(m_windowlessEnabled ? 1 : 0, false);
+    info.SetAsWindowless(kNullWindowHandle);// (m_windowlessEnabled ? 1 : 0, false);
 
     CefBrowserSettings settings;
     settings.windowless_frame_rate              = 0;

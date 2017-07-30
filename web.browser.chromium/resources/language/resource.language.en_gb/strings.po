@@ -31,3 +31,196 @@ msgstr ""
 msgctxt "#30003"
 msgid "Please enter SUID password"
 msgstr ""
+
+msgctxt "#30004"
+msgid "Website zoom level"
+msgstr ""
+
+msgctxt "#30005"
+msgid "{0:d} %"
+msgstr ""
+
+msgctxt "#30006"
+msgid "Website zoom step"
+msgstr ""
+
+msgctxt "#30007"
+msgid "Presentation"
+msgstr ""
+
+msgctxt "#30008"
+msgid "Security and data protection"
+msgstr ""
+
+msgctxt "#30009"
+msgid "Downloads"
+msgstr ""
+
+msgctxt "#30010"
+msgid "Before downloading files, ask for the location"
+msgstr ""
+
+msgctxt "#30011"
+msgid "Location"
+msgstr ""
+
+msgctxt "#30012"
+msgid "Password"
+msgstr ""
+
+msgctxt "#300013"
+msgid "Text"
+msgstr ""
+
+msgctxt "#30014"
+msgid "Text area"
+msgstr ""
+
+msgctxt "#30015"
+msgid "Finished"
+msgstr ""
+
+msgctxt "#30016"
+msgid "Delete"
+msgstr ""
+
+msgctxt "#30017"
+msgid "Complete"
+msgstr ""
+
+msgctxt "#30018"
+msgid "From history"
+msgstr ""
+
+
+msgctxt "#30080"
+msgid "Chromium web browser"
+msgstr ""
+
+msgctxt "#30081"
+msgid "Download path not defined, set it now"
+msgstr ""
+
+msgctxt "#30082"
+msgid "Download: %s"
+msgstr ""
+
+msgctxt "#30083"
+msgid "Total: %li MByte, Received: %li MByte"
+msgstr ""
+
+msgctxt "#30084"
+msgid "File '%s' already on download"
+msgstr ""
+
+msgctxt "#30085"
+msgid "File already present on selected location"
+msgstr ""
+
+msgctxt "#30086"
+msgid "Overwrite"
+msgstr ""
+
+msgctxt "#30087"
+msgid "Cancel download"
+msgstr ""
+
+msgctxt "#30088"
+msgid "Error"
+msgstr ""
+
+msgctxt "#30089"
+msgid "File '%s' not possible to delete, download canceled"
+msgstr ""
+
+msgctxt "#30090"
+msgid "%0.1f %%, Total: %li MByte, Received: %li MByte"
+msgstr ""
+
+msgctxt "#30091"
+msgid "Delete download"
+msgstr ""
+
+msgctxt "#30092"
+msgid "Cancel download"
+msgstr ""
+
+msgctxt "#30093"
+msgid "Pause download"
+msgstr ""
+
+msgctxt "#30094"
+msgid "Continue download"
+msgstr ""
+
+msgctxt "#30095"
+msgid "Paused (%s)"
+msgstr ""
+
+msgctxt "#30096"
+msgid "Canceled"
+msgstr ""
+
+msgctxt "#30097"
+msgid "Clear History"
+msgstr ""
+
+msgctxt "#30098"
+msgid "Delete downloaded file %s?"
+msgstr ""
+
+
+
+msgctxt "#30100"
+msgid "Back"
+msgstr ""
+
+msgctxt "#30101"
+msgid "Forward"
+msgstr ""
+
+msgctxt "#30110"
+msgid "Undo"
+msgstr ""
+
+msgctxt "#30111"
+msgid "Redo"
+msgstr ""
+
+msgctxt "#30112"
+msgid "Cut"
+msgstr ""
+
+msgctxt "#30113"
+msgid "Copy"
+msgstr ""
+
+msgctxt "#30114"
+msgid "Paste"
+msgstr ""
+
+msgctxt "#30115"
+msgid "Delete"
+msgstr ""
+
+msgctxt "#30116"
+msgid "Select all"
+msgstr ""
+
+msgctxt "#30131"
+msgid "Print…"
+msgstr ""
+
+msgctxt "#30132"
+msgid "View page source"
+msgstr ""
+
+
+
+msgctxt "#56500"
+msgid "Open Side"
+msgstr ""
+
+msgctxt "#56501"
+msgid "Open Keyboard"
+msgstr ""

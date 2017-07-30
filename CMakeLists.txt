@@ -273,6 +273,7 @@ include_directories(${INCLUDES}
                     ${PROJECT_SOURCE_DIR}/src/addon/utils/)
 
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
+                                 src/addon/DownloadHandler.cpp
                                  src/addon/URICheckHandler.cpp
                                  src/addon/WebBrowserClientBase.cpp
                                  src/addon/WebBrowserManager.cpp
@@ -282,6 +283,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/utils/Utils.cpp)
 
 list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
+                                 src/addon/DownloadHandler.h
                                  src/addon/URICheckHandler.h
                                  src/addon/WebBrowserClientBase.h
                                  src/addon/WebBrowserManager.h
@@ -290,7 +292,11 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/settings/SettingsMain.h
                                  src/addon/utils/Utils.h)
 
-list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main.cpp)
+list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main.cpp
+                                     src/app/client_app.cpp
+                                     src/app/client_app_other.cpp
+                                     src/app/client_app_renderer.cpp
+                                     src/app/client_switches.cpp)
 
 list(APPEND DEPLIBS ${p8-platform_LIBRARIES}
                     ${kodiplatform_LIBRARIES}

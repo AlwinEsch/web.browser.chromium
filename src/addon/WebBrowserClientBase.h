@@ -27,9 +27,12 @@
 #include "include/cef_render_handler.h"
 #include "include/wrapper/cef_message_router.h"
 #include "include/wrapper/cef_resource_manager.h"
+#include "include/views/cef_textfield_delegate.h"
 #include "p8-platform/threads/threads.h"
 
 #include "Dialogs/WebGUIDialogContextMenu.h"
+
+#include "DownloadHandler.h"
 
 #define TMSG_SET_CONTROL_READY        100
 #define TMSG_SET_OPENED_ADDRESS       101
@@ -74,6 +77,9 @@ typedef struct
 } Message;
 
 
+
+
+
 class CWebBrowserClientBase :
     public CefClient,
     public CefDialogHandler,
@@ -84,13 +90,13 @@ class CWebBrowserClientBase :
     public CefFindHandler,
     public CefFocusHandler,
     public CefLoadHandler,
-    /*public CefKeyboardHandler,*/
-    /*public CefDownloadHandler,*/
+//     public CefKeyboardHandler,
     public CefContextMenuHandler,
     public CefLifeSpanHandler,
     public CefRenderHandler,
     public CefRequestHandler,
     public CefRequestContextHandler
+
 {
 public:
   CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, kodi::addon::CInstanceWeb* instance);
@@ -151,7 +157,7 @@ public:
    * on this.
    * @return true if successed
    */
-  bool OpenWebsite(const char* strURL, bool single, bool allowMenus);
+  bool OpenWebsite(const std::string& strURL, bool single, bool allowMenus);
 
   /*!
    * @brief Handle given command
@@ -288,22 +294,10 @@ public:
    * Class used to handle file downloads. The methods of this class will called
    * on the browser process UI thread.
    */
-  /*//{
-  virtual CefRefPtr<CefDownloadHandler> GetDownloadHandler() OVERRIDE { return this; }
+  //{
+  virtual CefRefPtr<CefDownloadHandler> GetDownloadHandler() override { return m_downloadHandler; }
+  //}
 
-  virtual void OnBeforeDownload(                                      /// Called before a download begins. |suggested_name| is the suggested name for
-      CefRefPtr<CefBrowser>                 browser,                  /// the download file. By default the download will be canceled. Execute
-      CefRefPtr<CefDownloadItem>            download_item,            /// |callback| either asynchronously or in this method to continue the download
-      const CefString&                      suggested_name,           /// if desired. Do not keep a reference to |download_item| outside of this
-      CefRefPtr<CefBeforeDownloadCallback>  callback)                 /// method.
-                        OVERRIDE;                                     ///
-
-  virtual void OnDownloadUpdated(                                     /// Called when a download's status or progress information has been updated.
-      CefRefPtr<CefBrowser>                 browser,                  /// This may be called multiple times before and after OnBeforeDownload().
-      CefRefPtr<CefDownloadItem>            download_item,            /// Execute |callback| either asynchronously or in this method to cancel the
-      CefRefPtr<CefDownloadItemCallback>    callback)                 /// download if desired. Do not keep a reference to |download_item| outside of
-                        OVERRIDE;                                     /// this method.
-  //}*/
   /*!
    * @brief CefDragHandler methods
    *
@@ -426,8 +420,8 @@ public:
    * Implement this interface to handle events related to keyboard input. The
    * methods of this class will be called on the UI thread.
    */
-  /*//{
-  virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() OVERRIDE { return this; }
+  //{
+/*  virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() OVERRIDE { return this; }
 
   virtual bool OnPreKeyEvent(                                         /// Called before a keyboard event is sent to the renderer. |event| contains
       CefRefPtr<CefBrowser>                 browser,                  /// information about the keyboard event. |os_event| is the operating system
@@ -440,8 +434,8 @@ public:
       CefRefPtr<CefBrowser>                 browser,                  /// handle the event. |event| contains information about the keyboard event.
       const CefKeyEvent&                    event,                    /// |os_event| is the operating system event message, if any. Return true if
       CefEventHandle                        os_event)                 /// the keyboard event was handled or false otherwise.
-                        OVERRIDE;                                     ///
-  //}*/
+                        OVERRIDE;  */                                   ///
+  //}
   /*!
    * @brief CefLifeSpanHandler methods
    *
@@ -544,17 +538,18 @@ public:
       bool                                  canGoForward)             ///
                         OVERRIDE;                                     ///
 
-//  virtual void OnLoadStart(                                           /// Called when the browser begins loading a frame. The |frame| value will never be empty -- call
-//      CefRefPtr<CefBrowser>                 browser,                  /// the IsMain() method to check if this frame is the main frame. Multiple frames may be loading
-//      CefRefPtr<CefFrame>                   frame)                    /// at the same time. Sub-frames may start or continue loading after the main frame load has ended.
-//                        OVERRIDE;                                     /// This method may not be called for a particular frame if the load request for that frame fails.
-                                                                      /// For notification of overall browser load status use OnLoadingStateChange instead.
-//  virtual void OnLoadEnd(
-//      CefRefPtr<CefBrowser>                 browser,                  /// Called when the browser is done loading a frame. The |frame| value will never be empty -- call
-//      CefRefPtr<CefFrame>                   frame,                    /// the IsMain() method to check if this frame is the main frame. Multiple frames may be loading at
-//      int                                   httpStatusCode)           /// the same time. Sub-frames may start or continue loading after the main frame load has ended.
-//                        OVERRIDE;                                     /// Thismethod will always be called for all frames irrespective of whether the request completes
-//                                                                      /// successfully.
+ virtual void OnLoadStart(                                           /// Called when the browser begins loading a frame. The |frame| value will never be empty -- call
+     CefRefPtr<CefBrowser>                 browser,                  /// the IsMain() method to check if this frame is the main frame. Multiple frames may be loading
+     CefRefPtr<CefFrame>                   frame,                    /// at the same time. Sub-frames may start or continue loading after the main frame load has ended.
+     TransitionType                        transition_type)
+                       OVERRIDE;                                     /// This method may not be called for a particular frame if the load request for that frame fails.
+                                                                     /// For notification of overall browser load status use OnLoadingStateChange instead.
+ virtual void OnLoadEnd(
+     CefRefPtr<CefBrowser>                 browser,                  /// Called when the browser is done loading a frame. The |frame| value will never be empty -- call
+     CefRefPtr<CefFrame>                   frame,                    /// the IsMain() method to check if this frame is the main frame. Multiple frames may be loading at
+     int                                   httpStatusCode)           /// the same time. Sub-frames may start or continue loading after the main frame load has ended.
+                       OVERRIDE;                                     /// Thismethod will always be called for all frames irrespective of whether the request completes
+                                                                     /// successfully.
   virtual void OnLoadError(
       CefRefPtr<CefBrowser>                 browser,                  /// Called when the resource load for a navigation fails or is canceled.
       CefRefPtr<CefFrame>                   frame,                    /// |errorCode| is the error code number, |errorText| is the error text and
@@ -729,6 +724,8 @@ public:
                         OVERRIDE;                                     ///
   //}
 
+
+
   /*!
    * @brief CefRequestContextHandler methods
    *
@@ -843,4 +840,17 @@ private:
   //{
   CefRefPtr<CefResourceManager>   m_resourceManager;        /*!< Manages the registration and delivery of resources. */
   //}
+
+
+
+  std::string m_lastFocusedText;
+  std::string m_lastFocusedType;
+
+  CefRefPtr<CWebBrowserDownloadHandler> m_downloadHandler;
+
+  void OpenOwnContextMenu();
+  void HandleFieldInput(std::string& text, const std::string& type);
+
+  int ZoomLevelToPercentage(double zoomlevel);
+  double PercentageToZoomLevel(int percent);
 };

@@ -27,7 +27,12 @@
 #undef Success     // Definition conflicts with cef_message_router.h
 #undef RootWindow  // Definition conflicts with root_window.h
 
+#include <kodi/ActionIDs.h>
 #include <kodi/Filesystem.h>
+#include <kodi/General.h>
+#include <kodi/gui/dialogs/ContextMenu.h>
+#include <kodi/gui/dialogs/FileBrowser.h>
+#include <kodi/gui/dialogs/Keyboard.h>
 
 #include "include/cef_app.h"
 #include "include/cef_browser.h"
@@ -35,6 +40,7 @@
 #include "include/cef_parser.h"
 #include "include/wrapper/cef_helpers.h"
 #include "include/base/cef_bind.h"
+#include "include/views/cef_textfield.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
 
@@ -51,365 +57,23 @@
 //  XBIRRemote.h
 //  XINPUT_IR_REMOTE-*
 
-// Analogue - don't change order
-#define KEY_BUTTON_A                        256
-#define KEY_BUTTON_B                        257
-#define KEY_BUTTON_X                        258
-#define KEY_BUTTON_Y                        259
-#define KEY_BUTTON_BLACK                    260
-#define KEY_BUTTON_WHITE                    261
-#define KEY_BUTTON_LEFT_TRIGGER             262
-#define KEY_BUTTON_RIGHT_TRIGGER            263
-
-#define KEY_BUTTON_LEFT_THUMB_STICK         264
-#define KEY_BUTTON_RIGHT_THUMB_STICK        265
-
-#define KEY_BUTTON_RIGHT_THUMB_STICK_UP     266 // right thumb stick directions
-#define KEY_BUTTON_RIGHT_THUMB_STICK_DOWN   267 // for defining different actions per direction
-#define KEY_BUTTON_RIGHT_THUMB_STICK_LEFT   268
-#define KEY_BUTTON_RIGHT_THUMB_STICK_RIGHT  269
-
-// Digital - don't change order
-#define KEY_BUTTON_DPAD_UP                  270
-#define KEY_BUTTON_DPAD_DOWN                271
-#define KEY_BUTTON_DPAD_LEFT                272
-#define KEY_BUTTON_DPAD_RIGHT               273
-
-#define KEY_BUTTON_START                    274
-#define KEY_BUTTON_BACK                     275
-
-#define KEY_BUTTON_LEFT_THUMB_BUTTON        276
-#define KEY_BUTTON_RIGHT_THUMB_BUTTON       277
-
-#define KEY_BUTTON_LEFT_ANALOG_TRIGGER      278
-#define KEY_BUTTON_RIGHT_ANALOG_TRIGGER     279
-
-#define KEY_BUTTON_LEFT_THUMB_STICK_UP      280 // left thumb stick directions
-#define KEY_BUTTON_LEFT_THUMB_STICK_DOWN    281 // for defining different actions per direction
-#define KEY_BUTTON_LEFT_THUMB_STICK_LEFT    282
-#define KEY_BUTTON_LEFT_THUMB_STICK_RIGHT   283
-
-// 0xF000 -> 0xF200 is reserved for the keyboard; a keyboard press is either
-#define KEY_VKEY            0xF000 // a virtual key/functional key e.g. cursor left
-#define KEY_ASCII           0xF100 // a printable character in the range of TRUE ASCII (from 0 to 127) // FIXME make it clean and pure unicode! remove the need for KEY_ASCII
-#define KEY_UNICODE         0xF200 // another printable character whose range is not included in this KEY code
-
-// 0xE000 -> 0xEFFF is reserved for mouse actions
-#define KEY_VMOUSE          0xEFFF
-
-#define KEY_MOUSE_START            0xE000
-#define KEY_MOUSE_CLICK            0xE000
-#define KEY_MOUSE_RIGHTCLICK       0xE001
-#define KEY_MOUSE_MIDDLECLICK      0xE002
-#define KEY_MOUSE_DOUBLE_CLICK     0xE010
-#define KEY_MOUSE_LONG_CLICK       0xE020
-#define KEY_MOUSE_WHEEL_UP         0xE101
-#define KEY_MOUSE_WHEEL_DOWN       0xE102
-#define KEY_MOUSE_MOVE             0xE103
-#define KEY_MOUSE_DRAG             0xE104
-#define KEY_MOUSE_DRAG_START       0xE105
-#define KEY_MOUSE_DRAG_END         0xE106
-#define KEY_MOUSE_RDRAG            0xE107
-#define KEY_MOUSE_RDRAG_START      0xE108
-#define KEY_MOUSE_RDRAG_END        0xE109
-#define KEY_MOUSE_NOOP             0xEFFF
-#define KEY_MOUSE_END              0xEFFF
-
-// 0xD000 -> 0xD0FF is reserved for WM_APPCOMMAND messages
-#define KEY_APPCOMMAND      0xD000
-
-// 0xF000 -> 0xF0FF is reserved for mouse actions
-#define KEY_TOUCH           0xF000
-
-#define KEY_INVALID         0xFFFF
-
-#define ADDON_ACTION_NONE                    0
-#define ADDON_ACTION_MOVE_LEFT               1
-#define ADDON_ACTION_MOVE_RIGHT              2
-#define ADDON_ACTION_MOVE_UP                 3
-#define ADDON_ACTION_MOVE_DOWN               4
-#define ADDON_ACTION_PAGE_UP                 5
-#define ADDON_ACTION_PAGE_DOWN               6
-#define ADDON_ACTION_SELECT_ITEM             7
-#define ADDON_ACTION_HIGHLIGHT_ITEM          8
-#define ADDON_ACTION_PARENT_DIR              9
-#define ADDON_ACTION_PREVIOUS_MENU          10
-#define ADDON_ACTION_SHOW_INFO              11
-
-#define ADDON_ACTION_PAUSE                  12
-#define ADDON_ACTION_STOP                   13
-#define ADDON_ACTION_NEXT_ITEM              14
-#define ADDON_ACTION_PREV_ITEM              15
-#define ADDON_ACTION_FORWARD                16 // Can be used to specify specific action in a window, Playback control is handled in ACTION_PLAYER_*
-#define ADDON_ACTION_REWIND                 17 // Can be used to specify specific action in a window, Playback control is handled in ACTION_PLAYER_*
-
-#define ADDON_ACTION_SHOW_GUI               18 // toggle between GUI and movie or GUI and visualisation.
-#define ADDON_ACTION_ASPECT_RATIO           19 // toggle quick-access zoom modes. Can b used in videoFullScreen.zml window id=2005
-#define ADDON_ACTION_STEP_FORWARD           20 // seek +1% in the movie. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_STEP_BACK              21 // seek -1% in the movie. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_BIG_STEP_FORWARD       22 // seek +10% in the movie. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_BIG_STEP_BACK          23 // seek -10% in the movie. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_SHOW_OSD               24 // show/hide OSD. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_SHOW_SUBTITLES         25 // turn subtitles on/off. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_NEXT_SUBTITLE          26 // switch to next subtitle of movie. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_SHOW_CODEC             27 // show information about file. Can b used in videoFullScreen.xml window id=2005 and in slideshow.xml window id=2007
-#define ADDON_ACTION_NEXT_PICTURE           28 // show next picture of slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_PREV_PICTURE           29 // show previous picture of slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_ZOOM_OUT               30 // zoom in picture during slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_ZOOM_IN                31 // zoom out picture during slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_TOGGLE_SOURCE_DEST     32 // used to toggle between source view and destination view. Can be used in myfiles.xml window id=3
-#define ADDON_ACTION_SHOW_PLAYLIST          33 // used to toggle between current view and playlist view. Can b used in all mymusic xml files
-#define ADDON_ACTION_QUEUE_ITEM             34 // used to queue a item to the playlist. Can b used in all mymusic xml files
-#define ADDON_ACTION_REMOVE_ITEM            35 // not used anymore
-#define ADDON_ACTION_SHOW_FULLSCREEN        36 // not used anymore
-#define ADDON_ACTION_ZOOM_LEVEL_NORMAL      37 // zoom 1x picture during slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_ZOOM_LEVEL_1           38 // zoom 2x picture during slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_ZOOM_LEVEL_2           39 // zoom 3x picture during slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_ZOOM_LEVEL_3           40 // zoom 4x picture during slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_ZOOM_LEVEL_4           41 // zoom 5x picture during slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_ZOOM_LEVEL_5           42 // zoom 6x picture during slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_ZOOM_LEVEL_6           43 // zoom 7x picture during slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_ZOOM_LEVEL_7           44 // zoom 8x picture during slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_ZOOM_LEVEL_8           45 // zoom 9x picture during slideshow. Can b used in slideshow.xml window id=2007
-#define ADDON_ACTION_ZOOM_LEVEL_9           46 // zoom 10x picture during slideshow. Can b used in slideshow.xml window id=2007
-
-#define ADDON_ACTION_CALIBRATE_SWAP_ARROWS  47 // select next arrow. Can b used in: settingsScreenCalibration.xml windowid=11
-#define ADDON_ACTION_CALIBRATE_RESET        48 // reset calibration to defaults. Can b used in: settingsScreenCalibration.xml windowid=11/settingsUICalibration.xml windowid=10
-#define ADDON_ACTION_ANALOG_MOVE            49 // analog thumbstick move. Can b used in: slideshow.xml window id=2007/settingsScreenCalibration.xml windowid=11/settingsUICalibration.xml windowid=10
-// see also ACTION_ANALOG_MOVE_X, ACTION_ANALOG_MOVE_Y
-#define ADDON_ACTION_ROTATE_PICTURE_CW      50 // rotate current picture clockwise during slideshow. Can be used in slideshow.xml window id=2007
-#define ADDON_ACTION_ROTATE_PICTURE_CCW     51 // rotate current picture counterclockwise during slideshow. Can be used in slideshow.xml window id=2007
-
-#define ADDON_ACTION_SUBTITLE_DELAY_MIN     52 // Decrease subtitle/movie Delay.  Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_SUBTITLE_DELAY_PLUS    53 // Increase subtitle/movie Delay.  Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_AUDIO_DELAY_MIN        54 // Increase avsync delay.  Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_AUDIO_DELAY_PLUS       55 // Decrease avsync delay.  Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_AUDIO_NEXT_LANGUAGE    56 // Select next language in movie.  Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_CHANGE_RESOLUTION      57 // switch 2 next resolution. Can b used during screen calibration settingsScreenCalibration.xml windowid=11
-
-#define REMOTE_0                    58  // remote keys 0-9. are used by multiple windows
-#define REMOTE_1                    59  // for example in videoFullScreen.xml window id=2005 you can
-#define REMOTE_2                    60  // enter time (mmss) to jump to particular point in the movie
-#define REMOTE_3                    61
-#define REMOTE_4                    62  // with spincontrols you can enter 3digit number to quickly set
-#define REMOTE_5                    63  // spincontrol to desired value
-#define REMOTE_6                    64
-#define REMOTE_7                    65
-#define REMOTE_8                    66
-#define REMOTE_9                    67
-
-#define ADDON_ACTION_PLAY                 68  // Unused at the moment
-#define ADDON_ACTION_OSD_SHOW_LEFT        69  // Move left in OSD. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_OSD_SHOW_RIGHT       70  // Move right in OSD. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_OSD_SHOW_UP          71  // Move up in OSD. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_OSD_SHOW_DOWN        72  // Move down in OSD. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_OSD_SHOW_SELECT      73  // toggle/select option in OSD. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_OSD_SHOW_VALUE_PLUS  74  // increase value of current option in OSD. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_OSD_SHOW_VALUE_MIN   75  // decrease value of current option in OSD. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_SMALL_STEP_BACK      76  // jumps a few seconds back during playback of movie. Can b used in videoFullScreen.xml window id=2005
-
-#define ADDON_ACTION_PLAYER_FORWARD        77  // FF in current file played. global action, can be used anywhere
-#define ADDON_ACTION_PLAYER_REWIND         78  // RW in current file played. global action, can be used anywhere
-#define ADDON_ACTION_PLAYER_PLAY           79  // Play current song. Unpauses song and sets playspeed to 1x. global action, can be used anywhere
-
-#define ADDON_ACTION_DELETE_ITEM          80  // delete current selected item. Can be used in myfiles.xml window id=3 and in myvideoTitle.xml window id=25
-#define ADDON_ACTION_COPY_ITEM            81  // copy current selected item. Can be used in myfiles.xml window id=3
-#define ADDON_ACTION_MOVE_ITEM            82  // move current selected item. Can be used in myfiles.xml window id=3
-#define ADDON_ACTION_SHOW_MPLAYER_OSD     83  // toggles mplayers OSD. Can be used in videofullscreen.xml window id=2005
-#define ADDON_ACTION_OSD_HIDESUBMENU      84  // removes an OSD sub menu. Can be used in videoOSD.xml window id=2901
-#define ADDON_ACTION_TAKE_SCREENSHOT      85  // take a screenshot
-#define ADDON_ACTION_RENAME_ITEM          87  // rename item
-
-#define ADDON_ACTION_VOLUME_UP            88
-#define ADDON_ACTION_VOLUME_DOWN          89
-#define ADDON_ACTION_VOLAMP               90
-#define ADDON_ACTION_MUTE                 91
-#define ADDON_ACTION_NAV_BACK             92
-#define ADDON_ACTION_VOLAMP_UP            93
-#define ADDON_ACTION_VOLAMP_DOWN          94
-
-#define ADDON_ACTION_CREATE_EPISODE_BOOKMARK 95 //Creates an episode bookmark on the currently playing video file containing more than one episode
-#define ADDON_ACTION_CREATE_BOOKMARK         96 //Creates a bookmark of the currently playing video file
-
-#define ADDON_ACTION_CHAPTER_OR_BIG_STEP_FORWARD       97 // Goto the next chapter, if not available perform a big step forward
-#define ADDON_ACTION_CHAPTER_OR_BIG_STEP_BACK          98 // Goto the previous chapter, if not available perform a big step back
-
-#define ADDON_ACTION_CYCLE_SUBTITLE         99 // switch to next subtitle of movie, but will not enable/disable the subtitles. Can be used in videoFullScreen.xml window id=2005
-
-#define ADDON_ACTION_MOUSE_START            100
-#define ADDON_ACTION_MOUSE_LEFT_CLICK       100
-#define ADDON_ACTION_MOUSE_RIGHT_CLICK      101
-#define ADDON_ACTION_MOUSE_MIDDLE_CLICK     102
-#define ADDON_ACTION_MOUSE_DOUBLE_CLICK     103
-#define ADDON_ACTION_MOUSE_WHEEL_UP         104
-#define ADDON_ACTION_MOUSE_WHEEL_DOWN       105
-#define ADDON_ACTION_MOUSE_DRAG             106
-#define ADDON_ACTION_MOUSE_MOVE             107
-#define ADDON_ACTION_MOUSE_LONG_CLICK       108
-#define ADDON_ACTION_MOUSE_END              109
-
-#define ADDON_ACTION_BACKSPACE          110
-#define ADDON_ACTION_SCROLL_UP          111
-#define ADDON_ACTION_SCROLL_DOWN        112
-#define ADDON_ACTION_ANALOG_FORWARD     113
-#define ADDON_ACTION_ANALOG_REWIND      114
-
-#define ADDON_ACTION_MOVE_ITEM_UP       115  // move item up in playlist
-#define ADDON_ACTION_MOVE_ITEM_DOWN     116  // move item down in playlist
-#define ADDON_ACTION_CONTEXT_MENU       117  // pops up the context menu
-
-
-// stuff for virtual keyboard shortcuts
-#define ADDON_ACTION_SHIFT              118
-#define ADDON_ACTION_SYMBOLS            119
-#define ADDON_ACTION_CURSOR_LEFT        120
-#define ADDON_ACTION_CURSOR_RIGHT       121
-
-#define ADDON_ACTION_BUILT_IN_FUNCTION  122
-
-#define ADDON_ACTION_SHOW_OSD_TIME      123 // displays current time, can be used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_ANALOG_SEEK_FORWARD  124 // seeks forward, and displays the seek bar.
-#define ADDON_ACTION_ANALOG_SEEK_BACK     125 // seeks backward, and displays the seek bar.
-
-#define ADDON_ACTION_VIS_PRESET_SHOW        126
-#define ADDON_ACTION_VIS_PRESET_NEXT        128
-#define ADDON_ACTION_VIS_PRESET_PREV        129
-#define ADDON_ACTION_VIS_PRESET_LOCK        130
-#define ADDON_ACTION_VIS_PRESET_RANDOM      131
-#define ADDON_ACTION_VIS_RATE_PRESET_PLUS   132
-#define ADDON_ACTION_VIS_RATE_PRESET_MINUS  133
-
-#define ADDON_ACTION_SHOW_VIDEOMENU         134
-#define ADDON_ACTION_ENTER                  135
-
-#define ADDON_ACTION_INCREASE_RATING        136
-#define ADDON_ACTION_DECREASE_RATING        137
-
-#define ADDON_ACTION_NEXT_SCENE             138 // switch to next scene/cutpoint in movie
-#define ADDON_ACTION_PREV_SCENE             139 // switch to previous scene/cutpoint in movie
-
-#define ADDON_ACTION_NEXT_LETTER            140 // jump through a list or container by letter
-#define ADDON_ACTION_PREV_LETTER            141
-
-#define ADDON_ACTION_JUMP_SMS2              142 // jump direct to a particular letter using SMS-style input
-#define ADDON_ACTION_JUMP_SMS3              143
-#define ADDON_ACTION_JUMP_SMS4              144
-#define ADDON_ACTION_JUMP_SMS5              145
-#define ADDON_ACTION_JUMP_SMS6              146
-#define ADDON_ACTION_JUMP_SMS7              147
-#define ADDON_ACTION_JUMP_SMS8              148
-#define ADDON_ACTION_JUMP_SMS9              149
-
-#define ADDON_ACTION_FILTER_CLEAR           150
-#define ADDON_ACTION_FILTER_SMS2            151
-#define ADDON_ACTION_FILTER_SMS3            152
-#define ADDON_ACTION_FILTER_SMS4            153
-#define ADDON_ACTION_FILTER_SMS5            154
-#define ADDON_ACTION_FILTER_SMS6            155
-#define ADDON_ACTION_FILTER_SMS7            156
-#define ADDON_ACTION_FILTER_SMS8            157
-#define ADDON_ACTION_FILTER_SMS9            158
-
-#define ADDON_ACTION_FIRST_PAGE             159
-#define ADDON_ACTION_LAST_PAGE              160
-
-#define ADDON_ACTION_AUDIO_DELAY            161
-#define ADDON_ACTION_SUBTITLE_DELAY         162
-#define ADDON_ACTION_MENU                   163
-
-#define ADDON_ACTION_RECORD                 170
-
-#define ADDON_ACTION_PASTE                  180
-#define ADDON_ACTION_NEXT_CONTROL           181
-#define ADDON_ACTION_PREV_CONTROL           182
-#define ADDON_ACTION_CHANNEL_SWITCH         183
-#define ADDON_ACTION_CHANNEL_UP             184
-#define ADDON_ACTION_CHANNEL_DOWN           185
-#define ADDON_ACTION_NEXT_CHANNELGROUP      186
-#define ADDON_ACTION_PREVIOUS_CHANNELGROUP  187
-#define ADDON_ACTION_PVR_PLAY               188
-#define ADDON_ACTION_PVR_PLAY_TV            189
-#define ADDON_ACTION_PVR_PLAY_RADIO         190
-
-#define ADDON_ACTION_TOGGLE_FULLSCREEN      199 // switch 2 desktop resolution
-#define ADDON_ACTION_TOGGLE_WATCHED         200 // Toggle watched status (videos)
-#define ADDON_ACTION_SCAN_ITEM              201 // scan item
-#define ADDON_ACTION_TOGGLE_DIGITAL_ANALOG  202 // switch digital <-> analog
-#define ADDON_ACTION_RELOAD_KEYMAPS         203 // reloads CButtonTranslator's keymaps
-#define ADDON_ACTION_GUIPROFILE_BEGIN       204 // start the GUIControlProfiler running
-
-#define ADDON_ACTION_TELETEXT_RED           215 // Teletext Color buttons to control TopText
-#define ADDON_ACTION_TELETEXT_GREEN         216 //    "       "      "    "     "       "
-#define ADDON_ACTION_TELETEXT_YELLOW        217 //    "       "      "    "     "       "
-#define ADDON_ACTION_TELETEXT_BLUE          218 //    "       "      "    "     "       "
-
-#define ADDON_ACTION_INCREASE_PAR           219
-#define ADDON_ACTION_DECREASE_PAR           220
-
-#define ADDON_ACTION_VSHIFT_UP              227 // shift up video image in DVDPlayer
-#define ADDON_ACTION_VSHIFT_DOWN            228 // shift down video image in DVDPlayer
-
-#define ADDON_ACTION_PLAYER_PLAYPAUSE       229 // Play/pause. If playing it pauses, if paused it plays.
-
-#define ADDON_ACTION_SUBTITLE_VSHIFT_UP     230 // shift up subtitles in DVDPlayer
-#define ADDON_ACTION_SUBTITLE_VSHIFT_DOWN   231 // shift down subtitles in DVDPlayer
-#define ADDON_ACTION_SUBTITLE_ALIGN         232 // toggle vertical alignment of subtitles
-
-#define ADDON_ACTION_FILTER                 233
-
-#define ADDON_ACTION_SWITCH_PLAYER          234
-
-#define ADDON_ACTION_STEREOMODE_NEXT        235
-#define ADDON_ACTION_STEREOMODE_PREVIOUS    236
-#define ADDON_ACTION_STEREOMODE_TOGGLE      237 // turns 3d mode on/off
-#define ADDON_ACTION_STEREOMODE_SELECT      238
-#define ADDON_ACTION_STEREOMODE_TOMONO      239
-#define ADDON_ACTION_STEREOMODE_SET         240
-
-#define ADDON_ACTION_SETTINGS_RESET         241
-#define ADDON_ACTION_SETTINGS_LEVEL_CHANGE  242
-
-#define ADDON_ACTION_TRIGGER_OSD            243 // show autoclosing OSD. Can b used in videoFullScreen.xml window id=2005
-#define ADDON_ACTION_INPUT_TEXT             244
-#define ADDON_ACTION_VOLUME_SET             245
-
-// touch actions
-#define ADDON_ACTION_TOUCH_TAP              401
-#define ADDON_ACTION_TOUCH_TAP_TEN          410
-#define ADDON_ACTION_TOUCH_LONGPRESS        411
-#define ADDON_ACTION_TOUCH_LONGPRESS_TEN    420
-
-#define ADDON_ACTION_GESTURE_NOTIFY         500
-#define ADDON_ACTION_GESTURE_BEGIN          501
-#define ADDON_ACTION_GESTURE_ZOOM           502 //sendaction with point and currentPinchScale (fingers together < 1.0 -> fingers apart > 1.0)
-#define ADDON_ACTION_GESTURE_ROTATE         503
-#define ADDON_ACTION_GESTURE_PAN            504
-
-#define ADDON_ACTION_GESTURE_SWIPE_LEFT       511
-#define ADDON_ACTION_GESTURE_SWIPE_LEFT_TEN   520
-#define ADDON_ACTION_GESTURE_SWIPE_RIGHT      521
-#define ADDON_ACTION_GESTURE_SWIPE_RIGHT_TEN  530
-#define ADDON_ACTION_GESTURE_SWIPE_UP         531
-#define ADDON_ACTION_GESTURE_SWIPE_UP_TEN     540
-#define ADDON_ACTION_GESTURE_SWIPE_DOWN       541
-#define ADDON_ACTION_GESTURE_SWIPE_DOWN_TEN   550
-// 5xx is reserved for additional gesture actions
-#define ADDON_ACTION_GESTURE_END            599
-
-// other, non-gesture actions
-#define ADDON_ACTION_ANALOG_MOVE_X            601 // analog thumbstick move, horizontal axis; see ACTION_ANALOG_MOVE
-#define ADDON_ACTION_ANALOG_MOVE_Y            602 // analog thumbstick move, vertical axis; see ACTION_ANALOG_MOVE
-
-
-// The NOOP action can be specified to disable an input event. This is
-// useful in user keyboard.xml etc to disable actions specified in the
-// system mappings. ERROR action is used to play an error sound
-#define ADDON_ACTION_ERROR                  998
-#define ADDON_ACTION_NOOP                   999
-
+#define ZOOM_MULTIPLY 25.0
 
 using namespace std;
 using namespace P8PLATFORM;
+
+
+enum DOMTestType {
+  DOM_TEST_STRUCTURE,
+  DOM_TEST_MODIFY,
+};
+
+
+// Custom menu command Ids.
+enum client_menu_ids {
+  CLIENT_ID_OPEN_SELECTED_SIDE = MENU_ID_USER_FIRST,
+  CLIENT_ID_OPEN_KEYBOARD,
+};
 
 // From ui/events/keycodes/keyboard_codes_posix.h.
 enum KeyboardCode
@@ -490,7 +154,7 @@ enum KeyboardCode
         VKEY_LWIN = 0x5B,
         VKEY_COMMAND = VKEY_LWIN,  // Provide the Mac name for convenience.
         VKEY_RWIN = 0x5C,
-        VKEY_APPS = 0x5D,
+  VKEY_APPS = 0x5D,
         VKEY_SLEEP = 0x5F,
   VKEY_NUMPAD0 = 0x60,
   VKEY_NUMPAD1 = 0x61,
@@ -614,162 +278,159 @@ KeyboardCode ActionIdToKeyboardCode(int actionId)
 fprintf(stderr, "actionId - %i\n", actionId);
   switch (actionId)
   {
-    case ADDON_ACTION_MOVE_LEFT:        return VKEY_LEFT;
-    case ADDON_ACTION_MOVE_RIGHT:       return VKEY_RIGHT;
-    case ADDON_ACTION_MOVE_UP:          return VKEY_UP;
-    case ADDON_ACTION_MOVE_DOWN:        return VKEY_DOWN;
-    case ADDON_ACTION_PAGE_UP:          return VKEY_PRIOR;
-    case ADDON_ACTION_PAGE_DOWN:        fprintf(stderr, "ADDON_ACTION_PAGE_DOWN\n"); return VKEY_NEXT;
-    case ADDON_ACTION_SELECT_ITEM:      fprintf(stderr, "ADDON_ACTION_SELECT_ITEM\n"); return VKEY_RETURN;
-    case ADDON_ACTION_HIGHLIGHT_ITEM:
-      fprintf(stderr, "ADDON_ACTION_HIGHLIGHT_ITEM\n");
+    case ACTION_MOVE_LEFT:        return VKEY_LEFT;
+    case ACTION_MOVE_RIGHT:       return VKEY_RIGHT;
+    case ACTION_MOVE_UP:          return VKEY_UP;
+    case ACTION_MOVE_DOWN:        return VKEY_DOWN;
+    case ACTION_PAGE_UP:          return VKEY_PRIOR;
+    case ACTION_PAGE_DOWN:        fprintf(stderr, "ACTION_PAGE_DOWN\n"); return VKEY_NEXT;
+    case ACTION_SELECT_ITEM:      fprintf(stderr, "ACTION_SELECT_ITEM\n"); return VKEY_RETURN;
+    case ACTION_HIGHLIGHT_ITEM:
+      fprintf(stderr, "ACTION_HIGHLIGHT_ITEM\n");
       break;
-    case ADDON_ACTION_PARENT_DIR:
-      fprintf(stderr, "ADDON_ACTION_PARENT_DIR\n");;
+    case ACTION_PARENT_DIR:
+      fprintf(stderr, "ACTION_PARENT_DIR\n");;
       break;
-    case ADDON_ACTION_PREVIOUS_MENU:
-      fprintf(stderr, "ADDON_ACTION_PREVIOUS_MENU\n");;
+    case ACTION_PREVIOUS_MENU:
+      fprintf(stderr, "ACTION_PREVIOUS_MENU\n");;
       break;
-    case ADDON_ACTION_SHOW_INFO:
-      fprintf(stderr, "ADDON_ACTION_SHOW_INFO\n");;
+    case ACTION_SHOW_INFO:
+      fprintf(stderr, "ACTION_SHOW_INFO\n");;
       break;
-    case ADDON_ACTION_PAUSE:
-      fprintf(stderr, "ADDON_ACTION_PAUSE\n");;
+    case ACTION_PAUSE:
+      fprintf(stderr, "ACTION_PAUSE\n");;
       break;
-    case ADDON_ACTION_STOP:
-      fprintf(stderr, "ADDON_ACTION_STOP\n");;
+    case ACTION_STOP:
+      fprintf(stderr, "ACTION_STOP\n");;
       break;
-    case ADDON_ACTION_NEXT_ITEM:
-      fprintf(stderr, "ADDON_ACTION_NEXT_ITEM\n");;
+    case ACTION_NEXT_ITEM:
+      fprintf(stderr, "ACTION_NEXT_ITEM\n");;
       break;
-    case ADDON_ACTION_PREV_ITEM:
-      fprintf(stderr, "ADDON_ACTION_PREV_ITEM\n");;
+    case ACTION_PREV_ITEM:
+      fprintf(stderr, "ACTION_PREV_ITEM\n");;
       break;
-    case ADDON_ACTION_FORWARD:
-      fprintf(stderr, "ADDON_ACTION_FORWARD\n");;
+    case ACTION_FORWARD:
+      fprintf(stderr, "ACTION_FORWARD\n");;
       break;
-    case ADDON_ACTION_REWIND:
-      fprintf(stderr, "ADDON_ACTION_REWIND\n");;
+    case ACTION_REWIND:
+      fprintf(stderr, "ACTION_REWIND\n");;
       break;
-    case ADDON_ACTION_SHOW_GUI:
-      fprintf(stderr, "ADDON_ACTION_SHOW_GUI\n");;
+    case ACTION_SHOW_GUI:
+      fprintf(stderr, "ACTION_SHOW_GUI\n");;
       break;
-    case ADDON_ACTION_ASPECT_RATIO:
-      fprintf(stderr, "ADDON_ACTION_ASPECT_RATIO\n");;
+    case ACTION_ASPECT_RATIO:
+      fprintf(stderr, "ACTION_ASPECT_RATIO\n");;
       break;
-    case ADDON_ACTION_STEP_FORWARD:
-      fprintf(stderr, "ADDON_ACTION_STEP_FORWARD\n");;
+    case ACTION_STEP_FORWARD:
+      fprintf(stderr, "ACTION_STEP_FORWARD\n");;
       break;
-    case ADDON_ACTION_STEP_BACK:
-      fprintf(stderr, "ADDON_ACTION_STEP_BACK\n");;
+    case ACTION_STEP_BACK:
+      fprintf(stderr, "ACTION_STEP_BACK\n");;
       break;
-    case ADDON_ACTION_BIG_STEP_FORWARD:
-      fprintf(stderr, "ADDON_ACTION_BIG_STEP_FORWARD\n");;
+    case ACTION_BIG_STEP_FORWARD:
+      fprintf(stderr, "ACTION_BIG_STEP_FORWARD\n");;
       break;
-    case ADDON_ACTION_BIG_STEP_BACK:
-      fprintf(stderr, "ADDON_ACTION_BIG_STEP_BACK\n");;
+    case ACTION_BIG_STEP_BACK:
+      fprintf(stderr, "ACTION_BIG_STEP_BACK\n");;
       break;
-    case ADDON_ACTION_SHOW_OSD:
-      fprintf(stderr, "ADDON_ACTION_SHOW_OSD\n");;
+    case ACTION_SHOW_OSD:
+      fprintf(stderr, "ACTION_SHOW_OSD\n");;
       break;
-    case ADDON_ACTION_SHOW_SUBTITLES:
-      fprintf(stderr, "ADDON_ACTION_SHOW_SUBTITLES\n");;
+    case ACTION_SHOW_SUBTITLES:
+      fprintf(stderr, "ACTION_SHOW_SUBTITLES\n");;
       break;
-    case ADDON_ACTION_NEXT_SUBTITLE:
-      fprintf(stderr, "ADDON_ACTION_NEXT_SUBTITLE\n");;
+    case ACTION_NEXT_SUBTITLE:
+      fprintf(stderr, "ACTION_NEXT_SUBTITLE\n");;
       break;
-    case ADDON_ACTION_SHOW_CODEC:
-      fprintf(stderr, "ADDON_ACTION_SHOW_CODEC\n");;
+    case ACTION_NEXT_PICTURE:
+      fprintf(stderr, "ACTION_NEXT_PICTURE\n");;
       break;
-    case ADDON_ACTION_NEXT_PICTURE:
-      fprintf(stderr, "ADDON_ACTION_NEXT_PICTURE\n");;
+    case ACTION_PREV_PICTURE:
+      fprintf(stderr, "ACTION_PREV_PICTURE\n");;
       break;
-    case ADDON_ACTION_PREV_PICTURE:
-      fprintf(stderr, "ADDON_ACTION_PREV_PICTURE\n");;
+//     case ACTION_ZOOM_OUT:
+//       fprintf(stderr, "ACTION_ZOOM_OUT\n");;
+//       break;
+//     case ACTION_ZOOM_IN:
+//       fprintf(stderr, "ACTION_ZOOM_IN\n");;
+//       break;
+    case ACTION_TOGGLE_SOURCE_DEST:
+      fprintf(stderr, "ACTION_TOGGLE_SOURCE_DEST\n");;
       break;
-    case ADDON_ACTION_ZOOM_OUT:
-      fprintf(stderr, "ADDON_ACTION_ZOOM_OUT\n");;
+    case ACTION_SHOW_PLAYLIST:
+      fprintf(stderr, "ACTION_SHOW_PLAYLIST\n");;
       break;
-    case ADDON_ACTION_ZOOM_IN:
-      fprintf(stderr, "ADDON_ACTION_ZOOM_IN\n");;
+    case ACTION_QUEUE_ITEM:
+      fprintf(stderr, "ACTION_MOVE_LEFT\n");;
       break;
-    case ADDON_ACTION_TOGGLE_SOURCE_DEST:
-      fprintf(stderr, "ADDON_ACTION_TOGGLE_SOURCE_DEST\n");;
+    case ACTION_REMOVE_ITEM:
+      fprintf(stderr, "ACTION_REMOVE_ITEM\n");;
       break;
-    case ADDON_ACTION_SHOW_PLAYLIST:
-      fprintf(stderr, "ADDON_ACTION_SHOW_PLAYLIST\n");;
+    case ACTION_SHOW_FULLSCREEN:
+      fprintf(stderr, "ACTION_SHOW_FULLSCREEN\n");;
       break;
-    case ADDON_ACTION_QUEUE_ITEM:
-      fprintf(stderr, "ADDON_ACTION_MOVE_LEFT\n");;
+    case ACTION_ZOOM_LEVEL_NORMAL:
+      fprintf(stderr, "ACTION_ZOOM_LEVEL_NORMAL\n");;
       break;
-    case ADDON_ACTION_REMOVE_ITEM:
-      fprintf(stderr, "ADDON_ACTION_REMOVE_ITEM\n");;
+    case ACTION_ZOOM_LEVEL_1:
+      fprintf(stderr, "ACTION_ZOOM_LEVEL_1\n");;
       break;
-    case ADDON_ACTION_SHOW_FULLSCREEN:
-      fprintf(stderr, "ADDON_ACTION_SHOW_FULLSCREEN\n");;
+    case ACTION_ZOOM_LEVEL_2:
+      fprintf(stderr, "ACTION_ZOOM_LEVEL_2\n");;
       break;
-    case ADDON_ACTION_ZOOM_LEVEL_NORMAL:
-      fprintf(stderr, "ADDON_ACTION_ZOOM_LEVEL_NORMAL\n");;
+    case ACTION_ZOOM_LEVEL_3:
+      fprintf(stderr, "ACTION_ZOOM_LEVEL_3\n");;
       break;
-    case ADDON_ACTION_ZOOM_LEVEL_1:
-      fprintf(stderr, "ADDON_ACTION_ZOOM_LEVEL_1\n");;
+    case ACTION_ZOOM_LEVEL_4:
+      fprintf(stderr, "ACTION_ZOOM_LEVEL_4\n");;
       break;
-    case ADDON_ACTION_ZOOM_LEVEL_2:
-      fprintf(stderr, "ADDON_ACTION_ZOOM_LEVEL_2\n");;
+    case ACTION_ZOOM_LEVEL_5:
+      fprintf(stderr, "ACTION_ZOOM_LEVEL_5\n");;
       break;
-    case ADDON_ACTION_ZOOM_LEVEL_3:
-      fprintf(stderr, "ADDON_ACTION_ZOOM_LEVEL_3\n");;
+    case ACTION_ZOOM_LEVEL_6:
+      fprintf(stderr, "ACTION_ZOOM_LEVEL_6\n");;
       break;
-    case ADDON_ACTION_ZOOM_LEVEL_4:
-      fprintf(stderr, "ADDON_ACTION_ZOOM_LEVEL_4\n");;
+    case ACTION_ZOOM_LEVEL_7:
+      fprintf(stderr, "ACTION_ZOOM_LEVEL_7\n");;
       break;
-    case ADDON_ACTION_ZOOM_LEVEL_5:
-      fprintf(stderr, "ADDON_ACTION_ZOOM_LEVEL_5\n");;
+    case ACTION_ZOOM_LEVEL_8:
+      fprintf(stderr, "ACTION_ZOOM_LEVEL_8\n");;
       break;
-    case ADDON_ACTION_ZOOM_LEVEL_6:
-      fprintf(stderr, "ADDON_ACTION_ZOOM_LEVEL_6\n");;
+    case ACTION_ZOOM_LEVEL_9:
+      fprintf(stderr, "ACTION_ZOOM_LEVEL_9\n");;
       break;
-    case ADDON_ACTION_ZOOM_LEVEL_7:
-      fprintf(stderr, "ADDON_ACTION_ZOOM_LEVEL_7\n");;
+    case ACTION_CALIBRATE_SWAP_ARROWS:
+      fprintf(stderr, "ACTION_CALIBRATE_SWAP_ARROWS\n");;
       break;
-    case ADDON_ACTION_ZOOM_LEVEL_8:
-      fprintf(stderr, "ADDON_ACTION_ZOOM_LEVEL_8\n");;
+    case ACTION_CALIBRATE_RESET:
+      fprintf(stderr, "ACTION_CALIBRATE_RESET\n");
       break;
-    case ADDON_ACTION_ZOOM_LEVEL_9:
-      fprintf(stderr, "ADDON_ACTION_ZOOM_LEVEL_9\n");;
+    case ACTION_ANALOG_MOVE:
+      fprintf(stderr, "ACTION_ANALOG_MOVE\n");
       break;
-    case ADDON_ACTION_CALIBRATE_SWAP_ARROWS:
-      fprintf(stderr, "ADDON_ACTION_CALIBRATE_SWAP_ARROWS\n");;
+    case ACTION_ROTATE_PICTURE_CW:
+      fprintf(stderr, "ACTION_ROTATE_PICTURE_CW\n");
       break;
-    case ADDON_ACTION_CALIBRATE_RESET:
-      fprintf(stderr, "ADDON_ACTION_CALIBRATE_RESET\n");
+    case ACTION_ROTATE_PICTURE_CCW:
+      fprintf(stderr, "ACTION_ROTATE_PICTURE_CCW\n");
       break;
-    case ADDON_ACTION_ANALOG_MOVE:
-      fprintf(stderr, "ADDON_ACTION_ANALOG_MOVE\n");
+    case ACTION_SUBTITLE_DELAY_MIN:
+      fprintf(stderr, "ACTION_SUBTITLE_DELAY_MIN\n");
       break;
-    case ADDON_ACTION_ROTATE_PICTURE_CW:
-      fprintf(stderr, "ADDON_ACTION_ROTATE_PICTURE_CW\n");
+    case ACTION_SUBTITLE_DELAY_PLUS:
+      fprintf(stderr, "ACTION_SUBTITLE_DELAY_PLUS\n");
       break;
-    case ADDON_ACTION_ROTATE_PICTURE_CCW:
-      fprintf(stderr, "ADDON_ACTION_ROTATE_PICTURE_CCW\n");
+    case ACTION_AUDIO_DELAY_MIN:
+      fprintf(stderr, "ACTION_AUDIO_DELAY_MIN\n");
       break;
-    case ADDON_ACTION_SUBTITLE_DELAY_MIN:
-      fprintf(stderr, "ADDON_ACTION_SUBTITLE_DELAY_MIN\n");
+    case ACTION_AUDIO_DELAY_PLUS:
+      fprintf(stderr, "ACTION_AUDIO_DELAY_PLUS\n");
       break;
-    case ADDON_ACTION_SUBTITLE_DELAY_PLUS:
-      fprintf(stderr, "ADDON_ACTION_SUBTITLE_DELAY_PLUS\n");
+    case ACTION_AUDIO_NEXT_LANGUAGE:
+      fprintf(stderr, "ACTION_AUDIO_NEXT_LANGUAGE\n");
       break;
-    case ADDON_ACTION_AUDIO_DELAY_MIN:
-      fprintf(stderr, "ADDON_ACTION_AUDIO_DELAY_MIN\n");
-      break;
-    case ADDON_ACTION_AUDIO_DELAY_PLUS:
-      fprintf(stderr, "ADDON_ACTION_AUDIO_DELAY_PLUS\n");
-      break;
-    case ADDON_ACTION_AUDIO_NEXT_LANGUAGE:
-      fprintf(stderr, "ADDON_ACTION_AUDIO_NEXT_LANGUAGE\n");
-      break;
-    case ADDON_ACTION_CHANGE_RESOLUTION:
-      fprintf(stderr, "ADDON_ACTION_CHANGE_RESOLUTION\n");
+    case ACTION_CHANGE_RESOLUTION:
+      fprintf(stderr, "ACTION_CHANGE_RESOLUTION\n");
       break;
     case REMOTE_0:                      return VKEY_NUMPAD0;
     case REMOTE_1:                      return VKEY_NUMPAD1;
@@ -781,541 +442,513 @@ fprintf(stderr, "actionId - %i\n", actionId);
     case REMOTE_7:                      return VKEY_NUMPAD7;
     case REMOTE_8:                      return VKEY_NUMPAD8;
     case REMOTE_9:                      return VKEY_NUMPAD9;
-    case ADDON_ACTION_PLAY:
-      fprintf(stderr, "ADDON_ACTION_PLAY\n");
+    case ACTION_PLAY:
+      fprintf(stderr, "ACTION_PLAY\n");
       break;
-    case ADDON_ACTION_OSD_SHOW_LEFT:
-      fprintf(stderr, "ADDON_ACTION_OSD_SHOW_LEFT\n");
+    case ACTION_SMALL_STEP_BACK:
+      fprintf(stderr, "ACTION_SMALL_STEP_BACK\n");
       break;
-    case ADDON_ACTION_OSD_SHOW_RIGHT:
-      fprintf(stderr, "ADDON_ACTION_OSD_SHOW_RIGHT\n");
+    case ACTION_PLAYER_FORWARD:
+      fprintf(stderr, "ACTION_PLAYER_FORWARD\n");
       break;
-    case ADDON_ACTION_OSD_SHOW_UP:
-      fprintf(stderr, "ADDON_ACTION_OSD_SHOW_UP\n");
+    case ACTION_PLAYER_REWIND:
+      fprintf(stderr, "ACTION_PLAYER_REWIND\n");
       break;
-    case ADDON_ACTION_OSD_SHOW_DOWN:
-      fprintf(stderr, "ADDON_ACTION_OSD_SHOW_DOWN\n");
+    case ACTION_PLAYER_PLAY:
+      fprintf(stderr, "ACTION_PLAYER_PLAY\n");
       break;
-    case ADDON_ACTION_OSD_SHOW_SELECT:
-      fprintf(stderr, "ADDON_ACTION_OSD_SHOW_SELECT\n");
+    case ACTION_DELETE_ITEM:
+      fprintf(stderr, "ACTION_DELETE_ITEM\n");
       break;
-    case ADDON_ACTION_OSD_SHOW_VALUE_PLUS:
-      fprintf(stderr, "ADDON_ACTION_OSD_SHOW_VALUE_PLUS\n");
+    case ACTION_COPY_ITEM:
+      fprintf(stderr, "ACTION_COPY_ITEM\n");
       break;
-    case ADDON_ACTION_OSD_SHOW_VALUE_MIN:
-      fprintf(stderr, "ADDON_ACTION_OSD_SHOW_VALUE_MIN\n");
+    case ACTION_MOVE_ITEM:
+      fprintf(stderr, "ACTION_MOVE_ITEM\n");
       break;
-    case ADDON_ACTION_SMALL_STEP_BACK:
-      fprintf(stderr, "ADDON_ACTION_SMALL_STEP_BACK\n");
+    case ACTION_TAKE_SCREENSHOT:
+      fprintf(stderr, "ACTION_TAKE_SCREENSHOT\n");
       break;
-    case ADDON_ACTION_PLAYER_FORWARD:
-      fprintf(stderr, "ADDON_ACTION_PLAYER_FORWARD\n");
+    case ACTION_RENAME_ITEM:
+      fprintf(stderr, "ACTION_RENAME_ITEM\n");
       break;
-    case ADDON_ACTION_PLAYER_REWIND:
-      fprintf(stderr, "ADDON_ACTION_PLAYER_REWIND\n");
+    case ACTION_VOLUME_UP:
+      fprintf(stderr, "ACTION_VOLUME_UP\n");
       break;
-    case ADDON_ACTION_PLAYER_PLAY:
-      fprintf(stderr, "ADDON_ACTION_PLAYER_PLAY\n");
+    case ACTION_VOLUME_DOWN:
+      fprintf(stderr, "ACTION_VOLUME_DOWN\n");
       break;
-    case ADDON_ACTION_DELETE_ITEM:
-      fprintf(stderr, "ADDON_ACTION_DELETE_ITEM\n");
+    case ACTION_VOLAMP:
+      fprintf(stderr, "ACTION_VOLAMP\n");
       break;
-    case ADDON_ACTION_COPY_ITEM:
-      fprintf(stderr, "ADDON_ACTION_COPY_ITEM\n");
+    case ACTION_MUTE:
+      fprintf(stderr, "ACTION_MUTE\n");
       break;
-    case ADDON_ACTION_MOVE_ITEM:
-      fprintf(stderr, "ADDON_ACTION_MOVE_ITEM\n");
+    case ACTION_NAV_BACK:
+      fprintf(stderr, "ACTION_NAV_BACK\n");
       break;
-    case ADDON_ACTION_SHOW_MPLAYER_OSD:
-      fprintf(stderr, "ADDON_ACTION_SHOW_MPLAYER_OSD\n");
+    case ACTION_VOLAMP_UP:
+      fprintf(stderr, "ACTION_VOLAMP_UP\n");
       break;
-    case ADDON_ACTION_OSD_HIDESUBMENU:
-      fprintf(stderr, "ADDON_ACTION_OSD_HIDESUBMENU\n");
+    case ACTION_VOLAMP_DOWN:
+      fprintf(stderr, "ACTION_VOLAMP_DOWN\n");
       break;
-    case ADDON_ACTION_TAKE_SCREENSHOT:
-      fprintf(stderr, "ADDON_ACTION_TAKE_SCREENSHOT\n");
+    case ACTION_CREATE_EPISODE_BOOKMARK:
+      fprintf(stderr, "ACTION_CREATE_EPISODE_BOOKMARK\n");
       break;
-    case ADDON_ACTION_RENAME_ITEM:
-      fprintf(stderr, "ADDON_ACTION_RENAME_ITEM\n");
+    case ACTION_CREATE_BOOKMARK:
+      fprintf(stderr, "ACTION_CREATE_BOOKMARK\n");
       break;
-    case ADDON_ACTION_VOLUME_UP:
-      fprintf(stderr, "ADDON_ACTION_VOLUME_UP\n");
+    case ACTION_CHAPTER_OR_BIG_STEP_FORWARD:
+      fprintf(stderr, "ACTION_CHAPTER_OR_BIG_STEP_FORWARD\n");
       break;
-    case ADDON_ACTION_VOLUME_DOWN:
-      fprintf(stderr, "ADDON_ACTION_VOLUME_DOWN\n");
+    case ACTION_CHAPTER_OR_BIG_STEP_BACK:
+      fprintf(stderr, "ACTION_CHAPTER_OR_BIG_STEP_BACK\n");
       break;
-    case ADDON_ACTION_VOLAMP:
-      fprintf(stderr, "ADDON_ACTION_VOLAMP\n");
+    case ACTION_CYCLE_SUBTITLE:
+      fprintf(stderr, "ACTION_CYCLE_SUBTITLE\n");
       break;
-    case ADDON_ACTION_MUTE:
-      fprintf(stderr, "ADDON_ACTION_MUTE\n");
-      break;
-    case ADDON_ACTION_NAV_BACK:
-      fprintf(stderr, "ADDON_ACTION_NAV_BACK\n");
-      break;
-    case ADDON_ACTION_VOLAMP_UP:
-      fprintf(stderr, "ADDON_ACTION_VOLAMP_UP\n");
-      break;
-    case ADDON_ACTION_VOLAMP_DOWN:
-      fprintf(stderr, "ADDON_ACTION_VOLAMP_DOWN\n");
-      break;
-    case ADDON_ACTION_CREATE_EPISODE_BOOKMARK:
-      fprintf(stderr, "ADDON_ACTION_CREATE_EPISODE_BOOKMARK\n");
-      break;
-    case ADDON_ACTION_CREATE_BOOKMARK:
-      fprintf(stderr, "ADDON_ACTION_CREATE_BOOKMARK\n");
-      break;
-    case ADDON_ACTION_CHAPTER_OR_BIG_STEP_FORWARD:
-      fprintf(stderr, "ADDON_ACTION_CHAPTER_OR_BIG_STEP_FORWARD\n");
-      break;
-    case ADDON_ACTION_CHAPTER_OR_BIG_STEP_BACK:
-      fprintf(stderr, "ADDON_ACTION_CHAPTER_OR_BIG_STEP_BACK\n");
-      break;
-    case ADDON_ACTION_CYCLE_SUBTITLE:
-      fprintf(stderr, "ADDON_ACTION_CYCLE_SUBTITLE\n");
-      break;
-//    case ADDON_ACTION_MOUSE_START:
-//      fprintf(stderr, "ADDON_ACTION_MOUSE_START\n");
+//    case ACTION_MOUSE_START:
+//      fprintf(stderr, "ACTION_MOUSE_START\n");
 //      break;
-    case ADDON_ACTION_MOUSE_LEFT_CLICK:
-      fprintf(stderr, "ADDON_ACTION_MOUSE_LEFT_CLICK\n");
+    case ACTION_MOUSE_LEFT_CLICK:
+      fprintf(stderr, "ACTION_MOUSE_LEFT_CLICK\n");
       break;
-    case ADDON_ACTION_MOUSE_RIGHT_CLICK:
-      fprintf(stderr, "ADDON_ACTION_MOUSE_RIGHT_CLICK\n");
+    case ACTION_MOUSE_RIGHT_CLICK:
+      fprintf(stderr, "ACTION_MOUSE_RIGHT_CLICK\n");
       break;
-    case ADDON_ACTION_MOUSE_MIDDLE_CLICK:
-      fprintf(stderr, "ADDON_ACTION_MOUSE_MIDDLE_CLICK\n");
+    case ACTION_MOUSE_MIDDLE_CLICK:
+      fprintf(stderr, "ACTION_MOUSE_MIDDLE_CLICK\n");
       break;
-    case ADDON_ACTION_MOUSE_DOUBLE_CLICK:
-      fprintf(stderr, "ADDON_ACTION_MOUSE_DOUBLE_CLICK\n");
+    case ACTION_MOUSE_DOUBLE_CLICK:
+      fprintf(stderr, "ACTION_MOUSE_DOUBLE_CLICK\n");
       break;
-    case ADDON_ACTION_MOUSE_WHEEL_UP:
-      fprintf(stderr, "ADDON_ACTION_MOUSE_WHEEL_UP\n");
+    case ACTION_MOUSE_WHEEL_UP:
+      fprintf(stderr, "ACTION_MOUSE_WHEEL_UP\n");
       break;
-    case ADDON_ACTION_MOUSE_WHEEL_DOWN:
-      fprintf(stderr, "ADDON_ACTION_MOUSE_WHEEL_DOWN\n");
+    case ACTION_MOUSE_WHEEL_DOWN:
+      fprintf(stderr, "ACTION_MOUSE_WHEEL_DOWN\n");
       break;
-    case ADDON_ACTION_MOUSE_DRAG:
-      fprintf(stderr, "ADDON_ACTION_MOUSE_DRAG\n");
+    case ACTION_MOUSE_DRAG:
+      fprintf(stderr, "ACTION_MOUSE_DRAG\n");
       break;
-    case ADDON_ACTION_MOUSE_MOVE:
-      fprintf(stderr, "ADDON_ACTION_MOUSE_MOVE\n");
+    case ACTION_MOUSE_MOVE:
+      fprintf(stderr, "ACTION_MOUSE_MOVE\n");
       break;
-    case ADDON_ACTION_MOUSE_LONG_CLICK:
-      fprintf(stderr, "ADDON_ACTION_MOUSE_LONG_CLICK\n");
+    case ACTION_MOUSE_LONG_CLICK:
+      fprintf(stderr, "ACTION_MOUSE_LONG_CLICK\n");
       break;
-    case ADDON_ACTION_MOUSE_END:
-      fprintf(stderr, "ADDON_ACTION_MOUSE_END\n");
+    case ACTION_MOUSE_END:
+      fprintf(stderr, "ACTION_MOUSE_END\n");
       break;
-    case ADDON_ACTION_BACKSPACE:
-      fprintf(stderr, "ADDON_ACTION_BACKSPACE\n");
+    case ACTION_BACKSPACE:
+      fprintf(stderr, "ACTION_BACKSPACE\n");
       break;
-    case ADDON_ACTION_SCROLL_UP:
-      fprintf(stderr, "ADDON_ACTION_SCROLL_UP\n");
+    case ACTION_SCROLL_UP:
+      fprintf(stderr, "ACTION_SCROLL_UP\n");
       break;
-    case ADDON_ACTION_SCROLL_DOWN:
-      fprintf(stderr, "ADDON_ACTION_SCROLL_DOWN\n");
+    case ACTION_SCROLL_DOWN:
+      fprintf(stderr, "ACTION_SCROLL_DOWN\n");
       break;
-    case ADDON_ACTION_ANALOG_FORWARD:
-      fprintf(stderr, "ADDON_ACTION_ANALOG_FORWARD\n");
+    case ACTION_ANALOG_FORWARD:
+      fprintf(stderr, "ACTION_ANALOG_FORWARD\n");
       break;
-    case ADDON_ACTION_ANALOG_REWIND:
-      fprintf(stderr, "ADDON_ACTION_ANALOG_REWIND\n");
+    case ACTION_ANALOG_REWIND:
+      fprintf(stderr, "ACTION_ANALOG_REWIND\n");
       break;
-    case ADDON_ACTION_MOVE_ITEM_UP:
-      fprintf(stderr, "ADDON_ACTION_MOVE_ITEM_UP\n");
+    case ACTION_MOVE_ITEM_UP:
+      fprintf(stderr, "ACTION_MOVE_ITEM_UP\n");
       break;
-    case ADDON_ACTION_MOVE_ITEM_DOWN:
-      fprintf(stderr, "ADDON_ACTION_MOVE_ITEM_DOWN\n");
+    case ACTION_MOVE_ITEM_DOWN:
+      fprintf(stderr, "ACTION_MOVE_ITEM_DOWN\n");
       break;
-    case ADDON_ACTION_CONTEXT_MENU:
-      fprintf(stderr, "ADDON_ACTION_CONTEXT_MENU\n");
+    case ACTION_CONTEXT_MENU:
+      return VKEY_APPS;
+    case ACTION_SHIFT:
+      fprintf(stderr, "ACTION_SHIFT\n");
       break;
-    case ADDON_ACTION_SHIFT:
-      fprintf(stderr, "ADDON_ACTION_SHIFT\n");
+    case ACTION_SYMBOLS:
+      fprintf(stderr, "ACTION_SYMBOLS\n");
       break;
-    case ADDON_ACTION_SYMBOLS:
-      fprintf(stderr, "ADDON_ACTION_SYMBOLS\n");
+    case ACTION_CURSOR_LEFT:
+      fprintf(stderr, "ACTION_CURSOR_LEFT\n");
       break;
-    case ADDON_ACTION_CURSOR_LEFT:
-      fprintf(stderr, "ADDON_ACTION_CURSOR_LEFT\n");
+    case ACTION_CURSOR_RIGHT:
+      fprintf(stderr, "ACTION_CURSOR_RIGHT\n");
       break;
-    case ADDON_ACTION_CURSOR_RIGHT:
-      fprintf(stderr, "ADDON_ACTION_CURSOR_RIGHT\n");
+    case ACTION_BUILT_IN_FUNCTION:
+      fprintf(stderr, "ACTION_BUILT_IN_FUNCTION\n");
       break;
-    case ADDON_ACTION_BUILT_IN_FUNCTION:
-      fprintf(stderr, "ADDON_ACTION_BUILT_IN_FUNCTION\n");
+    case ACTION_SHOW_OSD_TIME:
+      fprintf(stderr, "ACTION_SHOW_OSD_TIME\n");
       break;
-    case ADDON_ACTION_SHOW_OSD_TIME:
-      fprintf(stderr, "ADDON_ACTION_SHOW_OSD_TIME\n");
+    case ACTION_ANALOG_SEEK_FORWARD:
+      fprintf(stderr, "ACTION_ANALOG_SEEK_FORWARD\n");
       break;
-    case ADDON_ACTION_ANALOG_SEEK_FORWARD:
-      fprintf(stderr, "ADDON_ACTION_ANALOG_SEEK_FORWARD\n");
+    case ACTION_ANALOG_SEEK_BACK:
+      fprintf(stderr, "ACTION_ANALOG_SEEK_BACK\n");
       break;
-    case ADDON_ACTION_ANALOG_SEEK_BACK:
-      fprintf(stderr, "ADDON_ACTION_ANALOG_SEEK_BACK\n");
+    case ACTION_VIS_PRESET_SHOW:
+      fprintf(stderr, "ACTION_VIS_PRESET_SHOW\n");
       break;
-    case ADDON_ACTION_VIS_PRESET_SHOW:
-      fprintf(stderr, "ADDON_ACTION_VIS_PRESET_SHOW\n");
+    case ACTION_VIS_PRESET_NEXT:
+      fprintf(stderr, "ACTION_VIS_PRESET_NEXT\n");
       break;
-    case ADDON_ACTION_VIS_PRESET_NEXT:
-      fprintf(stderr, "ADDON_ACTION_VIS_PRESET_NEXT\n");
+    case ACTION_VIS_PRESET_PREV:
+      fprintf(stderr, "ACTION_VIS_PRESET_PREV\n");
       break;
-    case ADDON_ACTION_VIS_PRESET_PREV:
-      fprintf(stderr, "ADDON_ACTION_VIS_PRESET_PREV\n");
+    case ACTION_VIS_PRESET_LOCK:
+      fprintf(stderr, "ACTION_VIS_PRESET_LOCK\n");
       break;
-    case ADDON_ACTION_VIS_PRESET_LOCK:
-      fprintf(stderr, "ADDON_ACTION_VIS_PRESET_LOCK\n");
+    case ACTION_VIS_PRESET_RANDOM:
+      fprintf(stderr, "ACTION_VIS_PRESET_RANDOM\n");
       break;
-    case ADDON_ACTION_VIS_PRESET_RANDOM:
-      fprintf(stderr, "ADDON_ACTION_VIS_PRESET_RANDOM\n");
+    case ACTION_VIS_RATE_PRESET_PLUS:
+      fprintf(stderr, "ACTION_VIS_RATE_PRESET_PLUS\n");
       break;
-    case ADDON_ACTION_VIS_RATE_PRESET_PLUS:
-      fprintf(stderr, "ADDON_ACTION_VIS_RATE_PRESET_PLUS\n");
+    case ACTION_VIS_RATE_PRESET_MINUS:
+      fprintf(stderr, "ACTION_VIS_RATE_PRESET_MINUS\n");
       break;
-    case ADDON_ACTION_VIS_RATE_PRESET_MINUS:
-      fprintf(stderr, "ADDON_ACTION_VIS_RATE_PRESET_MINUS\n");
+    case ACTION_SHOW_VIDEOMENU:
+      fprintf(stderr, "ACTION_SHOW_VIDEOMENU\n");
       break;
-    case ADDON_ACTION_SHOW_VIDEOMENU:
-      fprintf(stderr, "ADDON_ACTION_SHOW_VIDEOMENU\n");
+    case ACTION_ENTER:
+      fprintf(stderr, "ACTION_ENTER\n");
       break;
-    case ADDON_ACTION_ENTER:
-      fprintf(stderr, "ADDON_ACTION_ENTER\n");
+    case ACTION_INCREASE_RATING:
+      fprintf(stderr, "ACTION_INCREASE_RATING\n");
       break;
-    case ADDON_ACTION_INCREASE_RATING:
-      fprintf(stderr, "ADDON_ACTION_INCREASE_RATING\n");
+    case ACTION_DECREASE_RATING:
+      fprintf(stderr, "ACTION_DECREASE_RATING\n");
       break;
-    case ADDON_ACTION_DECREASE_RATING:
-      fprintf(stderr, "ADDON_ACTION_DECREASE_RATING\n");
+    case ACTION_NEXT_SCENE:
+      fprintf(stderr, "ACTION_NEXT_SCENE\n");
       break;
-    case ADDON_ACTION_NEXT_SCENE:
-      fprintf(stderr, "ADDON_ACTION_NEXT_SCENE\n");
+    case ACTION_PREV_SCENE:
+      fprintf(stderr, "ACTION_PREV_SCENE\n");
       break;
-    case ADDON_ACTION_PREV_SCENE:
-      fprintf(stderr, "ADDON_ACTION_PREV_SCENE\n");
+    case ACTION_NEXT_LETTER:
+      fprintf(stderr, "ACTION_NEXT_LETTER\n");
       break;
-    case ADDON_ACTION_NEXT_LETTER:
-      fprintf(stderr, "ADDON_ACTION_NEXT_LETTER\n");
+    case ACTION_PREV_LETTER:
+      fprintf(stderr, "ACTION_PREV_LETTER\n");
       break;
-    case ADDON_ACTION_PREV_LETTER:
-      fprintf(stderr, "ADDON_ACTION_PREV_LETTER\n");
+    case ACTION_JUMP_SMS2:
+      fprintf(stderr, "ACTION_JUMP_SMS2\n");
       break;
-    case ADDON_ACTION_JUMP_SMS2:
-      fprintf(stderr, "ADDON_ACTION_JUMP_SMS2\n");
+    case ACTION_JUMP_SMS3:
+      fprintf(stderr, "ACTION_JUMP_SMS3\n");
       break;
-    case ADDON_ACTION_JUMP_SMS3:
-      fprintf(stderr, "ADDON_ACTION_JUMP_SMS3\n");
+    case ACTION_JUMP_SMS4:
+      fprintf(stderr, "ACTION_JUMP_SMS4\n");
       break;
-    case ADDON_ACTION_JUMP_SMS4:
-      fprintf(stderr, "ADDON_ACTION_JUMP_SMS4\n");
+    case ACTION_JUMP_SMS5:
+      fprintf(stderr, "ACTION_JUMP_SMS5\n");
       break;
-    case ADDON_ACTION_JUMP_SMS5:
-      fprintf(stderr, "ADDON_ACTION_JUMP_SMS5\n");
+    case ACTION_JUMP_SMS6:
+      fprintf(stderr, "ACTION_JUMP_SMS6\n");
       break;
-    case ADDON_ACTION_JUMP_SMS6:
-      fprintf(stderr, "ADDON_ACTION_JUMP_SMS6\n");
+    case ACTION_JUMP_SMS7:
+      fprintf(stderr, "ACTION_JUMP_SMS7\n");
       break;
-    case ADDON_ACTION_JUMP_SMS7:
-      fprintf(stderr, "ADDON_ACTION_JUMP_SMS7\n");
+    case ACTION_JUMP_SMS8:
+      fprintf(stderr, "ACTION_JUMP_SMS8\n");
       break;
-    case ADDON_ACTION_JUMP_SMS8:
-      fprintf(stderr, "ADDON_ACTION_JUMP_SMS8\n");
+    case ACTION_JUMP_SMS9:
+      fprintf(stderr, "ACTION_JUMP_SMS9\n");
       break;
-    case ADDON_ACTION_JUMP_SMS9:
-      fprintf(stderr, "ADDON_ACTION_JUMP_SMS9\n");
+    case ACTION_FILTER_CLEAR:
+      fprintf(stderr, "ACTION_FILTER_CLEAR\n");
       break;
-    case ADDON_ACTION_FILTER_CLEAR:
-      fprintf(stderr, "ADDON_ACTION_FILTER_CLEAR\n");
+    case ACTION_FILTER_SMS2:
+      fprintf(stderr, "ACTION_FILTER_SMS2\n");
       break;
-    case ADDON_ACTION_FILTER_SMS2:
-      fprintf(stderr, "ADDON_ACTION_FILTER_SMS2\n");
+    case ACTION_FILTER_SMS3:
+      fprintf(stderr, "ACTION_FILTER_SMS3\n");
       break;
-    case ADDON_ACTION_FILTER_SMS3:
-      fprintf(stderr, "ADDON_ACTION_FILTER_SMS3\n");
+    case ACTION_FILTER_SMS4:
+      fprintf(stderr, "ACTION_FILTER_SMS4\n");
       break;
-    case ADDON_ACTION_FILTER_SMS4:
-      fprintf(stderr, "ADDON_ACTION_FILTER_SMS4\n");
+    case ACTION_FILTER_SMS5:
+      fprintf(stderr, "ACTION_FILTER_SMS5\n");
       break;
-    case ADDON_ACTION_FILTER_SMS5:
-      fprintf(stderr, "ADDON_ACTION_FILTER_SMS5\n");
+    case ACTION_FILTER_SMS6:
+      fprintf(stderr, "ACTION_FILTER_SMS6\n");
       break;
-    case ADDON_ACTION_FILTER_SMS6:
-      fprintf(stderr, "ADDON_ACTION_FILTER_SMS6\n");
+    case ACTION_FILTER_SMS7:
+      fprintf(stderr, "ACTION_FILTER_SMS7\n");
       break;
-    case ADDON_ACTION_FILTER_SMS7:
-      fprintf(stderr, "ADDON_ACTION_FILTER_SMS7\n");
+    case ACTION_FILTER_SMS8:
+      fprintf(stderr, "ACTION_FILTER_SMS8\n");
       break;
-    case ADDON_ACTION_FILTER_SMS8:
-      fprintf(stderr, "ADDON_ACTION_FILTER_SMS8\n");
+    case ACTION_FILTER_SMS9:
+      fprintf(stderr, "ACTION_FILTER_SMS9\n");
       break;
-    case ADDON_ACTION_FILTER_SMS9:
-      fprintf(stderr, "ADDON_ACTION_FILTER_SMS9\n");
+    case ACTION_FIRST_PAGE:        fprintf(stderr, "ACTION_SELECT_ITEM\n"); return VKEY_HOME;
+    case ACTION_LAST_PAGE:         fprintf(stderr, "ACTION_SELECT_ITEM\n"); return VKEY_END;
+    case ACTION_AUDIO_DELAY:
+      fprintf(stderr, "ACTION_AUDIO_DELAY\n");
       break;
-    case ADDON_ACTION_FIRST_PAGE:        fprintf(stderr, "ADDON_ACTION_SELECT_ITEM\n"); return VKEY_HOME;
-    case ADDON_ACTION_LAST_PAGE:         fprintf(stderr, "ADDON_ACTION_SELECT_ITEM\n"); return VKEY_END;
-    case ADDON_ACTION_AUDIO_DELAY:
-      fprintf(stderr, "ADDON_ACTION_AUDIO_DELAY\n");
+    case ACTION_SUBTITLE_DELAY:
+      fprintf(stderr, "ACTION_SUBTITLE_DELAY\n");
       break;
-    case ADDON_ACTION_SUBTITLE_DELAY:
-      fprintf(stderr, "ADDON_ACTION_SUBTITLE_DELAY\n");
+    case ACTION_MENU:
+      fprintf(stderr, "ACTION_MENU\n");
       break;
-    case ADDON_ACTION_MENU:
-      fprintf(stderr, "ADDON_ACTION_MENU\n");
+    case ACTION_RECORD:
+      fprintf(stderr, "ACTION_RECORD\n");
       break;
-    case ADDON_ACTION_RECORD:
-      fprintf(stderr, "ADDON_ACTION_RECORD\n");
+    case ACTION_PASTE:
+      fprintf(stderr, "ACTION_PASTE\n");
       break;
-    case ADDON_ACTION_PASTE:
-      fprintf(stderr, "ADDON_ACTION_PASTE\n");
+    case ACTION_NEXT_CONTROL:
+      fprintf(stderr, "ACTION_NEXT_CONTROL\n");
       break;
-    case ADDON_ACTION_NEXT_CONTROL:
-      fprintf(stderr, "ADDON_ACTION_NEXT_CONTROL\n");
+    case ACTION_PREV_CONTROL:
+      fprintf(stderr, "ACTION_PREV_CONTROL\n");
       break;
-    case ADDON_ACTION_PREV_CONTROL:
-      fprintf(stderr, "ADDON_ACTION_PREV_CONTROL\n");
+    case ACTION_CHANNEL_SWITCH:
+      fprintf(stderr, "ACTION_CHANNEL_SWITCH\n");
       break;
-    case ADDON_ACTION_CHANNEL_SWITCH:
-      fprintf(stderr, "ADDON_ACTION_CHANNEL_SWITCH\n");
+    case ACTION_CHANNEL_UP:
+      fprintf(stderr, "ACTION_CHANNEL_UP\n");
       break;
-    case ADDON_ACTION_CHANNEL_UP:
-      fprintf(stderr, "ADDON_ACTION_CHANNEL_UP\n");
+    case ACTION_CHANNEL_DOWN:
+      fprintf(stderr, "ACTION_CHANNEL_DOWN\n");
       break;
-    case ADDON_ACTION_CHANNEL_DOWN:
-      fprintf(stderr, "ADDON_ACTION_CHANNEL_DOWN\n");
+    case ACTION_NEXT_CHANNELGROUP:
+      fprintf(stderr, "ACTION_NEXT_CHANNELGROUP\n");
       break;
-    case ADDON_ACTION_NEXT_CHANNELGROUP:
-      fprintf(stderr, "ADDON_ACTION_NEXT_CHANNELGROUP\n");
+    case ACTION_PREVIOUS_CHANNELGROUP:
+      fprintf(stderr, "ACTION_PREVIOUS_CHANNELGROUP\n");
       break;
-    case ADDON_ACTION_PREVIOUS_CHANNELGROUP:
-      fprintf(stderr, "ADDON_ACTION_PREVIOUS_CHANNELGROUP\n");
+    case ACTION_PVR_PLAY:
+      fprintf(stderr, "ACTION_PVR_PLAY\n");
       break;
-    case ADDON_ACTION_PVR_PLAY:
-      fprintf(stderr, "ADDON_ACTION_PVR_PLAY\n");
+    case ACTION_PVR_PLAY_TV:
+      fprintf(stderr, "ACTION_PVR_PLAY_TV\n");
       break;
-    case ADDON_ACTION_PVR_PLAY_TV:
-      fprintf(stderr, "ADDON_ACTION_PVR_PLAY_TV\n");
+    case ACTION_PVR_PLAY_RADIO:
+      fprintf(stderr, "ACTION_PVR_PLAY_RADIO\n");
       break;
-    case ADDON_ACTION_PVR_PLAY_RADIO:
-      fprintf(stderr, "ADDON_ACTION_PVR_PLAY_RADIO\n");
+    case ACTION_TOGGLE_FULLSCREEN:
+      fprintf(stderr, "ACTION_TOGGLE_FULLSCREEN\n");
       break;
-    case ADDON_ACTION_TOGGLE_FULLSCREEN:
-      fprintf(stderr, "ADDON_ACTION_TOGGLE_FULLSCREEN\n");
+    case ACTION_TOGGLE_WATCHED:
+      fprintf(stderr, "ACTION_TOGGLE_WATCHED\n");
       break;
-    case ADDON_ACTION_TOGGLE_WATCHED:
-      fprintf(stderr, "ADDON_ACTION_TOGGLE_WATCHED\n");
+    case ACTION_SCAN_ITEM:
+      fprintf(stderr, "ACTION_SCAN_ITEM\n");
       break;
-    case ADDON_ACTION_SCAN_ITEM:
-      fprintf(stderr, "ADDON_ACTION_SCAN_ITEM\n");
+    case ACTION_TOGGLE_DIGITAL_ANALOG:
+      fprintf(stderr, "ACTION_TOGGLE_DIGITAL_ANALOG\n");
       break;
-    case ADDON_ACTION_TOGGLE_DIGITAL_ANALOG:
-      fprintf(stderr, "ADDON_ACTION_TOGGLE_DIGITAL_ANALOG\n");
+    case ACTION_RELOAD_KEYMAPS:
+      fprintf(stderr, "ACTION_RELOAD_KEYMAPS\n");
       break;
-    case ADDON_ACTION_RELOAD_KEYMAPS:
-      fprintf(stderr, "ADDON_ACTION_RELOAD_KEYMAPS\n");
+    case ACTION_GUIPROFILE_BEGIN:
+      fprintf(stderr, "ACTION_GUIPROFILE_BEGIN\n");
       break;
-    case ADDON_ACTION_GUIPROFILE_BEGIN:
-      fprintf(stderr, "ADDON_ACTION_GUIPROFILE_BEGIN\n");
+    case ACTION_TELETEXT_RED:
+      fprintf(stderr, "ACTION_TELETEXT_RED\n");
       break;
-    case ADDON_ACTION_TELETEXT_RED:
-      fprintf(stderr, "ADDON_ACTION_TELETEXT_RED\n");
+    case ACTION_TELETEXT_GREEN:
+      fprintf(stderr, "ACTION_TELETEXT_GREEN\n");
       break;
-    case ADDON_ACTION_TELETEXT_GREEN:
-      fprintf(stderr, "ADDON_ACTION_TELETEXT_GREEN\n");
+    case ACTION_TELETEXT_YELLOW:
+      fprintf(stderr, "ACTION_TELETEXT_YELLOW\n");
       break;
-    case ADDON_ACTION_TELETEXT_YELLOW:
-      fprintf(stderr, "ADDON_ACTION_TELETEXT_YELLOW\n");
+    case ACTION_TELETEXT_BLUE:
+      fprintf(stderr, "ACTION_TELETEXT_BLUE\n");
       break;
-    case ADDON_ACTION_TELETEXT_BLUE:
-      fprintf(stderr, "ADDON_ACTION_TELETEXT_BLUE\n");
+    case ACTION_INCREASE_PAR:
+      fprintf(stderr, "ACTION_INCREASE_PAR\n");
       break;
-    case ADDON_ACTION_INCREASE_PAR:
-      fprintf(stderr, "ADDON_ACTION_INCREASE_PAR\n");
+    case ACTION_DECREASE_PAR:
+      fprintf(stderr, "ACTION_DECREASE_PAR\n");
       break;
-    case ADDON_ACTION_DECREASE_PAR:
-      fprintf(stderr, "ADDON_ACTION_DECREASE_PAR\n");
+    case ACTION_VSHIFT_UP:
+      fprintf(stderr, "ACTION_VSHIFT_UP\n");
       break;
-    case ADDON_ACTION_VSHIFT_UP:
-      fprintf(stderr, "ADDON_ACTION_VSHIFT_UP\n");
+    case ACTION_VSHIFT_DOWN:
+      fprintf(stderr, "ACTION_VSHIFT_DOWN\n");
       break;
-    case ADDON_ACTION_VSHIFT_DOWN:
-      fprintf(stderr, "ADDON_ACTION_VSHIFT_DOWN\n");
+    case ACTION_PLAYER_PLAYPAUSE:
+      fprintf(stderr, "ACTION_PLAYER_PLAYPAUSE\n");
       break;
-    case ADDON_ACTION_PLAYER_PLAYPAUSE:
-      fprintf(stderr, "ADDON_ACTION_PLAYER_PLAYPAUSE\n");
+    case ACTION_SUBTITLE_VSHIFT_UP:
+      fprintf(stderr, "ACTION_SUBTITLE_VSHIFT_UP\n");
       break;
-    case ADDON_ACTION_SUBTITLE_VSHIFT_UP:
-      fprintf(stderr, "ADDON_ACTION_SUBTITLE_VSHIFT_UP\n");
+    case ACTION_SUBTITLE_VSHIFT_DOWN:
+      fprintf(stderr, "ACTION_SUBTITLE_VSHIFT_DOWN\n");
       break;
-    case ADDON_ACTION_SUBTITLE_VSHIFT_DOWN:
-      fprintf(stderr, "ADDON_ACTION_SUBTITLE_VSHIFT_DOWN\n");
+    case ACTION_SUBTITLE_ALIGN:
+      fprintf(stderr, "ACTION_SUBTITLE_ALIGN\n");
       break;
-    case ADDON_ACTION_SUBTITLE_ALIGN:
-      fprintf(stderr, "ADDON_ACTION_SUBTITLE_ALIGN\n");
+    case ACTION_FILTER:
+      fprintf(stderr, "ACTION_FILTER\n");
       break;
-    case ADDON_ACTION_FILTER:
-      fprintf(stderr, "ADDON_ACTION_FILTER\n");
+    case ACTION_SWITCH_PLAYER:
+      fprintf(stderr, "ACTION_SWITCH_PLAYER\n");
       break;
-    case ADDON_ACTION_SWITCH_PLAYER:
-      fprintf(stderr, "ADDON_ACTION_SWITCH_PLAYER\n");
+    case ACTION_STEREOMODE_NEXT:
+      fprintf(stderr, "ACTION_STEREOMODE_NEXT\n");
       break;
-    case ADDON_ACTION_STEREOMODE_NEXT:
-      fprintf(stderr, "ADDON_ACTION_STEREOMODE_NEXT\n");
+    case ACTION_STEREOMODE_PREVIOUS:
+      fprintf(stderr, "ACTION_STEREOMODE_PREVIOUS\n");
       break;
-    case ADDON_ACTION_STEREOMODE_PREVIOUS:
-      fprintf(stderr, "ADDON_ACTION_STEREOMODE_PREVIOUS\n");
+    case ACTION_STEREOMODE_TOGGLE:
+      fprintf(stderr, "ACTION_STEREOMODE_TOGGLE\n");
       break;
-    case ADDON_ACTION_STEREOMODE_TOGGLE:
-      fprintf(stderr, "ADDON_ACTION_STEREOMODE_TOGGLE\n");
+    case ACTION_STEREOMODE_SELECT:
+      fprintf(stderr, "ACTION_STEREOMODE_SELECT\n");
       break;
-    case ADDON_ACTION_STEREOMODE_SELECT:
-      fprintf(stderr, "ADDON_ACTION_STEREOMODE_SELECT\n");
+    case ACTION_STEREOMODE_TOMONO:
+      fprintf(stderr, "ACTION_STEREOMODE_TOMONO\n");
       break;
-    case ADDON_ACTION_STEREOMODE_TOMONO:
-      fprintf(stderr, "ADDON_ACTION_STEREOMODE_TOMONO\n");
+    case ACTION_STEREOMODE_SET:
+      fprintf(stderr, "ACTION_STEREOMODE_SET\n");
       break;
-    case ADDON_ACTION_STEREOMODE_SET:
-      fprintf(stderr, "ADDON_ACTION_STEREOMODE_SET\n");
+    case ACTION_SETTINGS_RESET:
+      fprintf(stderr, "ACTION_SETTINGS_RESET\n");
       break;
-    case ADDON_ACTION_SETTINGS_RESET:
-      fprintf(stderr, "ADDON_ACTION_SETTINGS_RESET\n");
+    case ACTION_SETTINGS_LEVEL_CHANGE:
+      fprintf(stderr, "ACTION_SETTINGS_LEVEL_CHANGE\n");
       break;
-    case ADDON_ACTION_SETTINGS_LEVEL_CHANGE:
-      fprintf(stderr, "ADDON_ACTION_SETTINGS_LEVEL_CHANGE\n");
+    case ACTION_TRIGGER_OSD:
+      fprintf(stderr, "ACTION_TRIGGER_OSD\n");
       break;
-    case ADDON_ACTION_TRIGGER_OSD:
-      fprintf(stderr, "ADDON_ACTION_TRIGGER_OSD\n");
+    case ACTION_INPUT_TEXT:
+      fprintf(stderr, "ACTION_INPUT_TEXT\n");
       break;
-    case ADDON_ACTION_INPUT_TEXT:
-      fprintf(stderr, "ADDON_ACTION_INPUT_TEXT\n");
+    case ACTION_VOLUME_SET:
+      fprintf(stderr, "ACTION_VOLUME_SET\n");
       break;
-    case ADDON_ACTION_VOLUME_SET:
-      fprintf(stderr, "ADDON_ACTION_VOLUME_SET\n");
+    case ACTION_TOUCH_TAP:
+      fprintf(stderr, "ACTION_TOUCH_TAP\n");
       break;
-    case ADDON_ACTION_TOUCH_TAP:
-      fprintf(stderr, "ADDON_ACTION_TOUCH_TAP\n");
+    case ACTION_TOUCH_TAP_TEN:
+      fprintf(stderr, "ACTION_TOUCH_TAP_TEN\n");
       break;
-    case ADDON_ACTION_TOUCH_TAP_TEN:
-      fprintf(stderr, "ADDON_ACTION_TOUCH_TAP_TEN\n");
+    case ACTION_TOUCH_LONGPRESS:
+      fprintf(stderr, "ACTION_TOUCH_LONGPRESS\n");
       break;
-    case ADDON_ACTION_TOUCH_LONGPRESS:
-      fprintf(stderr, "ADDON_ACTION_TOUCH_LONGPRESS\n");
+    case ACTION_TOUCH_LONGPRESS_TEN:
+      fprintf(stderr, "ACTION_TOUCH_LONGPRESS_TEN\n");
       break;
-    case ADDON_ACTION_TOUCH_LONGPRESS_TEN:
-      fprintf(stderr, "ADDON_ACTION_TOUCH_LONGPRESS_TEN\n");
+    case ACTION_GESTURE_NOTIFY:
+      fprintf(stderr, "ACTION_GESTURE_NOTIFY\n");
       break;
-    case ADDON_ACTION_GESTURE_NOTIFY:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_NOTIFY\n");
+    case ACTION_GESTURE_BEGIN:
+      fprintf(stderr, "ACTION_GESTURE_BEGIN\n");
       break;
-    case ADDON_ACTION_GESTURE_BEGIN:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_BEGIN\n");
+    case ACTION_GESTURE_ZOOM:
+      fprintf(stderr, "ACTION_GESTURE_ZOOM\n");
       break;
-    case ADDON_ACTION_GESTURE_ZOOM:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_ZOOM\n");
+    case ACTION_GESTURE_ROTATE:
+      fprintf(stderr, "ACTION_GESTURE_ROTATE\n");
       break;
-    case ADDON_ACTION_GESTURE_ROTATE:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_ROTATE\n");
+    case ACTION_GESTURE_PAN:
+      fprintf(stderr, "ACTION_GESTURE_PAN\n");
       break;
-    case ADDON_ACTION_GESTURE_PAN:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_PAN\n");
+    case ACTION_GESTURE_SWIPE_LEFT:
+      fprintf(stderr, "ACTION_GESTURE_SWIPE_LEFT\n");
       break;
-    case ADDON_ACTION_GESTURE_SWIPE_LEFT:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_SWIPE_LEFT\n");
+    case ACTION_GESTURE_SWIPE_LEFT_TEN:
+      fprintf(stderr, "ACTION_GESTURE_SWIPE_LEFT_TEN\n");
       break;
-    case ADDON_ACTION_GESTURE_SWIPE_LEFT_TEN:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_SWIPE_LEFT_TEN\n");
+    case ACTION_GESTURE_SWIPE_RIGHT:
+      fprintf(stderr, "ACTION_GESTURE_SWIPE_RIGHT\n");
       break;
-    case ADDON_ACTION_GESTURE_SWIPE_RIGHT:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_SWIPE_RIGHT\n");
+    case ACTION_GESTURE_SWIPE_RIGHT_TEN:
+      fprintf(stderr, "ACTION_GESTURE_SWIPE_RIGHT_TEN\n");
       break;
-    case ADDON_ACTION_GESTURE_SWIPE_RIGHT_TEN:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_SWIPE_RIGHT_TEN\n");
+    case ACTION_GESTURE_SWIPE_UP:
+      fprintf(stderr, "ACTION_GESTURE_SWIPE_UP\n");
       break;
-    case ADDON_ACTION_GESTURE_SWIPE_UP:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_SWIPE_UP\n");
+    case ACTION_GESTURE_SWIPE_UP_TEN:
+      fprintf(stderr, "ACTION_GESTURE_SWIPE_UP_TEN\n");
       break;
-    case ADDON_ACTION_GESTURE_SWIPE_UP_TEN:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_SWIPE_UP_TEN\n");
+    case ACTION_GESTURE_SWIPE_DOWN:
+      fprintf(stderr, "ACTION_GESTURE_SWIPE_DOWN\n");
       break;
-    case ADDON_ACTION_GESTURE_SWIPE_DOWN:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_SWIPE_DOWN\n");
+    case ACTION_GESTURE_SWIPE_DOWN_TEN:
+      fprintf(stderr, "ACTION_GESTURE_SWIPE_DOWN_TEN\n");
       break;
-    case ADDON_ACTION_GESTURE_SWIPE_DOWN_TEN:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_SWIPE_DOWN_TEN\n");
+    case ACTION_GESTURE_END:
+      fprintf(stderr, "ACTION_GESTURE_END\n");
       break;
-    case ADDON_ACTION_GESTURE_END:
-      fprintf(stderr, "ADDON_ACTION_GESTURE_END\n");
+    case ACTION_ANALOG_MOVE_X:
+      fprintf(stderr, "ACTION_ANALOG_MOVE_X\n");
       break;
-    case ADDON_ACTION_ANALOG_MOVE_X:
-      fprintf(stderr, "ADDON_ACTION_ANALOG_MOVE_X\n");
+    case ACTION_ANALOG_MOVE_Y:
+      fprintf(stderr, "ACTION_ANALOG_MOVE_Y\n");
       break;
-    case ADDON_ACTION_ANALOG_MOVE_Y:
-      fprintf(stderr, "ADDON_ACTION_ANALOG_MOVE_Y\n");
+    case ACTION_ERROR:
+      fprintf(stderr, "ACTION_ERROR\n");
       break;
-    case ADDON_ACTION_ERROR:
-      fprintf(stderr, "ADDON_ACTION_ERROR\n");
+    case ACTION_NOOP:
+      fprintf(stderr, "ACTION_NOOP\n");
       break;
-    case ADDON_ACTION_NOOP:
-      fprintf(stderr, "ADDON_ACTION_NOOP\n");
-      break;
-    case ADDON_ACTION_NONE:
+    case ACTION_NONE:
     default:
       break;
   }
   return VKEY_UNKNOWN;
 }
 
-//#define ADDON_ACTION_MOUSE_START            100
-//#define ADDON_ACTION_MOUSE_LEFT_CLICK       100
-//#define ADDON_ACTION_MOUSE_RIGHT_CLICK      101
-//#define ADDON_ACTION_MOUSE_MIDDLE_CLICK     102
-//#define ADDON_ACTION_MOUSE_DOUBLE_CLICK     103
-//#define ADDON_ACTION_MOUSE_WHEEL_UP         104
-//#define ADDON_ACTION_MOUSE_WHEEL_DOWN       105
-//#define ADDON_ACTION_MOUSE_DRAG             106
-//#define ADDON_ACTION_MOUSE_MOVE             107
-//#define ADDON_ACTION_MOUSE_LONG_CLICK       108
-//#define ADDON_ACTION_MOUSE_END              109
+//#define ACTION_MOUSE_START            100
+//#define ACTION_MOUSE_LEFT_CLICK       100
+//#define ACTION_MOUSE_RIGHT_CLICK      101
+//#define ACTION_MOUSE_MIDDLE_CLICK     102
+//#define ACTION_MOUSE_DOUBLE_CLICK     103
+//#define ACTION_MOUSE_WHEEL_UP         104
+//#define ACTION_MOUSE_WHEEL_DOWN       105
+//#define ACTION_MOUSE_DRAG             106
+//#define ACTION_MOUSE_MOVE             107
+//#define ACTION_MOUSE_LONG_CLICK       108
+//#define ACTION_MOUSE_END              109
 
 int GetCefStateModifiers(int actionId)
 {
   int modifiers = 0;
   switch (actionId)
   {
-    case ADDON_ACTION_MOUSE_LEFT_CLICK:
+    case ACTION_MOUSE_LEFT_CLICK:
       modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-      fprintf(stderr, "ADDON_ACTION_MOUSE_LEFT_CLICK\n");
+      fprintf(stderr, "ACTION_MOUSE_LEFT_CLICK\n");
       break;
-    case ADDON_ACTION_MOUSE_RIGHT_CLICK:
+    case ACTION_MOUSE_RIGHT_CLICK:
       modifiers |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
-      fprintf(stderr, "ADDON_ACTION_MOUSE_RIGHT_CLICK\n");
+      fprintf(stderr, "ACTION_MOUSE_RIGHT_CLICK\n");
       break;
-    case ADDON_ACTION_MOUSE_MIDDLE_CLICK:
+    case ACTION_MOUSE_MIDDLE_CLICK:
       modifiers |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
       fprintf(stderr, "EVENTFLAG_MIDDLE_MOUSE_BUTTON\n");
       break;
-    case ADDON_ACTION_MOUSE_DOUBLE_CLICK:
+    case ACTION_MOUSE_DOUBLE_CLICK:
 //      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-fprintf(stderr, "ADDON_ACTION_MOUSE_DOUBLE_CLICK\n");
+fprintf(stderr, "ACTION_MOUSE_DOUBLE_CLICK\n");
       break;
-    case ADDON_ACTION_MOUSE_WHEEL_UP:
+    case ACTION_MOUSE_WHEEL_UP:
 //      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-fprintf(stderr, "ADDON_ACTION_MOUSE_WHEEL_UP\n");
+fprintf(stderr, "ACTION_MOUSE_WHEEL_UP\n");
       break;
-    case ADDON_ACTION_MOUSE_WHEEL_DOWN:
+    case ACTION_MOUSE_WHEEL_DOWN:
 //      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-fprintf(stderr, "ADDON_ACTION_MOUSE_WHEEL_DOWN\n");
+fprintf(stderr, "ACTION_MOUSE_WHEEL_DOWN\n");
       break;
-    case ADDON_ACTION_MOUSE_DRAG:
+    case ACTION_MOUSE_DRAG:
 //      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-fprintf(stderr, "ADDON_ACTION_MOUSE_DRAG\n");
+fprintf(stderr, "ACTION_MOUSE_DRAG\n");
       break;
-    case ADDON_ACTION_MOUSE_MOVE:
+    case ACTION_MOUSE_MOVE:
 //      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-fprintf(stderr, "ADDON_ACTION_MOUSE_MOVE\n");
+fprintf(stderr, "ACTION_MOUSE_MOVE\n");
       break;
-    case ADDON_ACTION_MOUSE_LONG_CLICK:
+    case ACTION_MOUSE_LONG_CLICK:
 //      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-fprintf(stderr, "ADDON_ACTION_MOUSE_LONG_CLICK\n");
+fprintf(stderr, "ACTION_MOUSE_LONG_CLICK\n");
       break;
     default:
       break;
@@ -1340,12 +973,47 @@ fprintf(stderr, "ADDON_ACTION_MOUSE_LONG_CLICK\n");
   return modifiers;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// class ClientDownloadImageCallback : public CefDownloadImageCallback
+// {
+//  public:
+//   explicit ClientDownloadImageCallback() {}
+//
+//   void OnDownloadImageFinished(const CefString& image_url,
+//                                int http_status_code,
+//                                CefRefPtr<CefImage> image) OVERRIDE
+//   {
+//
+//   }
+//
+//  private:
+//   IMPLEMENT_REFCOUNTING(ClientDownloadImageCallback);
+//   DISALLOW_COPY_AND_ASSIGN(ClientDownloadImageCallback);
+// };
+
 CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, kodi::addon::CInstanceWeb* instance) :
   m_instance(instance),
   m_iUniqueClientId(iUniqueClientId),
   m_iBrowserCount(0),
   m_bIsDirty(false),
-  m_bFocusOnEditableField(0),
+  m_bFocusOnEditableField(false),
   m_iMousePreviousFlags(0),
   m_iMousePreviousControl(MBT_LEFT),
   m_BrowserId(-1),
@@ -1369,7 +1037,8 @@ CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDO
   m_iGUIItemBack(props->iGUIItemBack),
   m_bTransparentBackground(props->bUseTransparentBackground),
   m_pControlIdent(props->pControlIdent),
-  m_isClosing(false)
+  m_isClosing(false),
+  m_downloadHandler(new CWebBrowserDownloadHandler)
 {
   m_BackgroundColor[3]  = float(CefColorGetA(props->iBackgroundColorARGB)) / 255.0f;
   m_BackgroundColor[2]  = float(CefColorGetR(props->iBackgroundColorARGB)) / 255.0f;
@@ -1392,6 +1061,7 @@ CWebBrowserClientBase::~CWebBrowserClientBase()
 
 void CWebBrowserClientBase::SetBrowser(CefRefPtr<CefBrowser> browser)
 {
+  fprintf(stderr, "-- %s\n", __func__);
   m_Browser = browser;
 }
 
@@ -1514,15 +1184,37 @@ bool CWebBrowserClientBase::OnAction(int actionId, int &nextItem)
    */
   switch (actionId)
   {
-    case ADDON_ACTION_VOLUME_UP:
-    case ADDON_ACTION_VOLUME_DOWN:
-    case ADDON_ACTION_VOLAMP:
-    case ADDON_ACTION_MUTE:
+    case ACTION_VOLUME_UP:
+    case ACTION_VOLUME_DOWN:
+    case ACTION_VOLAMP:
+    case ACTION_MUTE:
       return false;
-    case ADDON_ACTION_NAV_BACK:
-    case ADDON_ACTION_MENU:
-    case ADDON_ACTION_PREVIOUS_MENU:
+    case ACTION_NAV_BACK:
+    case ACTION_MENU:
+    case ACTION_PREVIOUS_MENU:
       return false;
+    case ACTION_ZOOM_OUT:
+    {
+      int zoomTo = kodi::GetSettingInt("zoomlevel") - kodi::GetSettingInt("zoom_step_size");
+      if (zoomTo < 30)
+        break;
+
+      LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - Zoom out to %i %%", __FUNCTION__, zoomTo);
+      m_Browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(zoomTo));
+      kodi::SetSettingInt("zoomlevel", zoomTo);
+      break;
+    }
+    case ACTION_ZOOM_IN:
+    {
+      int zoomTo = kodi::GetSettingInt("zoomlevel") + kodi::GetSettingInt("zoom_step_size");
+      if (zoomTo > 330)
+        break;
+
+      LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - Zoom in to %i %%", __FUNCTION__, zoomTo);
+      m_Browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(zoomTo));
+      kodi::SetSettingInt("zoomlevel", zoomTo);
+      break;
+    }
     default:
       break;
   };
@@ -1565,15 +1257,23 @@ bool CWebBrowserClientBase::OnMouseEvent(int id, double x, double y, double offs
 
   switch (id)
   {
-    case ADDON_ACTION_MOUSE_LEFT_CLICK:
+    case ACTION_MOUSE_LEFT_CLICK:
       mouse_event.modifiers = 0;
       mouse_event.modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
       host->SendMouseClickEvent(mouse_event, MBT_LEFT, false, 1);
       host->SendMouseClickEvent(mouse_event, MBT_LEFT, true, 1);
       m_iMousePreviousFlags = mouse_event.modifiers;
       m_iMousePreviousControl = MBT_LEFT;
+
+      /// @todo fix this bad way to prevent not wanted keyboard view if not a text field is selected.
+      if (m_bFocusOnEditableField)
+      {
+        CEvent::Sleep(100);
+        if (m_bFocusOnEditableField)
+          HandleFieldInput(m_lastFocusedText, m_lastFocusedType);
+      }
       break;
-    case ADDON_ACTION_MOUSE_RIGHT_CLICK:
+    case ACTION_MOUSE_RIGHT_CLICK:
       mouse_event.modifiers = 0;
       mouse_event.modifiers |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
       host->SendMouseClickEvent(mouse_event, MBT_RIGHT, false, 1);
@@ -1581,7 +1281,7 @@ bool CWebBrowserClientBase::OnMouseEvent(int id, double x, double y, double offs
       m_iMousePreviousFlags = mouse_event.modifiers;
       m_iMousePreviousControl = MBT_RIGHT;
       break;
-    case ADDON_ACTION_MOUSE_MIDDLE_CLICK:
+    case ACTION_MOUSE_MIDDLE_CLICK:
       mouse_event.modifiers = 0;
       mouse_event.modifiers |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
       host->SendMouseClickEvent(mouse_event, MBT_MIDDLE, false, 1);
@@ -1589,29 +1289,29 @@ bool CWebBrowserClientBase::OnMouseEvent(int id, double x, double y, double offs
       m_iMousePreviousFlags = mouse_event.modifiers;
       m_iMousePreviousControl = MBT_MIDDLE;
       break;
-    case ADDON_ACTION_MOUSE_DOUBLE_CLICK:
+    case ACTION_MOUSE_DOUBLE_CLICK:
       mouse_event.modifiers = m_iMousePreviousFlags;
       host->SendMouseClickEvent(mouse_event, m_iMousePreviousControl, false, 1);
       host->SendMouseClickEvent(mouse_event, m_iMousePreviousControl, true, 1);
       m_iMousePreviousControl = MBT_LEFT;
       m_iMousePreviousFlags = 0;
       break;
-    case ADDON_ACTION_MOUSE_WHEEL_UP:
+    case ACTION_MOUSE_WHEEL_UP:
       host->SendMouseWheelEvent(mouse_event, 0, scrollbarPixelsPerTick);
       break;
-    case ADDON_ACTION_MOUSE_WHEEL_DOWN:
+    case ACTION_MOUSE_WHEEL_DOWN:
       host->SendMouseWheelEvent(mouse_event, 0, -scrollbarPixelsPerTick);
       break;
-    case ADDON_ACTION_MOUSE_DRAG:
+    case ACTION_MOUSE_DRAG:
 
       break;
-    case ADDON_ACTION_MOUSE_MOVE:
+    case ACTION_MOUSE_MOVE:
     {
       bool mouse_leave = state == 3 ? true : false;
       host->SendMouseMoveEvent(mouse_event, mouse_leave);
       break;
     }
-    case ADDON_ACTION_MOUSE_LONG_CLICK:
+    case ACTION_MOUSE_LONG_CLICK:
 
       break;
     default:
@@ -1623,6 +1323,15 @@ bool CWebBrowserClientBase::OnMouseEvent(int id, double x, double y, double offs
 
 bool CWebBrowserClientBase::Initialize()
 {
+  if (!m_Browser.get())
+  {
+    LOG_MESSAGE(ADDON_LOG_ERROR, "%s - Called without present browser", __FUNCTION__);
+    return false;
+  }
+
+  m_Browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(kodi::GetSettingInt("zoomlevel")));
+
+
   return true;
 }
 
@@ -1636,8 +1345,9 @@ bool CWebBrowserClientBase::Dirty()
 
 static bool fir = false;
 
-bool CWebBrowserClientBase::OpenWebsite(const char* strURL, bool single, bool allowMenus)
+bool CWebBrowserClientBase::OpenWebsite(const std::string& strURL, bool single, bool allowMenus)
 {
+  fprintf(stderr, "-- %s\n", __func__);
   if (!m_Browser.get())
   {
     LOG_MESSAGE(ADDON_LOG_ERROR, "%s - Called without present browser", __FUNCTION__);
@@ -1655,6 +1365,7 @@ bool CWebBrowserClientBase::OpenWebsite(const char* strURL, bool single, bool al
     m_strStartupURL = strURL;
 
   frame->LoadURL(strURL);
+
   return true;
 }
 
@@ -1673,6 +1384,9 @@ void CWebBrowserClientBase::CallSingleCommand(WEB_ADDON_SINGLE_COMMANDS command)
       break;
     case WEB_CMD_NAV_FORWARD:
       m_Browser->GoForward();
+      break;
+    case WEB_OPEN_OWN_CONTEXT_MENU:
+      OpenOwnContextMenu();
       break;
     default:
       break;
@@ -1713,18 +1427,52 @@ bool CWebBrowserClientBase::OnProcessMessageReceived(
 {
   CEF_REQUIRE_UI_THREAD();
 
-//  if (m_pMessageRouter->OnProcessMessageReceived(browser, source_process, message))
-//    return true;
+  CefRefPtr<CefBrowserHost> host = browser->GetHost();
 
+// //     if (message->GetName() == "DOMTest.Message") {
+// //       EXPECT_EQ(message->GetArgumentList()->GetSize(), (size_t)1);
+//       int test_type = DOM_TEST_STRUCTURE;//message->GetArgumentList()->GetInt(0);
+// //
+//       browser->GetMainFrame()->VisitDOM(
+//           new TestDOMVisitor(browser, static_cast<DOMTestType>(test_type)));
+//       return true;
+// //     }
   // Check for messages from the client renderer.
   std::string message_name = message->GetName();
+
+
+//  if (m_pMessageRouter->OnProcessMessageReceived(browser, source_process, message))
+//    return true;
+fprintf(stderr, "-------------- %s\n", __PRETTY_FUNCTION__);
+// m_Browser->GetMainFrame()->VisitDOM(new TestDOMVisitor(m_Browser, static_cast<DOMTestType>(DOM_TEST_STRUCTURE)));
+
   if (message_name == "ClientRenderer.FocusedNodeChanged")
   {
-    // A message is sent from ClientRenderDelegate to tell us whether the
-    // currently focused DOM node is editable. Use of |focus_on_editable_field_|
-    // is redundant with CefKeyEvent.focus_on_editable_field in OnPreKeyEvent
-    // but is useful for demonstration purposes.
+//       // Start the test in the render process.
+//       CefRefPtr<CefProcessMessage> message2(
+//           CefProcessMessage::Create("DOMTest.Message"));
+//       message2->GetArgumentList()->SetInt(0, DOM_TEST_MODIFY);
+//       browser->SendProcessMessage(PID_RENDERER, message2);
+
+//     // A message is sent from ClientRenderDelegate to tell us whether the
+//     // currently focused DOM node is editable. Use of |focus_on_editable_field_|
+//     // is redundant with CefKeyEvent.focus_on_editable_field in OnPreKeyEvent
+//     // but is useful for demonstration purposes.
     m_bFocusOnEditableField = message->GetArgumentList()->GetBool(0);
+    if (m_bFocusOnEditableField)
+    {
+    fprintf(stderr, "----------------------- , node->GetName() '%s'\n", message->GetArgumentList()->GetString(1).ToString().c_str());
+    fprintf(stderr, "----------------------- , node->GetValue() '%s'\n", message->GetArgumentList()->GetString(2).ToString().c_str());
+    fprintf(stderr, "----------------------- , node->GetFormControlElementType() '%s'\n", message->GetArgumentList()->GetString(3).ToString().c_str());
+    fprintf(stderr, "----------------------- , node->GetType() '%i'\n", message->GetArgumentList()->GetInt(4));
+
+
+      m_lastFocusedText = message->GetArgumentList()->GetString(2).ToString();
+      m_lastFocusedType = message->GetArgumentList()->GetString(3).ToString();
+      HandleFieldInput(m_lastFocusedText, m_lastFocusedType);
+      host->SendFocusEvent(false);
+    }
+    fprintf(stderr, "-------------- %s m_bFocusOnEditableField %i\n", __PRETTY_FUNCTION__,  m_bFocusOnEditableField);
     return true;
   }
 
@@ -1763,6 +1511,14 @@ void CWebBrowserClientBase::OnBeforeContextMenu(
 {
     LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
 
+    std::string url = params->GetLinkUrl().ToString();
+    if (!url.empty())
+      model->InsertItemAt(0, CLIENT_ID_OPEN_SELECTED_SIDE, kodi::GetLocalizedString(30000 + CLIENT_ID_OPEN_SELECTED_SIDE));
+
+    int flags = params->GetTypeFlags();
+    if (flags & CM_TYPEFLAG_EDITABLE)
+      model->InsertItemAt(0, CLIENT_ID_OPEN_KEYBOARD, kodi::GetLocalizedString(30000 + CLIENT_ID_OPEN_KEYBOARD));
+
     LOG_MESSAGE(ADDON_LOG_DEBUG, "CefContextMenuParams");
     LOG_MESSAGE(ADDON_LOG_DEBUG, "- %ix%i - TypeFlags: 0x%X - ImageContents: %s - MediaType: %i - MediaStateFlags %i - EditStateFlags %i", params->GetXCoord(),
         params->GetYCoord(), (int)params->GetTypeFlags(), params->HasImageContents() ? "yes" : "no",
@@ -1786,13 +1542,8 @@ void CWebBrowserClientBase::OnBeforeContextMenu(
     LOG_MESSAGE(ADDON_LOG_DEBUG, "CefMenuModel");
     LOG_MESSAGE(ADDON_LOG_DEBUG, "- Count:                  %i", model->GetCount());
     for (unsigned int i = 0; i < model->GetCount(); i++)
-      LOG_MESSAGE(ADDON_LOG_DEBUG, "  - %02i: %s", i, model->GetLabelAt(i).ToString().c_str());
-
-
-
-//    m_contextMenu.Open(browser, frame, params, model);
-//    model->Clear();
-//    model = new CWebGUIDialogContextMenu;
+      LOG_MESSAGE(ADDON_LOG_DEBUG, "  - %02i: ID '%i' Type '%i' - Name '%s'",
+                      i, model->GetCommandIdAt(i), model->GetTypeAt(i), model->GetLabelAt(i).ToString().c_str());
 }
 
 bool CWebBrowserClientBase::RunContextMenu(
@@ -1802,7 +1553,57 @@ bool CWebBrowserClientBase::RunContextMenu(
     CefRefPtr<CefMenuModel>               model,
     CefRefPtr<CefRunContextMenuCallback>  callback)
 {
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+  std::vector<std::string> entries;
+  std::vector<int> entrieIds;
+  for (unsigned int i = 0; i < model->GetCount(); i++)
+  {
+    int id = model->GetCommandIdAt(i);
+    if (id < 0 ||
+        id == MENU_ID_PRINT ||
+        id == MENU_ID_VIEW_SOURCE)
+    {
+      // ignored parts!
+      continue;
+    }
+
+    cef_menu_item_type_t type = model->GetTypeAt(i);
+    if (type == MENUITEMTYPE_SEPARATOR)
+    {
+      // ignore separators
+      continue;
+    }
+    else if (type != MENUITEMTYPE_COMMAND)
+    {
+      // TODO add support for other formats e.g. boolean check
+      LOG_MESSAGE(ADDON_LOG_ERROR, "cef_menu_item_type_t '%i' currently not supported!", type);
+      continue;
+    }
+
+    entries.push_back(kodi::GetLocalizedString(30000 + id));
+    entrieIds.push_back(id);
+  }
+
+  int ret = kodi::gui::dialogs::ContextMenu::Show("", entries);
+  if (ret >= 0)
+  {
+    int id = entrieIds[ret];
+    if (id < MENU_ID_USER_FIRST || id > MENU_ID_USER_LAST)
+      callback->Continue(entrieIds[ret], EVENTFLAG_LEFT_MOUSE_BUTTON);
+    else if (id == CLIENT_ID_OPEN_SELECTED_SIDE)
+    {
+      std::string url = params->GetLinkUrl().ToString();
+      OpenWebsite(url, false, false);
+    }
+    else if (id == CLIENT_ID_OPEN_KEYBOARD)
+    {
+
+    }
+  }
+  else
+    callback->Cancel();
+
+  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+  return true;
 }
 
 bool CWebBrowserClientBase::OnContextMenuCommand(
@@ -1813,7 +1614,7 @@ bool CWebBrowserClientBase::OnContextMenuCommand(
     EventFlags                            event_flags)
 {
     LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-  return true;
+  return false;
 }
 
 void CWebBrowserClientBase::OnContextMenuDismissed(
@@ -1913,27 +1714,6 @@ bool CWebBrowserClientBase::OnConsoleMessage(
 }
 //}
 
-/*!
- * @brief CefDownloadHandler methods
- */
-/*//{
-void CWebBrowserClientBase::OnBeforeDownload(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefDownloadItem>            download_item,
-    const CefString&                      suggested_name,
-    CefRefPtr<CefBeforeDownloadCallback>  callback)
-{
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-}
-
-void CWebBrowserClientBase::OnDownloadUpdated(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefDownloadItem>            download_item,
-    CefRefPtr<CefDownloadItemCallback>    callback)
-{
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-}
-//}*/
 
 /*!
  * @brief CefDragHandler methods
@@ -2087,11 +1867,10 @@ bool CWebBrowserClientBase::OnBeforePopup(
     CefBrowserSettings&                   settings,
     bool*                                 no_javascript_access)
 {
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-  if(browser->GetHost()->IsWindowRenderingDisabled())
-      return true; /* Cancel popups in off-screen rendering mode */
+  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - %s", __FUNCTION__, std::string(target_url).c_str());
 
-  return false;
+  OpenWebsite(std::string(target_url), false, false);
+  return true; /* Cancel popups in off-screen rendering mode */
 }
 
 void CWebBrowserClientBase::OnAfterCreated(CefRefPtr<CefBrowser> browser)
@@ -2186,20 +1965,24 @@ void CWebBrowserClientBase::OnLoadingStateChange(
   SendMessage(tMsg, false);
 }
 
-//void CWebBrowserClientBase::OnLoadStart(
-//    CefRefPtr<CefBrowser>                 browser,
-//    CefRefPtr<CefFrame>                   frame)
-//{
-//    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-//}
+void CWebBrowserClientBase::OnLoadStart(
+   CefRefPtr<CefBrowser>                 browser,
+   CefRefPtr<CefFrame>                   frame,
+   TransitionType                        transition_type
+                                       )
+{
+  fprintf(stderr, "-----------------< %s\n", __PRETTY_FUNCTION__);
+   LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+   Initialize();
+}
 
-//void CWebBrowserClientBase::OnLoadEnd(
-//    CefRefPtr<CefBrowser>                 browser,
-//    CefRefPtr<CefFrame>                   frame,
-//    int                                   httpStatusCode)
-//{
-//    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-//}
+void CWebBrowserClientBase::OnLoadEnd(
+   CefRefPtr<CefBrowser>                 browser,
+   CefRefPtr<CefFrame>                   frame,
+   int                                   httpStatusCode)
+{
+   LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+}
 
 void CWebBrowserClientBase::OnLoadError(
     CefRefPtr<CefBrowser>                 browser,
@@ -2227,30 +2010,30 @@ void CWebBrowserClientBase::OnLoadError(
   LoadErrorPage(frame, failedUrl, errorCode, errorText);
 }
 //}
-
+//CefCursorHandle
 /*!
  * @brief CefKeyboardHandler methods
  */
-/*//{
-bool CWebBrowserClientBase::OnPreKeyEvent(
-    CefRefPtr<CefBrowser>                 browser,
-    const CefKeyEvent&                    event,
-    CefEventHandle                        os_event,
-    bool*                                 is_keyboard_shortcut)
-{
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-  return false;
-}
-
-bool CWebBrowserClientBase::OnKeyEvent(
-    CefRefPtr<CefBrowser>                 browser,
-    const CefKeyEvent&                    event,
-    CefEventHandle                        os_event)
-{
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-  return false;
-}
-//}*/
+//{
+// bool CWebBrowserClientBase::OnPreKeyEvent(
+//     CefRefPtr<CefBrowser>                 browser,
+//     const CefKeyEvent&                    event,
+//     CefEventHandle                        os_event,
+//     bool*                                 is_keyboard_shortcut)
+// {
+//     LOG_MESSAGE(ADDON_LOG_DEBUG, "%s is_keyboard_shortcut='%i', ", __FUNCTION__, *is_keyboard_shortcut);
+//   return false;
+// }
+//
+// bool CWebBrowserClientBase::OnKeyEvent(
+//     CefRefPtr<CefBrowser>                 browser,
+//     const CefKeyEvent&                    event,
+//     CefEventHandle                        os_event)
+// {
+//     LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+//   return false;
+// }
+//}
 
 /*!
  * @brief CefRequestHandler methods
@@ -2483,3 +2266,66 @@ void CWebBrowserClientBase::LoadErrorPage(
   frame->LoadURL(CURICheck::GetDataURI(ss.str(), "text/html"));
 }
 //}
+
+
+
+
+
+void CWebBrowserClientBase::OpenOwnContextMenu()
+{
+  std::vector<std::string> entries;
+  entries.push_back(kodi::GetLocalizedString(30009));
+
+  int ret = kodi::gui::dialogs::ContextMenu::Show("", entries);
+  if (ret >= 0)
+  {
+    switch (ret)
+    {
+      case 0:
+      {
+        CDownloadDialog downloadDialog(m_downloadHandler);
+        downloadDialog.Open();
+        break;
+      }
+      default:
+        break;
+    }
+  }
+}
+
+void CWebBrowserClientBase::HandleFieldInput(std::string& text, const std::string& type)
+{
+  CefRefPtr<CefBrowserHost> host = m_Browser->GetHost();
+
+  std::string header;
+  if (type == "password")
+    header = kodi::GetLocalizedString(30012);
+  else if (type == "text")
+    header = kodi::GetLocalizedString(30013);
+  else if (type == "textarea")
+    header = kodi::GetLocalizedString(30014);
+
+  if (kodi::gui::dialogs::Keyboard::ShowAndGetInput(text, header, true, type == "password"))
+  {
+    m_Browser->GetFocusedFrame()->SelectAll();
+
+    CefKeyEvent keyEvent;
+    keyEvent.type = KEYEVENT_CHAR;
+
+    for (int i = 0; i < text.size(); ++i)
+    {
+      keyEvent.character = text[i];
+      host->SendKeyEvent(keyEvent);
+    }
+  }
+}
+
+int CWebBrowserClientBase::ZoomLevelToPercentage(double zoomlevel)
+{
+  return int((zoomlevel*ZOOM_MULTIPLY)+100.0);
+}
+
+double CWebBrowserClientBase::PercentageToZoomLevel(int percent)
+{
+  return (double(percent-100))/ZOOM_MULTIPLY;
+}
