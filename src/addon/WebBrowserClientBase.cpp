@@ -1008,8 +1008,8 @@ fprintf(stderr, "ACTION_MOUSE_LONG_CLICK\n");
 //   DISALLOW_COPY_AND_ASSIGN(ClientDownloadImageCallback);
 // };
 
-CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, kodi::addon::CInstanceWeb* instance) :
-  m_instance(instance),
+CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, CWebBrowser* instance) :
+  m_mainBrowserHandler(instance),
   m_iUniqueClientId(iUniqueClientId),
   m_iBrowserCount(0),
   m_bIsDirty(false),
@@ -1037,8 +1037,7 @@ CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDO
   m_iGUIItemBack(props->iGUIItemBack),
   m_bTransparentBackground(props->bUseTransparentBackground),
   m_pControlIdent(props->pControlIdent),
-  m_isClosing(false),
-  m_downloadHandler(new CWebBrowserDownloadHandler)
+  m_isClosing(false)
 {
   m_BackgroundColor[3]  = float(CefColorGetA(props->iBackgroundColorARGB)) / 255.0f;
   m_BackgroundColor[2]  = float(CefColorGetR(props->iBackgroundColorARGB)) / 255.0f;
@@ -1124,28 +1123,28 @@ void CWebBrowserClientBase::HandleMessages()
     {
       case TMSG_SET_CONTROL_READY:
         LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Web control %s", pMsg->param1 ? "ready" : "failed");
-        m_instance->Control_SetControlReady(&m_addonHandle, pMsg->param1);
+        m_mainBrowserHandler->Control_SetControlReady(&m_addonHandle, pMsg->param1);
         break;
       case TMSG_SET_OPENED_ADDRESS:
         LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site url '%s'", pMsg->strParam.c_str());
-        m_instance->Control_SetOpenedAddress(&m_addonHandle, pMsg->strParam.c_str());
+        m_mainBrowserHandler->Control_SetOpenedAddress(&m_addonHandle, pMsg->strParam.c_str());
         break;
       case TMSG_SET_OPENED_TITLE:
         LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site title '%s'", pMsg->strParam.c_str());
-        m_instance->Control_SetOpenedTitle(&m_addonHandle, pMsg->strParam.c_str());
+        m_mainBrowserHandler->Control_SetOpenedTitle(&m_addonHandle, pMsg->strParam.c_str());
         break;
       case TMSG_SET_ICON_URL:
         LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site set icon url '%s'", pMsg->strParam.c_str());
-        m_instance->Control_SetIconURL(&m_addonHandle, pMsg->strParam.c_str());
+        m_mainBrowserHandler->Control_SetIconURL(&m_addonHandle, pMsg->strParam.c_str());
         break;
       case TMSG_SET_LOADING_STATE:
-        m_instance->Control_SetLoadingState(&m_addonHandle, pMsg->param1, pMsg->param2, pMsg->param3);
+        m_mainBrowserHandler->Control_SetLoadingState(&m_addonHandle, pMsg->param1, pMsg->param2, pMsg->param3);
         break;
       case TMSG_SET_TOOLTIP:
-        m_instance->Control_SetTooltip(&m_addonHandle, pMsg->strParam.c_str());
+        m_mainBrowserHandler->Control_SetTooltip(&m_addonHandle, pMsg->strParam.c_str());
         break;
       case TMSG_SET_STATUS_MESSAGE:
-        m_instance->Control_SetStatusMessage(&m_addonHandle, pMsg->strParam.c_str());
+        m_mainBrowserHandler->Control_SetStatusMessage(&m_addonHandle, pMsg->strParam.c_str());
         break;
       case TMSG_HANDLE_ON_PAINT:
       {
@@ -1399,7 +1398,7 @@ void CWebBrowserClientBase::SetAddonHandle(ADDON_HANDLE addonHandle)
   m_addonHandle.dataIdentifier = addonHandle->dataIdentifier;
   m_addonHandle.dataAddress = m_pControlIdent;
 
-  m_instance->GetUsedSkinNames(&m_addonHandle, *m_strTempStoreA, *m_strTempStoreB, TEMP_STORE_SIZE);
+  m_mainBrowserHandler->GetUsedSkinNames(&m_addonHandle, *m_strTempStoreA, *m_strTempStoreB, TEMP_STORE_SIZE);
 
   std::string path = g_strUserPath;
   if (path.at(path.size() - 1) != '\\' &&
@@ -1476,25 +1475,6 @@ fprintf(stderr, "-------------- %s\n", __PRETTY_FUNCTION__);
     return true;
   }
 
-  return false;
-}
-//}
-
-/*! @brief CefDialogHandler methods */
-//{
-bool CWebBrowserClientBase::OnFileDialog(
-    CefRefPtr<CefBrowser>                 browser,
-    FileDialogMode                        mode,
-    const CefString&                      title,
-    const CefString&                      default_file_path,
-    const std::vector<CefString>&         accept_filters,
-    int                                   selected_accept_filter,
-    CefRefPtr<CefFileDialogCallback>      callback)
-{
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - Title: %s - default_file_path: %s - selected_accept_filter: %i - mode: %i",
-    __FUNCTION__, title.ToString().c_str(), default_file_path.ToString().c_str(), selected_accept_filter, (int)mode);
-  for (unsigned int i = 0; i < accept_filters.size(); i++)
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "  - %02i: %s", i, accept_filters[i].ToString().c_str());
   return false;
 }
 //}
@@ -1732,36 +1712,6 @@ bool CWebBrowserClientBase::OnDragEnter(
     return true;
 
   return false;
-}
-//}
-
-/*!
- * @brief CefGeolocationHandler methods
- */
-//{
-bool CWebBrowserClientBase::OnRequestGeolocationPermission(
-    CefRefPtr<CefBrowser>                 browser,
-    const CefString&                      requesting_url,
-    int                                   request_id,
-    CefRefPtr<CefGeolocationCallback>     callback)
-{
-  CEF_REQUIRE_UI_THREAD();
-
-  if (g_pWebManager->GetSettings()->GeolocationAllowance())
-  {
-    // Allow geolocation access from all websites.
-    callback->Continue(true);
-    return true;
-  }
-  return false;
-}
-
-
-void CWebBrowserClientBase::OnCancelGeolocationPermission(
-    CefRefPtr<CefBrowser>                 browser,
-    int                                   request_id)
-{
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
 }
 //}
 
@@ -2283,7 +2233,7 @@ void CWebBrowserClientBase::OpenOwnContextMenu()
     {
       case 0:
       {
-        CDownloadDialog downloadDialog(m_downloadHandler);
+        CDownloadDialog downloadDialog(m_mainBrowserHandler->GetDownloadHandler());
         downloadDialog.Open();
         break;
       }

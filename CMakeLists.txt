@@ -274,6 +274,8 @@ include_directories(${INCLUDES}
 
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/DownloadHandler.cpp
+                                 src/addon/GeolocationPermission.cpp
+                                 src/addon/UploadHandler.cpp
                                  src/addon/URICheckHandler.cpp
                                  src/addon/WebBrowserClientBase.cpp
                                  src/addon/WebBrowserManager.cpp
@@ -284,6 +286,8 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
 
 list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/DownloadHandler.h
+                                 src/addon/GeolocationPermission.h
+                                 src/addon/UploadHandler.h
                                  src/addon/URICheckHandler.h
                                  src/addon/WebBrowserClientBase.h
                                  src/addon/WebBrowserManager.h

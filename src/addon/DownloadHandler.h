@@ -55,7 +55,6 @@ public:
   const std::string& GetPath() { return m_path; }
   const std::string& GetProcessText() { return m_processText; }
 
-
 private:
   const std::string m_url;
 

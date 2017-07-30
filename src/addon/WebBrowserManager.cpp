@@ -635,7 +635,7 @@ bool CWebBrowserApp::OnProcessMessageReceived(
 
 int CWebBrowserManager::m_iUniqueClientId = 0;
 
-CWebBrowserManager::CWebBrowserManager(kodi::addon::CInstanceWeb* instance) :
+CWebBrowserManager::CWebBrowserManager(CWebBrowser* instance) :
   m_isActive(false),
   m_windowlessEnabled(true),
   m_instance(instance)

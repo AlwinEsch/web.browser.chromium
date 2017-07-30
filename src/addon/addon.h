@@ -17,7 +17,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string>
+#include <kodi/addon-instance/Web.h>
+
+#include "DownloadHandler.h"
+#include "GeolocationPermission.h"
+#include "UploadHandler.h"
 
 class CWebBrowserManager;
 
@@ -27,3 +31,34 @@ extern std::string                   g_strUserPath;
 extern std::string                   g_strAddonLibPath;
 extern std::string                   g_strAddonSharePath;
 extern CWebBrowserManager           *g_pWebManager;
+
+
+class CWebBrowser : public kodi::addon::CInstanceWeb
+{
+public:
+  CWebBrowser(KODI_HANDLE instance);
+  virtual ~CWebBrowser();
+
+  virtual WEB_ADDON_ERROR GetCapabilities(WEB_ADDON_CAPABILITIES *pCapabilities) override;
+  virtual bool SetLanguage(const char *language) override;
+  virtual WEB_ADDON_ERROR GetVariousTypes(const WEB_ADDON_VARIOUS_TYPE *prevType, WEB_ADDON_VARIOUS_TYPE *type) override;
+  virtual WEB_ADDON_ERROR CreateControl(const WEB_ADDON_GUI_PROPS &props, const char *webType, ADDON_HANDLE handle) override;
+  virtual bool DestroyControl(const ADDON_HANDLE handle) override;
+  virtual void Render(const ADDON_HANDLE handle) override;
+  virtual void Stop(const ADDON_HANDLE handle) override;
+  virtual bool Dirty(const ADDON_HANDLE handle) override;
+  virtual bool OnInit(const ADDON_HANDLE handle) override;
+  virtual bool OnAction(const ADDON_HANDLE handle, int actionId, int &nextItem) override;
+  virtual bool OnMouseEvent(const ADDON_HANDLE handle, int id, double x, double y, double offsetX, double offsetY, int state) override;
+  virtual bool OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus) override;
+  virtual void CallSingleCommand(const ADDON_HANDLE handle, WEB_ADDON_SINGLE_COMMANDS command) override;
+
+  CefRefPtr<CWebBrowserDownloadHandler> GetDownloadHandler() { return m_downloadHandler; }
+  CefRefPtr<CWebBrowserUploadHandler> GetUploadHandler() { return m_uploadHandler; }
+  CefRefPtr<CWebBrowserGeolocationPermission> GetGeolocationPermission() { return m_geolocationPermission; }
+
+private:
+  CefRefPtr<CWebBrowserDownloadHandler> m_downloadHandler;
+  CefRefPtr<CWebBrowserUploadHandler> m_uploadHandler;
+  CefRefPtr<CWebBrowserGeolocationPermission> m_geolocationPermission;
+};

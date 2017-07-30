@@ -49,7 +49,7 @@ msgid "Presentation"
 msgstr ""
 
 msgctxt "#30008"
-msgid "Security and data protection"
+msgid "Security / data protection"
 msgstr ""
 
 msgctxt "#30009"
@@ -90,6 +90,58 @@ msgstr ""
 
 msgctxt "#30018"
 msgid "From history"
+msgstr ""
+
+msgctxt "#30019"
+msgid "Select file"
+msgstr ""
+
+msgctxt "#30020"
+msgid "Select multiple files"
+msgstr ""
+
+msgctxt "#30021"
+msgid "Select directory"
+msgstr ""
+
+msgctxt "#30022"
+msgid "Save file"
+msgstr ""
+
+msgctxt "#30023"
+msgid "Content settings"
+msgstr ""
+
+msgctxt "#30024"
+msgid "Location"
+msgstr ""
+
+msgctxt "#30025"
+msgid "Ask before access (recommended)"
+msgstr ""
+
+msgctxt "#30026"
+msgid "Always submit"
+msgstr ""
+
+msgctxt "#30027"
+msgid "Always block"
+msgstr ""
+
+msgctxt "#30028"
+msgid "Question"
+msgstr ""
+
+msgctxt "#30029"
+msgid "%s want your location"
+msgstr ""
+
+msgctxt "#30030"
+msgid "Allow"
+msgstr ""
+
+msgctxt "#30031"
+msgid "Block"
 msgstr ""
 
 

@@ -30,7 +30,7 @@
 using namespace std;
 using namespace ADDON;
 
-CWebBrowserClientDirectX::CWebBrowserClientDirectX(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, kodi::addon::CInstanceWeb* instance) :
+CWebBrowserClientDirectX::CWebBrowserClientDirectX(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, CWebBrowser* instance) :
   CWebBrowserClientBase(iUniqueClientId, props, instance)
 {
 }

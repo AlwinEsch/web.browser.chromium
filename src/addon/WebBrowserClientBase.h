@@ -33,6 +33,7 @@
 #include "Dialogs/WebGUIDialogContextMenu.h"
 
 #include "DownloadHandler.h"
+#include "UploadHandler.h"
 
 #define TMSG_SET_CONTROL_READY        100
 #define TMSG_SET_OPENED_ADDRESS       101
@@ -82,10 +83,8 @@ typedef struct
 
 class CWebBrowserClientBase :
     public CefClient,
-    public CefDialogHandler,
     public CefDisplayHandler,
     public CefDragHandler,
-    public CefGeolocationHandler,
     public CefJSDialogHandler,
     public CefFindHandler,
     public CefFocusHandler,
@@ -99,8 +98,12 @@ class CWebBrowserClientBase :
 
 {
 public:
-  CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, kodi::addon::CInstanceWeb* instance);
+  CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, CWebBrowser* instance);
   virtual ~CWebBrowserClientBase();
+
+  virtual CefRefPtr<CefDialogHandler> GetDialogHandler() override { return m_mainBrowserHandler->GetUploadHandler(); }
+  virtual CefRefPtr<CefDownloadHandler> GetDownloadHandler() override { return m_mainBrowserHandler->GetDownloadHandler(); }
+  virtual CefRefPtr<CefGeolocationHandler> GetGeolocationHandler() override { return m_mainBrowserHandler->GetGeolocationPermission(); }
 
   void SetBrowser(CefRefPtr<CefBrowser> browser);
 
@@ -191,24 +194,7 @@ public:
       CefRefPtr<CefProcessMessage>          message)                  ///
                         OVERRIDE;                                     ///
   //}
-  /*!
-   * @brief CefDialogHandler methods
-   * ./cef/include/cef_dialog_handler.h
-   *
-   * Implement this interface to handle dialog events. The methods of this class
-   * will be called on the browser process UI thread.
-   */
-  //{
-  virtual bool OnFileDialog(
-      CefRefPtr<CefBrowser>                 browser,
-      FileDialogMode                        mode,
-      const CefString&                      title,
-      const CefString&                      default_file_path,
-      const std::vector<CefString>&         accept_filters,
-      int                                   selected_accept_filter,
-      CefRefPtr<CefFileDialogCallback>      callback)
-                        OVERRIDE;
-  //}
+
   /*!
    * @brief CefContextMenuHandler methods
    *
@@ -288,15 +274,6 @@ public:
       int                                   line)                     ///
                         OVERRIDE;                                     ///
   //}
-  /*!
-   * @brief CefDownloadHandler methods
-   *
-   * Class used to handle file downloads. The methods of this class will called
-   * on the browser process UI thread.
-   */
-  //{
-  virtual CefRefPtr<CefDownloadHandler> GetDownloadHandler() override { return m_downloadHandler; }
-  //}
 
   /*!
    * @brief CefDragHandler methods
@@ -311,28 +288,6 @@ public:
       CefRefPtr<CefBrowser>                 browser,                  /// contains the drag event data and |mask| represents the type of drag
       CefRefPtr<CefDragData>                dragData,                 /// operation. Return false for default drag handling behavior or true to
       CefRenderHandler::DragOperationsMask  mask)                     /// cancel the drag event.
-                        OVERRIDE;                                     ///
-  //}
-  /*!
-   * @brief CefGeolocationHandler methods
-   *
-   * Implement this interface to handle events related to geolocation permission
-   * requests. The methods of this class will be called on the browser process UI
-   * thread.
-   */
-  //{
-  CefRefPtr<CefGeolocationHandler> GetGeolocationHandler() OVERRIDE { return this; }
-
-  virtual bool OnRequestGeolocationPermission(                        /// Called when a page requests permission to access geolocation information.
-      CefRefPtr<CefBrowser>                 browser,                  /// |requesting_url| is the URL requesting permission and |request_id| is the
-      const CefString&                      requesting_url,           /// unique ID for the permission request. Return true and call
-      int                                   request_id,               /// CefGeolocationCallback::Continue() either in this method or at a later
-      CefRefPtr<CefGeolocationCallback>     callback)                 /// time to continue or cancel the request. Return false to cancel the request
-                        OVERRIDE;                                     /// immediately.
-
-  virtual void OnCancelGeolocationPermission(                         /// Called when a geolocation access request is canceled. |requesting_url| is
-      CefRefPtr<CefBrowser>                 browser,                  /// the URL that originally requested permission and |request_id| is the unique
-      int                                   request_id)               /// ID for the permission request.
                         OVERRIDE;                                     ///
   //}
 
@@ -749,7 +704,7 @@ public:
   //}
   IMPLEMENT_REFCOUNTING(CWebBrowserClientBase);
 
-  kodi::addon::CInstanceWeb* m_instance;
+  CWebBrowser* m_mainBrowserHandler;
 
 protected:
   void SendMessage(Message& message, bool wait);
@@ -846,7 +801,6 @@ private:
   std::string m_lastFocusedText;
   std::string m_lastFocusedType;
 
-  CefRefPtr<CWebBrowserDownloadHandler> m_downloadHandler;
 
   void OpenOwnContextMenu();
   void HandleFieldInput(std::string& text, const std::string& type);

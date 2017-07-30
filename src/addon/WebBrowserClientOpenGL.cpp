@@ -54,7 +54,7 @@ using namespace std;
 #define VERIFY_NO_ERROR
 #endif
 
-CWebBrowserClientOpenGL::CWebBrowserClientOpenGL(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, kodi::addon::CInstanceWeb* instance) :
+CWebBrowserClientOpenGL::CWebBrowserClientOpenGL(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, CWebBrowser* instance) :
   CWebBrowserClientBase(iUniqueClientId, props, instance),
   m_bInitialized(false),
   m_iTextureId(0),

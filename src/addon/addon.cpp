@@ -19,7 +19,6 @@
 #include <string>
 
 #include "addon.h"
-#include <kodi/addon-instance/Web.h>
 #include "p8-platform/util/util.h"
 #include "p8-platform/util/StdString.h"
 
@@ -39,29 +38,11 @@ std::string               g_strAddonLibPath   = "";
 std::string               g_strAddonSharePath = "";
 CWebBrowserManager       *g_pWebManager       = NULL;
 
-class CWebBrowser : public kodi::addon::CInstanceWeb
-{
-public:
-  CWebBrowser(KODI_HANDLE instance);
-  virtual ~CWebBrowser();
-
-  virtual WEB_ADDON_ERROR GetCapabilities(WEB_ADDON_CAPABILITIES *pCapabilities) override;
-  virtual bool SetLanguage(const char *language) override;
-  virtual WEB_ADDON_ERROR GetVariousTypes(const WEB_ADDON_VARIOUS_TYPE *prevType, WEB_ADDON_VARIOUS_TYPE *type) override;
-  virtual WEB_ADDON_ERROR CreateControl(const WEB_ADDON_GUI_PROPS &props, const char *webType, ADDON_HANDLE handle) override;
-  virtual bool DestroyControl(const ADDON_HANDLE handle) override;
-  virtual void Render(const ADDON_HANDLE handle) override;
-  virtual void Stop(const ADDON_HANDLE handle) override;
-  virtual bool Dirty(const ADDON_HANDLE handle) override;
-  virtual bool OnInit(const ADDON_HANDLE handle) override;
-  virtual bool OnAction(const ADDON_HANDLE handle, int actionId, int &nextItem) override;
-  virtual bool OnMouseEvent(const ADDON_HANDLE handle, int id, double x, double y, double offsetX, double offsetY, int state) override;
-  virtual bool OpenWebsite(const ADDON_HANDLE handle, const char* strURL, bool single, bool allowMenus) override;
-  virtual void CallSingleCommand(const ADDON_HANDLE handle, WEB_ADDON_SINGLE_COMMANDS command) override;
-};
-
 CWebBrowser::CWebBrowser(KODI_HANDLE instance)
-  : CInstanceWeb(instance)
+  : CInstanceWeb(instance),
+    m_downloadHandler(new CWebBrowserDownloadHandler),
+    m_uploadHandler(new CWebBrowserUploadHandler),
+    m_geolocationPermission(new CWebBrowserGeolocationPermission)
 {
   kodi::Log(ADDON_LOG_DEBUG, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
 

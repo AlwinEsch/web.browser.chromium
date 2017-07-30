@@ -26,7 +26,7 @@ class CWebBrowserClientDirectX :
   public CefRenderHandler
 {
 public:
-  CWebBrowserClientDirectX(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, kodi::addon::CInstanceWeb* instance);
+  CWebBrowserClientDirectX(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, CWebBrowser* instance);
   virtual ~CWebBrowserClientDirectX();
 
   virtual bool Initialize();

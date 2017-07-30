@@ -33,7 +33,7 @@
 class CWebBrowserManager : public P8PLATFORM::CThread
 {
 public:
-  CWebBrowserManager(kodi::addon::CInstanceWeb* instance);
+  CWebBrowserManager(CWebBrowser* instance);
   virtual ~CWebBrowserManager();
 
   bool Create();
@@ -148,5 +148,5 @@ private:
 
   CefRefPtr<CefBrowser>         m_pBrowser;
   CefRefPtr<CWebBrowserClient>  m_pBrowserClient;
-  kodi::addon::CInstanceWeb* m_instance;
+  CWebBrowser* m_instance;
 };

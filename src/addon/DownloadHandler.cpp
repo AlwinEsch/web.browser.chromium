@@ -151,7 +151,6 @@ void CDownloadDialog::GetContextButtons(int itemNumber, std::vector< std::pair<u
 
 bool CDownloadDialog::OnContextButton(int itemNumber, unsigned int button)
 {
-  fprintf(stderr, "-> button %i %s\n", button, __PRETTY_FUNCTION__);
   if (button == 30092)
     m_items[itemNumber]->Cancel();
   else if (button == 30093)
@@ -626,4 +625,3 @@ void CWebBrowserDownloadHandler::ResetHistory()
     return;
   }
 }
-

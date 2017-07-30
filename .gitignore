@@ -6,6 +6,8 @@
 
 .dummy
 .dummy.in
+.kdev4
+*.kdev4
 
 web.*/addon.xml
 
