@@ -39,11 +39,12 @@
 #define TMSG_SET_OPENED_ADDRESS       101
 #define TMSG_SET_OPENED_TITLE         102
 #define TMSG_SET_ICON_URL             103
-#define TMSG_BROWSER_CLOSE            104
-#define TMSG_SET_LOADING_STATE        105
-#define TMSG_SET_TOOLTIP              106
-#define TMSG_SET_STATUS_MESSAGE       107
-#define TMSG_HANDLE_ON_PAINT          108
+#define TMSG_FULLSCREEN_MODE_CHANGE   104
+#define TMSG_BROWSER_CLOSE            105
+#define TMSG_SET_LOADING_STATE        106
+#define TMSG_SET_TOOLTIP              107
+#define TMSG_SET_STATUS_MESSAGE       108
+#define TMSG_HANDLE_ON_PAINT          109
 
 struct MessageCallback
 {
@@ -81,8 +82,8 @@ typedef struct
 
 
 
-class CWebBrowserClientBase :
-    public CefClient,
+class CWebBrowserClientBase
+  : public CefClient,
     public CefDisplayHandler,
     public CefDragHandler,
     public CefJSDialogHandler,
@@ -104,6 +105,42 @@ public:
   virtual CefRefPtr<CefDialogHandler> GetDialogHandler() override { return m_mainBrowserHandler->GetUploadHandler(); }
   virtual CefRefPtr<CefDownloadHandler> GetDownloadHandler() override { return m_mainBrowserHandler->GetDownloadHandler(); }
   virtual CefRefPtr<CefGeolocationHandler> GetGeolocationHandler() override { return m_mainBrowserHandler->GetGeolocationPermission(); }
+  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
+
+  /*!
+   * @brief CefDisplayHandler methods
+   *
+   * Implement this interface to handle events related to browser display state.
+   * The methods of this class will be called on the UI thread.
+   */
+  //@{
+  virtual void OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& url) override;
+  virtual void OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title) override;
+  virtual void OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const std::vector<CefString>& icon_urls) override;
+  virtual void OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bool fullscreen) override;
+  virtual bool OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text) override;
+  virtual void OnStatusMessage(CefRefPtr<CefBrowser> browser, const CefString& value) override;
+  virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString&  message, const CefString& source, int line) override;
+  //@}
+
+
+
+  virtual CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefDragHandler> GetDragHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefFindHandler> GetFindHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefFocusHandler> GetFocusHandler() OVERRIDE { return this; }
+  //virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefRequestHandler> GetRequestHandler() OVERRIDE { return this; }
+  //virtual CefRefPtr<CefRequestContextHandler> GetHandler() OVERRIDE { return this; }
+
+
+
+
+
 
   void SetBrowser(CefRefPtr<CefBrowser> browser);
 
@@ -202,7 +239,6 @@ public:
    * class will be called on the UI thread.
    */
   //{
-  virtual CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() OVERRIDE { return this; }
 
   virtual void OnBeforeContextMenu(                                ///<-- Called before a context menu is displayed. |params| provides information
       CefRefPtr<CefBrowser>                 browser,                  /// about the context menu state. |model| initially contains the default
@@ -232,48 +268,7 @@ public:
       CefRefPtr<CefFrame>                   frame)                    ///
                         OVERRIDE;                                     ///
   //}
-  /*!
-   * @brief CefDisplayHandler methods
-   *
-   * Implement this interface to handle events related to browser display state.
-   * The methods of this class will be called on the UI thread.
-   */
-  //{
-  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE { return this; }
 
-  virtual void OnAddressChange(                                       ///
-      CefRefPtr<CefBrowser>                 browser,                  /// Called when a frame's address has changed.
-      CefRefPtr<CefFrame>                   frame,                    ///
-      const CefString&                      url)                      ///
-                        OVERRIDE;                                     ///
-
-  virtual void OnTitleChange(                                         ///
-      CefRefPtr<CefBrowser>                 browser,                  /// Called when the page title changes.
-      const CefString&                      title)                    ///
-                        OVERRIDE;                                     ///
-
-  virtual void OnFaviconURLChange(                                    ///
-      CefRefPtr<CefBrowser>                 browser,                  /// Called when the page icon changes.
-      const std::vector<CefString>&         icon_urls)                ///
-                        OVERRIDE;                                     ///
-
-  virtual bool OnTooltip(                                             /// Called when the browser is about to display a tooltip. |text| contains the text that will be
-      CefRefPtr<CefBrowser>                 browser,                  /// displayed in the tooltip. To handle the display of the tooltip yourself return true. Otherwise,
-      CefString&                            text)                     /// you can optionally modify |text| and then return false to allow the browser to display the
-                        OVERRIDE;                                     /// tooltip. When window rendering is disabled the application is responsible for drawing tooltips
-                                                                      /// and the return value is ignored.
-  virtual void OnStatusMessage(
-      CefRefPtr<CefBrowser>                 browser,                  /// Called when the browser receives a status message. |value| contains the
-      const CefString&                      value)                    /// text that will be displayed in the status message.
-                        OVERRIDE;                                     ///
-
-  virtual bool OnConsoleMessage(                                      ///
-      CefRefPtr<CefBrowser>                 browser,                  /// Called to display a console message. Return true to stop the message from
-      const CefString&                      message,                  /// being output to the console.
-      const CefString&                      source,                   ///
-      int                                   line)                     ///
-                        OVERRIDE;                                     ///
-  //}
 
   /*!
    * @brief CefDragHandler methods
@@ -282,7 +277,6 @@ public:
    * this class will be called on the UI thread.
    */
   //{
-  virtual CefRefPtr<CefDragHandler> GetDragHandler() OVERRIDE { return this; }
 
   virtual bool OnDragEnter(                                           /// Called when an external drag event enters the browser window. |dragData|
       CefRefPtr<CefBrowser>                 browser,                  /// contains the drag event data and |mask| represents the type of drag
@@ -298,7 +292,6 @@ public:
    * methods of this class will be called on the UI thread.
    */
   //{
-  CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() OVERRIDE { return this; }
 
   virtual bool OnJSDialog(                                         ///<--
       CefRefPtr<CefBrowser>                 browser,                  ///
@@ -333,7 +326,6 @@ public:
    * methods of this class will be called on the UI thread.
    */
   //{
-  CefRefPtr<CefFindHandler> GetFindHandler() OVERRIDE { return this; }
 
   virtual void OnFindResult(
       CefRefPtr<CefBrowser>                 browser,                  ///
@@ -352,7 +344,6 @@ public:
    * this class will be called on the UI thread.
    */
   //{
-  CefRefPtr<CefFocusHandler> GetFocusHandler() OVERRIDE { return this; }
 
   virtual void OnTakeFocus(
       CefRefPtr<CefBrowser>                 browser,                  ///
@@ -376,7 +367,7 @@ public:
    * methods of this class will be called on the UI thread.
    */
   //{
-/*  virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() OVERRIDE { return this; }
+/*
 
   virtual bool OnPreKeyEvent(                                         /// Called before a keyboard event is sent to the renderer. |event| contains
       CefRefPtr<CefBrowser>                 browser,                  /// information about the keyboard event. |os_event| is the operating system
@@ -399,7 +390,6 @@ public:
    * indicated.
    */
   //{
-  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE { return this; }
 
   virtual bool OnBeforePopup(                                         /// Called on the IO thread before a new popup browser is created. The |browser| and |frame| values
       CefRefPtr<CefBrowser>                 browser,                  /// represent the source of the popup request. The |target_url| and |target_frame_name| values
@@ -484,7 +474,6 @@ public:
    * render process main thread (TID_RENDERER).
    */
   //{
-  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE { return this; }
 
   virtual void OnLoadingStateChange(                                  /// Called when the loading state has changed. This callback will be executed
       CefRefPtr<CefBrowser>                 browser,                  /// twice -- once when loading is initiated either programmatically or by user
@@ -520,7 +509,6 @@ public:
    * The methods of this class will be called on the UI thread.
    */
   //{
-  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE { return this; }
 
   virtual bool GetRootScreenRect(                                  ///<-- Called to retrieve the root window rectangle in screen coordinates. Return
       CefRefPtr<CefBrowser>                 browser,                  /// true if the rectangle was provided.
@@ -587,7 +575,6 @@ public:
    * methods of this class will be called on the thread indicated.
    */
   //{
-  virtual CefRefPtr<CefRequestHandler> GetRequestHandler() OVERRIDE { return this; }
                                                                       /// Called on the UI thread before browser navigation. Return true to cancel the navigation or
   virtual bool OnBeforeBrowse(                                     ///<-- false to allow the navigation to proceed. The |request| object cannot be modified in this
       CefRefPtr<CefBrowser>                 browser,                  /// callback. CefLoadHandler::OnLoadingStateChange will be called twice in all cases. If the
@@ -688,10 +675,8 @@ public:
    * methods of this class will be called on the thread indicated.
    */
   //{
-//  virtual CefRefPtr<CefRequestContextHandler> GetHandler() OVERRIDE { return this; }
 
-  virtual CefRefPtr<CefCookieManager> GetCookieManager()           ///<--
-                        OVERRIDE;                                     ///
+  virtual CefRefPtr<CefCookieManager> GetCookieManager() OVERRIDE;
 
   virtual bool OnBeforePluginLoad(                                 ///<--
       const CefString&                      mime_type,                ///
@@ -735,16 +720,11 @@ protected:
   float         m_BackgroundColor[4];
 
 private:
-  #define TEMP_STORE_SIZE 1024
-  char*         m_strTempStoreA;                  /*!< Temporary storage for strings to access kodi's web lib */
-  char*         m_strTempStoreB;                  /*!<     "        "     "     "     "    "     "     "   " */
-
   std::string   m_strStartupURL;
   const int     m_iUniqueClientId;                /*!< Unique identification id of this control client */
   time_t        m_inactivateTime;                 /*!< Time where client becomes set inactive to handle the timeout */
   int           m_iBrowserCount;                  /*!< The current number of browsers using this handler. */
   bool          m_bIsDirty;
-  std::string   m_strActiveSkinPath;
   bool          m_bFocusOnEditableField;
   float         m_fMouseXScaleFactor;
   float         m_fMouseYScaleFactor;

@@ -1045,8 +1045,6 @@ CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDO
   m_BackgroundColor[0]  = float(CefColorGetB(props->iBackgroundColorARGB)) / 255.0f;
   m_fMouseXScaleFactor  = float(m_iXPos + m_iWidth) / float(m_iSkinXPos + m_iSkinWidth);
   m_fMouseYScaleFactor  = float(m_iYPos + m_iHeight) / float(m_iSkinYPos + m_iSkinHeight);
-  m_strTempStoreA       = (char*)malloc(TEMP_STORE_SIZE);
-  m_strTempStoreB       = (char*)malloc(TEMP_STORE_SIZE);
 
   /*!> CEF related sub classes to manage web parts */
   m_resourceManager     = new CefResourceManager();
@@ -1054,9 +1052,178 @@ CWebBrowserClientBase::CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDO
 
 CWebBrowserClientBase::~CWebBrowserClientBase()
 {
-  free(m_strTempStoreA);
-  free(m_strTempStoreB);
 }
+
+/*!
+ * @brief CefDisplayHandler methods
+ */
+//@{
+void CWebBrowserClientBase::OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& url)
+{
+  if (frame->IsMain())
+  {
+    Message tMsg = {TMSG_SET_OPENED_ADDRESS};
+    tMsg.strParam = url.ToString().c_str();
+    SendMessage(tMsg, false);
+  }
+}
+
+void CWebBrowserClientBase::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title)
+{
+  if (m_lastTitle != title.ToString().c_str())
+  {
+    m_lastTitle = title.ToString().c_str();
+
+    Message tMsg = {TMSG_SET_OPENED_TITLE};
+    tMsg.strParam = m_lastTitle.c_str();
+    SendMessage(tMsg, false);
+  }
+}
+
+void CWebBrowserClientBase::OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const std::vector<CefString>& icon_urls)
+{
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "From currently opened web site given icon urls (first one used)");
+  unsigned int listSize = icon_urls.size();
+  for (unsigned int i = 0; i < listSize; ++i)
+    LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - Icon %i - %s", i+1, icon_urls[i].ToString().c_str());
+
+  Message tMsg = {TMSG_SET_ICON_URL};
+  if (listSize > 0)
+    tMsg.strParam = icon_urls[0].ToString().c_str();
+  else
+    tMsg.strParam = "";
+  SendMessage(tMsg, false);
+}
+
+void CWebBrowserClientBase::OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bool fullscreen)
+{
+  Message tMsg = {TMSG_FULLSCREEN_MODE_CHANGE};
+  tMsg.param1 = fullscreen ? 1 : 0;
+  SendMessage(tMsg, false);
+}
+
+bool CWebBrowserClientBase::OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text)
+{
+  if (m_lastTooltip != text.ToString().c_str())
+  {
+    m_lastTooltip = text.ToString().c_str();
+
+    Message tMsg = {TMSG_SET_TOOLTIP};
+    tMsg.strParam = m_lastTooltip.c_str();
+    SendMessage(tMsg, false);
+  }
+
+  return true;
+}
+
+void CWebBrowserClientBase::OnStatusMessage(CefRefPtr<CefBrowser> browser, const CefString& value)
+{
+  if (m_lastStatusMsg != value.ToString().c_str())
+  {
+    m_lastStatusMsg = value.ToString().c_str();
+
+    Message tMsg = {TMSG_SET_STATUS_MESSAGE};
+    tMsg.strParam = m_lastStatusMsg.c_str();
+    SendMessage(tMsg, false);
+  }
+}
+
+bool CWebBrowserClientBase::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString& message, const CefString& source, int line)
+{
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Message: %s - Source: %s - Line: %i", __FUNCTION__,
+                       message.ToString().c_str(), source.ToString().c_str(), line);
+  return true;
+}
+//@}
+
+
+void CWebBrowserClientBase::HandleMessages()
+{
+  // process threadmessages
+  CLockObject lock(m_Mutex);
+  while (!m_processQueue.empty())
+  {
+    Message* pMsg = m_processQueue.front();
+    m_processQueue.pop();
+
+    std::shared_ptr<CEvent> waitEvent = pMsg->waitEvent;
+    lock.Unlock(); // <- see the large comment in SendMessage ^
+    switch (pMsg->dwMessage)
+    {
+      case TMSG_SET_CONTROL_READY:
+      {
+        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Web control %s", pMsg->param1 ? "ready" : "failed");
+        m_mainBrowserHandler->Control_SetControlReady(&m_addonHandle, pMsg->param1);
+        break;
+      }
+      case TMSG_SET_OPENED_ADDRESS:
+      {
+        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site url '%s'", pMsg->strParam.c_str());
+        m_mainBrowserHandler->Control_SetOpenedAddress(&m_addonHandle, pMsg->strParam.c_str());
+        break;
+      }
+      case TMSG_SET_OPENED_TITLE:
+      {
+        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site title '%s'", pMsg->strParam.c_str());
+        m_mainBrowserHandler->Control_SetOpenedTitle(&m_addonHandle, pMsg->strParam.c_str());
+        break;
+      }
+      case TMSG_SET_ICON_URL:
+      {
+        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site set icon url '%s'", pMsg->strParam.c_str());
+        m_mainBrowserHandler->Control_SetIconURL(&m_addonHandle, pMsg->strParam.c_str());
+        break;
+      }
+      case TMSG_FULLSCREEN_MODE_CHANGE:
+      {
+        bool fullscreen = pMsg->param1 != 0;
+        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "From currently opened web site becomes fullsreen requested as '%s'", fullscreen ? "yes" : "no");
+        m_mainBrowserHandler->Control_SetFullscreen(&m_addonHandle, fullscreen);
+        break;
+      }
+      case TMSG_SET_LOADING_STATE:
+      {
+        m_mainBrowserHandler->Control_SetLoadingState(&m_addonHandle, pMsg->param1, pMsg->param2, pMsg->param3);
+        break;
+      }
+      case TMSG_SET_TOOLTIP:
+      {
+        m_mainBrowserHandler->Control_SetTooltip(&m_addonHandle, pMsg->strParam.c_str());
+        break;
+      }
+      case TMSG_SET_STATUS_MESSAGE:
+      {
+        m_mainBrowserHandler->Control_SetStatusMessage(&m_addonHandle, pMsg->strParam.c_str());
+        break;
+      }
+      case TMSG_HANDLE_ON_PAINT:
+      {
+        OnPaintMessage *data = static_cast<OnPaintMessage*>(pMsg->lpVoid);
+        data->client.callback(pMsg->lpVoid);
+        m_bIsDirty = true;
+        break;
+      }
+      case TMSG_BROWSER_CLOSE:
+      {
+        CefRefPtr<CefBrowser> browser = (CefBrowser*)pMsg->lpVoid;
+
+        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Browser close");
+        break;
+      }
+      default:
+        break;
+    };
+
+    if (waitEvent)
+      waitEvent->Signal();
+    delete pMsg;
+
+    lock.Lock();
+  }
+}
+
+
+
 
 void CWebBrowserClientBase::SetBrowser(CefRefPtr<CefBrowser> browser)
 {
@@ -1106,70 +1273,6 @@ void CWebBrowserClientBase::SendMessage(Message& message, bool wait)
 
   if (waitEvent)
     waitEvent->Wait(1000);
-}
-
-void CWebBrowserClientBase::HandleMessages()
-{
-  // process threadmessages
-  CLockObject lock(m_Mutex);
-  while (!m_processQueue.empty())
-  {
-    Message* pMsg = m_processQueue.front();
-    m_processQueue.pop();
-
-    std::shared_ptr<CEvent> waitEvent = pMsg->waitEvent;
-    lock.Unlock(); // <- see the large comment in SendMessage ^
-    switch (pMsg->dwMessage)
-    {
-      case TMSG_SET_CONTROL_READY:
-        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Web control %s", pMsg->param1 ? "ready" : "failed");
-        m_mainBrowserHandler->Control_SetControlReady(&m_addonHandle, pMsg->param1);
-        break;
-      case TMSG_SET_OPENED_ADDRESS:
-        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site url '%s'", pMsg->strParam.c_str());
-        m_mainBrowserHandler->Control_SetOpenedAddress(&m_addonHandle, pMsg->strParam.c_str());
-        break;
-      case TMSG_SET_OPENED_TITLE:
-        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site title '%s'", pMsg->strParam.c_str());
-        m_mainBrowserHandler->Control_SetOpenedTitle(&m_addonHandle, pMsg->strParam.c_str());
-        break;
-      case TMSG_SET_ICON_URL:
-        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site set icon url '%s'", pMsg->strParam.c_str());
-        m_mainBrowserHandler->Control_SetIconURL(&m_addonHandle, pMsg->strParam.c_str());
-        break;
-      case TMSG_SET_LOADING_STATE:
-        m_mainBrowserHandler->Control_SetLoadingState(&m_addonHandle, pMsg->param1, pMsg->param2, pMsg->param3);
-        break;
-      case TMSG_SET_TOOLTIP:
-        m_mainBrowserHandler->Control_SetTooltip(&m_addonHandle, pMsg->strParam.c_str());
-        break;
-      case TMSG_SET_STATUS_MESSAGE:
-        m_mainBrowserHandler->Control_SetStatusMessage(&m_addonHandle, pMsg->strParam.c_str());
-        break;
-      case TMSG_HANDLE_ON_PAINT:
-      {
-        OnPaintMessage *data = static_cast<OnPaintMessage*>(pMsg->lpVoid);
-        data->client.callback(pMsg->lpVoid);
-        m_bIsDirty = true;
-        break;
-      }
-      case TMSG_BROWSER_CLOSE:
-      {
-        CefRefPtr<CefBrowser> browser = (CefBrowser*)pMsg->lpVoid;
-
-        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Browser close");
-        break;
-      }
-      default:
-        break;
-    };
-
-    if (waitEvent)
-      waitEvent->Signal();
-    delete pMsg;
-
-    lock.Lock();
-  }
 }
 
 bool CWebBrowserClientBase::OnAction(int actionId, int &nextItem)
@@ -1397,20 +1500,6 @@ void CWebBrowserClientBase::SetAddonHandle(ADDON_HANDLE addonHandle)
   m_addonHandle.callerAddress = addonHandle->callerAddress;
   m_addonHandle.dataIdentifier = addonHandle->dataIdentifier;
   m_addonHandle.dataAddress = m_pControlIdent;
-
-  m_mainBrowserHandler->GetUsedSkinNames(&m_addonHandle, *m_strTempStoreA, *m_strTempStoreB, TEMP_STORE_SIZE);
-
-  std::string path = g_strUserPath;
-  if (path.at(path.size() - 1) != '\\' &&
-      path.at(path.size() - 1) != '/')
-    path.append("/");
-
-  m_strActiveSkinPath = StringUtils::Format("%sresources/skins/%s/", path.c_str(), m_strTempStoreA);
-  if (!kodi::vfs::DirectoryExists(m_strActiveSkinPath))
-  {
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_NOTICE, "Currently used skin '%s' not supported, falling back to default '%s'", m_strTempStoreA, m_strTempStoreB);
-    m_strActiveSkinPath = StringUtils::Format("%sresources/skins/%s/", path.c_str(), m_strTempStoreB);
-  }
 }
 
 /*!
@@ -1605,94 +1694,6 @@ void CWebBrowserClientBase::OnContextMenuDismissed(
 }
 //}
 
-/*!
- * @brief CefDisplayHandler methods
- */
-//{
-void CWebBrowserClientBase::OnAddressChange(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefFrame>                   frame,
-    const CefString&                      url)
-{
-  if (frame->IsMain())
-  {
-    Message tMsg = {TMSG_SET_OPENED_ADDRESS};
-    tMsg.strParam = url.ToString().c_str();
-    SendMessage(tMsg, false);
-  }
-}
-
-void CWebBrowserClientBase::OnTitleChange(
-    CefRefPtr<CefBrowser>                 browser,
-    const CefString&                      title)
-{
-  if (m_lastTitle != title.ToString().c_str())
-  {
-    m_lastTitle = title.ToString().c_str();
-
-    Message tMsg = {TMSG_SET_OPENED_TITLE};
-    tMsg.strParam = m_lastTitle.c_str();
-    SendMessage(tMsg, false);
-  }
-}
-
-void CWebBrowserClientBase::OnFaviconURLChange(
-    CefRefPtr<CefBrowser>                 browser,
-    const std::vector<CefString>&         icon_urls)
-{
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "From currently opened web site given icon urls (first one used)");
-  unsigned int listSize = icon_urls.size();
-  for (unsigned int i = 0; i < listSize; ++i)
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - Icon %i - %s", i+1, icon_urls[i].ToString().c_str());
-
-  Message tMsg = {TMSG_SET_ICON_URL};
-  if (listSize > 0)
-    tMsg.strParam = icon_urls[0].ToString().c_str();
-  else
-    tMsg.strParam = "";
-  SendMessage(tMsg, false);
-}
-
-bool CWebBrowserClientBase::OnTooltip(
-    CefRefPtr<CefBrowser>                 browser,
-    CefString&                            text)
-{
-  if (m_lastTooltip != text.ToString().c_str())
-  {
-    m_lastTooltip = text.ToString().c_str();
-
-    Message tMsg = {TMSG_SET_TOOLTIP};
-    tMsg.strParam = m_lastTooltip.c_str();
-    SendMessage(tMsg, false);
-  }
-
-  return false;
-}
-
-void CWebBrowserClientBase::OnStatusMessage(
-    CefRefPtr<CefBrowser>                 browser,
-    const CefString&                      value)
-{
-  if (m_lastStatusMsg != value.ToString().c_str())
-  {
-    m_lastStatusMsg = value.ToString().c_str();
-
-    Message tMsg = {TMSG_SET_STATUS_MESSAGE};
-    tMsg.strParam = m_lastStatusMsg.c_str();
-    SendMessage(tMsg, false);
-  }
-}
-
-bool CWebBrowserClientBase::OnConsoleMessage(
-    CefRefPtr<CefBrowser>                 browser,
-    const CefString&                      message,
-    const CefString&                      source,
-    int                                   line)
-{
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Message: %s - Source: %s - Line: %i", __FUNCTION__, message.ToString().c_str(), source.ToString().c_str(), line);
-  return true;
-}
-//}
 
 
 /*!
