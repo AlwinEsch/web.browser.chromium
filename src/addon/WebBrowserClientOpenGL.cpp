@@ -54,8 +54,8 @@ using namespace std;
 #define VERIFY_NO_ERROR
 #endif
 
-CWebBrowserClientOpenGL::CWebBrowserClientOpenGL(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, CWebBrowser* instance) :
-  CWebBrowserClientBase(iUniqueClientId, props, instance),
+CWebBrowserClientOpenGL::CWebBrowserClientOpenGL(KODI_HANDLE handle, int iUniqueClientId, CWebBrowser* instance) :
+  CWebBrowserClientBase(handle, iUniqueClientId, instance),
   m_bInitialized(false),
   m_iTextureId(0),
   m_iViewWidth(0),
@@ -63,6 +63,7 @@ CWebBrowserClientOpenGL::CWebBrowserClientOpenGL(int iUniqueClientId, const WEB_
   m_fSpinX(0),
   m_fSpinY(0)
 {
+  fprintf(stderr, " -1- %s\n", __PRETTY_FUNCTION__);
 }
 
 CWebBrowserClientOpenGL::~CWebBrowserClientOpenGL()
@@ -141,7 +142,7 @@ void CWebBrowserClientOpenGL::Render()
   glPushMatrix ();
   glLoadIdentity(); VERIFY_NO_ERROR;
 
-  if (!m_bTransparentBackground)
+  if (!UseTransparentBackground())
   {
     // Draw the background gradient.
     glPushAttrib(GL_ALL_ATTRIB_BITS); VERIFY_NO_ERROR;
@@ -162,7 +163,7 @@ void CWebBrowserClientOpenGL::Render()
   if (m_fSpinY != 0)
     glRotatef(-m_fSpinY, 0.0f, 1.0f, 0.0f); VERIFY_NO_ERROR;
 
-  if (m_bTransparentBackground)
+  if (UseTransparentBackground())
   {
     // Enable alpha blending.
     glEnable(GL_BLEND); VERIFY_NO_ERROR;
@@ -185,7 +186,7 @@ void CWebBrowserClientOpenGL::Render()
   glDisable(GL_TEXTURE_2D); VERIFY_NO_ERROR;
 
   //! Disable alpha blending if needed.
-  if (m_bTransparentBackground)
+  if (UseTransparentBackground())
     glDisable(GL_BLEND); VERIFY_NO_ERROR;
 
 #ifdef SHOW_UPDATE_RECT
@@ -252,8 +253,8 @@ bool CWebBrowserClientOpenGL::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect
   // The simulated screen and view rectangle are the same. This is necessary
   // for popup menus to be located and sized inside the view.
   rect.x = rect.y = 0;
-  rect.width = m_iWidth;
-  rect.height = m_iHeight;
+  rect.width = GetWidth();
+  rect.height = GetHeight();
   return true;
 }
 
@@ -262,8 +263,8 @@ bool CWebBrowserClientOpenGL::GetScreenPoint(CefRefPtr<CefBrowser> browser, int 
   P8PLATFORM::CLockObject lock(m_Mutex);
   CEF_REQUIRE_UI_THREAD();
 
-  screenX = m_iXPos + viewX;
-  screenY = m_iYPos + viewY;
+  screenX = GetXPos() + viewX;
+  screenY = GetYPos() + viewY;
   return true;
 }
 
@@ -301,7 +302,7 @@ void CWebBrowserClientOpenGL::OnPaint(void *msg)
   if (!thisClass->m_bInitialized)
     thisClass->Initialize();
 
-  if (thisClass->m_bTransparentBackground) // Enable alpha blending if true.
+  if (thisClass->UseTransparentBackground()) // Enable alpha blending if true.
     glEnable(GL_BLEND); VERIFY_NO_ERROR;
 
   // Enable 2D textures.
@@ -393,6 +394,6 @@ void CWebBrowserClientOpenGL::OnPaint(void *msg)
   glDisable(GL_TEXTURE_2D); VERIFY_NO_ERROR;
 
   // Disable alpha blending.
-  if (thisClass->m_bTransparentBackground)
+  if (thisClass->UseTransparentBackground())
     glDisable(GL_BLEND); VERIFY_NO_ERROR;
 }

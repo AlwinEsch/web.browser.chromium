@@ -27,11 +27,8 @@
 #include "WebBrowserClientDirectX.h"
 #include "Utils.h"
 
-using namespace std;
-using namespace ADDON;
-
-CWebBrowserClientDirectX::CWebBrowserClientDirectX(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, CWebBrowser* instance) :
-  CWebBrowserClientBase(iUniqueClientId, props, instance)
+CWebBrowserClientDirectX::CWebBrowserClientDirectX(KODI_HANDLE handle, int iUniqueClientId, WebBrowserAddon instance)
+  : CWebBrowserClientBase(handle, iUniqueClientId, instance)
 {
 }
 

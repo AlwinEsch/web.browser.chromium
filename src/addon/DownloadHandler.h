@@ -72,13 +72,11 @@ private:
   kodi::gui::dialogs::CExtendedProgress* m_progressDialog;
 };
 
-class CWebBrowserDownloadHandler;
-
-class CDownloadDialog : public kodi::gui::CWindow
+class CWebBrowserDownloadHandler : public CefDownloadHandler, public kodi::gui::CWindow
 {
 public:
-  CDownloadDialog(CefRefPtr<CWebBrowserDownloadHandler> downloadHandler);
-  virtual ~CDownloadDialog();
+  CWebBrowserDownloadHandler();
+  virtual ~CWebBrowserDownloadHandler();
 
   void Open();
 
@@ -89,17 +87,6 @@ public:
   virtual void GetContextButtons(int itemNumber, std::vector< std::pair<unsigned int, std::string> > &buttons) override;
   virtual bool OnContextButton(int itemNumber, unsigned int button) override;
 
-private:
-  P8PLATFORM::CMutex m_mutex;
-  CefRefPtr<CWebBrowserDownloadHandler> m_downloadHandler;
-  std::vector<std::shared_ptr<CDownloadItem>> m_items;
-};
-
-class CWebBrowserDownloadHandler : public CefDownloadHandler
-{
-public:
-  CWebBrowserDownloadHandler();
-  virtual ~CWebBrowserDownloadHandler();
 
   virtual void OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
                                 const CefString& suggested_name, CefRefPtr<CefBeforeDownloadCallback> callback) override;
@@ -107,7 +94,6 @@ public:
   virtual void OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
                                  CefRefPtr<CefDownloadItemCallback> callback) override;
 
-  void AddDownloadDialog(CDownloadDialog* dialog);
   bool HasDownloads() { return !m_activeDownloads.empty() || !m_finishedDownloads.empty() ? true : false; }
   bool HasActiveDownloads() { return !m_activeDownloads.empty() ? true : false; }
   bool HasFinishedDownloads() { return !m_finishedDownloads.empty() ? true : false; }
@@ -124,8 +110,10 @@ private:
   bool LoadDownloadHistory(bool initial);
   bool SaveDownloadHistory();
 
+
+  std::vector<std::shared_ptr<CDownloadItem>> m_items;
+
   P8PLATFORM::CMutex m_mutex;
   std::map<std::string, std::shared_ptr<CDownloadItem>> m_activeDownloads;
   std::map<std::string, std::shared_ptr<CDownloadItem>> m_finishedDownloads;
-  CDownloadDialog* m_downloadDialog;
 };

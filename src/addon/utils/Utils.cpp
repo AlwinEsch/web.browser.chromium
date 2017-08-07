@@ -40,7 +40,7 @@ void LOG_INTERNAL_MESSAGE(const AddonLog loglevel, const char *format, ...)
 {
   if (logCount == 0)
   {
-    logFile = g_strLogPath + "kodi-chromium.log";
+    logFile = kodi::GetBaseUserPath("kodi-chromium.log");
     LOG_MESSAGE(ADDON_LOG_NOTICE, "Own add-on log file becomes stored at '%s'", logFile.c_str());
     if (kodi::vfs::FileExists(logFile, false))
     {
@@ -54,7 +54,7 @@ void LOG_INTERNAL_MESSAGE(const AddonLog loglevel, const char *format, ...)
         file.Close();
         kodi::vfs::DeleteFile(logFile);
 
-        ret = file.OpenFileForWrite(g_strLogPath + "kodi-chromium.old.log", true);
+        ret = file.OpenFileForWrite(kodi::GetBaseUserPath("kodi-chromium.old.log"), true);
         if (ret)
         {
           if (fileSize > 0)

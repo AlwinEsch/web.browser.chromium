@@ -274,26 +274,34 @@ include_directories(${INCLUDES}
 
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/DownloadHandler.cpp
+                                 src/addon/DOMVisitor.cpp
                                  src/addon/GeolocationPermission.cpp
+                                 src/addon/MessageIds.cpp
+                                 src/addon/SystemTranslator.cpp
                                  src/addon/UploadHandler.cpp
                                  src/addon/URICheckHandler.cpp
                                  src/addon/WebBrowserClientBase.cpp
                                  src/addon/WebBrowserManager.cpp
-                                 src/addon/Dialogs/WebGUIDialogBrowser.cpp
-                                 src/addon/Dialogs/WebGUIDialogContextMenu.cpp
-                                 src/addon/settings/SettingsMain.cpp
+                                 src/addon/Cookies/CookieHandler.cpp
+                                 src/addon/JSInterface/Handler.cpp
+                                 src/addon/JSInterface/JSDialogHandler.cpp
+                                 src/addon/JSInterface/V8Handler.cpp
                                  src/addon/utils/Utils.cpp)
 
 list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/DownloadHandler.h
+                                 src/addon/DOMVisitor.h
                                  src/addon/GeolocationPermission.h
+                                 src/addon/MessageIds.h
+                                 src/addon/SystemTranslator.h
                                  src/addon/UploadHandler.h
                                  src/addon/URICheckHandler.h
                                  src/addon/WebBrowserClientBase.h
                                  src/addon/WebBrowserManager.h
-                                 src/addon/Dialogs/WebGUIDialogBrowser.h
-                                 src/addon/Dialogs/WebGUIDialogContextMenu.h
-                                 src/addon/settings/SettingsMain.h
+                                 src/addon/Cookies/CookieHandler.cpp
+                                 src/addon/JSInterface/Handler.h
+                                 src/addon/JSInterface/JSDialogHandler.h
+                                 src/addon/JSInterface/V8Handler.h
                                  src/addon/utils/Utils.h)
 
 list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main.cpp

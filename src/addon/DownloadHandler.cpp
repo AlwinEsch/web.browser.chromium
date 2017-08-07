@@ -28,158 +28,6 @@
 #include <p8-platform/util/StringUtils.h>
 #include <iomanip>
 
-CDownloadDialog::CDownloadDialog(CefRefPtr<CWebBrowserDownloadHandler> downloadHandler)
-  : CWindow("DialogDownloads.xml", "skin.estuary", true),
-    m_downloadHandler(downloadHandler)
-{
-  m_downloadHandler->AddDownloadDialog(this);
-}
-
-CDownloadDialog::~CDownloadDialog()
-{
-  m_downloadHandler->AddDownloadDialog(nullptr);
-}
-
-void CDownloadDialog::Open()
-{
-  DoModal();
-}
-
-void CDownloadDialog::UpdateEntry(std::shared_ptr<CDownloadItem> downloadItem, bool complete)
-{
-  for (unsigned int i = 0; i < m_items.size(); ++i)
-  {
-    if (m_items[i]->GetPath() != downloadItem->GetPath())
-      continue;
-
-    kodi::gui::ListItemPtr item = GetListItem(i);
-
-    std::string info;
-    if (complete)
-    {
-      item->SetLabel2(kodi::GetLocalizedString(30015));
-      std::time_t time = downloadItem->GetDownloadTime();
-      auto tm = *std::localtime(&time);
-
-      std::string format = kodi::GetRegion("datelong") + " - " + kodi::GetRegion("time");
-      std::ostringstream oss;
-      oss << std::put_time(&tm, format.c_str());
-      item->SetProperty("downloadtime", oss.str());
-    }
-    else if (downloadItem->IsCanceled())
-      item->SetLabel2(kodi::GetLocalizedString(30096));
-    else if (downloadItem->IsPaused())
-      item->SetLabel2(StringUtils::Format(kodi::GetLocalizedString(30095).c_str(), downloadItem->GetProcessText().c_str()));
-    else
-      item->SetLabel2(downloadItem->GetProcessText());
-    break;
-  }
-}
-
-bool CDownloadDialog::OnClick(int controlId)
-{
-  fprintf(stderr, "-> %s\n", __PRETTY_FUNCTION__);
-  return false;
-}
-
-bool CDownloadDialog::OnInit()
-{
-  ClearList();
-  m_items.clear();
-
-  for (const auto& file : m_downloadHandler->GetActiveDownloads())
-    m_items.push_back(file.second);
-  for (const auto& file : m_downloadHandler->GetFinishedDownloads())
-  {
-    if (file.second->GetName().empty())
-      continue;
-    m_items.push_back(file.second);
-  }
-
-  for (const auto& file : m_items)
-  {
-    kodi::gui::ListItemPtr item(new kodi::gui::CListItem(file->GetName()));
-
-    std::string info;
-    if (file->IsComplete())
-    {
-      info = kodi::GetLocalizedString(30015);
-
-      std::time_t time = file->GetDownloadTime();
-      auto tm = *std::localtime(&time);
-
-      std::string format = kodi::GetRegion("datelong") + " - " + kodi::GetRegion("time");
-      std::ostringstream oss;
-      oss << std::put_time(&tm, format.c_str());
-      item->SetProperty("downloadtime", oss.str());
-    }
-    else if (file->IsCanceled())
-      info = kodi::GetLocalizedString(30096);
-    else if (file->IsPaused())
-      info = StringUtils::Format(kodi::GetLocalizedString(30095).c_str(), file->GetProcessText().c_str());
-    else
-      info = file->GetProcessText();
-
-    item->SetLabel2(info);
-    item->SetPath(file->GetPath());
-    AddListItem(item);
-  }
-
-  return true;
-}
-
-void CDownloadDialog::GetContextButtons(int itemNumber, std::vector< std::pair<unsigned int, std::string> > &buttons)
-{
-  m_mutex.Lock();
-  if (m_items[itemNumber]->IsComplete())
-    buttons.push_back(std::pair<unsigned int, std::string>(30091, kodi::GetLocalizedString(30091)));
-  else
-  {
-    if (!m_items[itemNumber]->IsCanceled())
-    {
-      buttons.push_back(std::pair<unsigned int, std::string>(30092, kodi::GetLocalizedString(30092)));
-      if (!m_items[itemNumber]->IsPaused())
-        buttons.push_back(std::pair<unsigned int, std::string>(30093, kodi::GetLocalizedString(30093)));
-      else
-        buttons.push_back(std::pair<unsigned int, std::string>(30094, kodi::GetLocalizedString(30094)));
-    }
-  }
-  if (m_downloadHandler->HasFinishedDownloads())
-    buttons.push_back(std::pair<unsigned int, std::string>(30097, kodi::GetLocalizedString(30097)));
-  m_mutex.Unlock();
-}
-
-bool CDownloadDialog::OnContextButton(int itemNumber, unsigned int button)
-{
-  if (button == 30092)
-    m_items[itemNumber]->Cancel();
-  else if (button == 30093)
-    m_items[itemNumber]->Pause();
-  else if (button == 30094)
-    m_items[itemNumber]->Resume();
-  else if (button == 30097)
-  {
-    m_downloadHandler->ResetHistory();
-    OnInit();
-  }
-  else if (button == 30091)
-  {
-    bool canceled = false;
-    std::string text = StringUtils::Format(kodi::GetLocalizedString(30098).c_str(), m_items[itemNumber]->GetName().c_str());
-    bool ret = kodi::gui::dialogs::YesNo::ShowAndGetInput(kodi::GetLocalizedString(30016), text, canceled,
-                                                          kodi::GetLocalizedString(30018), kodi::GetLocalizedString(30017));
-    if (canceled)
-      return false;
-
-    if (ret)
-      kodi::vfs::DeleteFile(m_items[itemNumber]->GetPath());
-
-    m_downloadHandler->RemovedFinishedDownload(m_items[itemNumber]);
-    OnInit();
-  }
-  return true;
-}
-
 CDownloadItem::CDownloadItem(const std::string& url, CefRefPtr<CefDownloadItemCallback> callback)
   : m_url(url),
     m_time(0),
@@ -310,20 +158,13 @@ void CDownloadItem::SetProgressText(long totalMBytes, long receivedMBytes, float
 }
 
 CWebBrowserDownloadHandler::CWebBrowserDownloadHandler()
-  : m_downloadDialog(nullptr)
+  : CWindow("DialogDownloads.xml", "skin.estuary", true)
 {
   LoadDownloadHistory(true);
 }
 
 CWebBrowserDownloadHandler::~CWebBrowserDownloadHandler()
 {
-}
-
-void CWebBrowserDownloadHandler::AddDownloadDialog(CDownloadDialog* dialog)
-{
-  m_mutex.Lock();
-  m_downloadDialog = dialog;
-  m_mutex.Unlock();
 }
 
 void CWebBrowserDownloadHandler::OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
@@ -480,8 +321,7 @@ void CWebBrowserDownloadHandler::OnDownloadUpdated(CefRefPtr<CefBrowser> browser
 
   {
     m_mutex.Lock();
-    if (m_downloadDialog)
-      m_downloadDialog->UpdateEntry(downloadItem, download_item->IsComplete());
+    UpdateEntry(downloadItem, download_item->IsComplete());
     m_mutex.Unlock();
   }
 }
@@ -624,4 +464,139 @@ void CWebBrowserDownloadHandler::ResetHistory()
     kodi::Log(ADDON_LOG_ERROR, "failed to write download history data");
     return;
   }
+}
+
+void CWebBrowserDownloadHandler::UpdateEntry(std::shared_ptr<CDownloadItem> downloadItem, bool complete)
+{
+  for (unsigned int i = 0; i < m_items.size(); ++i)
+  {
+    if (m_items[i]->GetPath() != downloadItem->GetPath())
+      continue;
+
+    kodi::gui::ListItemPtr item = GetListItem(i);
+
+    std::string info;
+    if (complete)
+    {
+      item->SetLabel2(kodi::GetLocalizedString(30015));
+      std::time_t time = downloadItem->GetDownloadTime();
+      auto tm = *std::localtime(&time);
+
+      std::string format = kodi::GetRegion("datelong") + " - " + kodi::GetRegion("time");
+      std::ostringstream oss;
+      oss << std::put_time(&tm, format.c_str());
+      item->SetProperty("downloadtime", oss.str());
+    }
+    else if (downloadItem->IsCanceled())
+      item->SetLabel2(kodi::GetLocalizedString(30096));
+    else if (downloadItem->IsPaused())
+      item->SetLabel2(StringUtils::Format(kodi::GetLocalizedString(30095).c_str(), downloadItem->GetProcessText().c_str()));
+    else
+      item->SetLabel2(downloadItem->GetProcessText());
+    break;
+  }
+}
+
+bool CWebBrowserDownloadHandler::OnClick(int controlId)
+{
+  fprintf(stderr, "-> %s\n", __PRETTY_FUNCTION__);
+  return false;
+}
+
+bool CWebBrowserDownloadHandler::OnInit()
+{
+  ClearList();
+  m_items.clear();
+
+  for (const auto& file : GetActiveDownloads())
+    m_items.push_back(file.second);
+  for (const auto& file : GetFinishedDownloads())
+  {
+    if (file.second->GetName().empty())
+      continue;
+    m_items.push_back(file.second);
+  }
+
+  for (const auto& file : m_items)
+  {
+    kodi::gui::ListItemPtr item(new kodi::gui::CListItem(file->GetName()));
+
+    std::string info;
+    if (file->IsComplete())
+    {
+      info = kodi::GetLocalizedString(30015);
+
+      std::time_t time = file->GetDownloadTime();
+      auto tm = *std::localtime(&time);
+
+      std::string format = kodi::GetRegion("datelong") + " - " + kodi::GetRegion("time");
+      std::ostringstream oss;
+      oss << std::put_time(&tm, format.c_str());
+      item->SetProperty("downloadtime", oss.str());
+    }
+    else if (file->IsCanceled())
+      info = kodi::GetLocalizedString(30096);
+    else if (file->IsPaused())
+      info = StringUtils::Format(kodi::GetLocalizedString(30095).c_str(), file->GetProcessText().c_str());
+    else
+      info = file->GetProcessText();
+
+    item->SetLabel2(info);
+    item->SetPath(file->GetPath());
+    AddListItem(item);
+  }
+
+  return true;
+}
+
+void CWebBrowserDownloadHandler::GetContextButtons(int itemNumber, std::vector< std::pair<unsigned int, std::string> > &buttons)
+{
+  m_mutex.Lock();
+  if (m_items[itemNumber]->IsComplete())
+    buttons.push_back(std::pair<unsigned int, std::string>(30091, kodi::GetLocalizedString(30091)));
+  else
+  {
+    if (!m_items[itemNumber]->IsCanceled())
+    {
+      buttons.push_back(std::pair<unsigned int, std::string>(30092, kodi::GetLocalizedString(30092)));
+      if (!m_items[itemNumber]->IsPaused())
+        buttons.push_back(std::pair<unsigned int, std::string>(30093, kodi::GetLocalizedString(30093)));
+      else
+        buttons.push_back(std::pair<unsigned int, std::string>(30094, kodi::GetLocalizedString(30094)));
+    }
+  }
+  if (HasFinishedDownloads())
+    buttons.push_back(std::pair<unsigned int, std::string>(30097, kodi::GetLocalizedString(30097)));
+  m_mutex.Unlock();
+}
+
+bool CWebBrowserDownloadHandler::OnContextButton(int itemNumber, unsigned int button)
+{
+  if (button == 30092)
+    m_items[itemNumber]->Cancel();
+  else if (button == 30093)
+    m_items[itemNumber]->Pause();
+  else if (button == 30094)
+    m_items[itemNumber]->Resume();
+  else if (button == 30097)
+  {
+    ResetHistory();
+    OnInit();
+  }
+  else if (button == 30091)
+  {
+    bool canceled = false;
+    std::string text = StringUtils::Format(kodi::GetLocalizedString(30098).c_str(), m_items[itemNumber]->GetName().c_str());
+    bool ret = kodi::gui::dialogs::YesNo::ShowAndGetInput(kodi::GetLocalizedString(30016), text, canceled,
+                                                          kodi::GetLocalizedString(30018), kodi::GetLocalizedString(30017));
+    if (canceled)
+      return false;
+
+    if (ret)
+      kodi::vfs::DeleteFile(m_items[itemNumber]->GetPath());
+
+    RemovedFinishedDownload(m_items[itemNumber]);
+    OnInit();
+  }
+  return true;
 }

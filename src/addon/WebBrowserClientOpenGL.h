@@ -26,7 +26,7 @@ class CWebBrowserClientOpenGL :
   public CWebBrowserClientBase
 {
 public:
-  CWebBrowserClientOpenGL(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, CWebBrowser* instance);
+  CWebBrowserClientOpenGL(KODI_HANDLE handle, int iUniqueClientId, CWebBrowser* instance);
   virtual ~CWebBrowserClientOpenGL();
 
   virtual bool Initialize();

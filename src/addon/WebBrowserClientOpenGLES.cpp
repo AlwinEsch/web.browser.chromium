@@ -30,8 +30,8 @@
 using namespace std;
 using namespace ADDON;
 
-CWebBrowserClientOpenGLES::CWebBrowserClientOpenGLES(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, CWebBrowser* instance) :
-  CWebBrowserClientBase(iUniqueClientId, props, instance)
+CWebBrowserClientOpenGLES::CWebBrowserClientOpenGLES(KODI_HANDLE handle, int iUniqueClientId, WebBrowserAddon instance)
+  : CWebBrowserClientBase(handle, iUniqueClientId, instance)
 {
 }
 

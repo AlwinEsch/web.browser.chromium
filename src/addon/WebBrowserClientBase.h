@@ -1,6 +1,6 @@
 #pragma once
 /*
- *      Copyright (C) 2015 Team KODI
+ *      Copyright (C) 2015-2017 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -17,10 +17,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- #define NDEBUG 1
+#define NDEBUG 1
+
+#include <kodi/addon-instance/Web.h>
 
 #include <queue>
-#include <kodi/addon-instance/Web.h>
 
 #include "include/cef_app.h"
 #include "include/cef_client.h"
@@ -30,21 +31,23 @@
 #include "include/views/cef_textfield_delegate.h"
 #include "p8-platform/threads/threads.h"
 
-#include "Dialogs/WebGUIDialogContextMenu.h"
-
 #include "DownloadHandler.h"
 #include "UploadHandler.h"
+
+class CJSHandler;
+class CJSDialogHandler;
+
 
 #define TMSG_SET_CONTROL_READY        100
 #define TMSG_SET_OPENED_ADDRESS       101
 #define TMSG_SET_OPENED_TITLE         102
 #define TMSG_SET_ICON_URL             103
-#define TMSG_FULLSCREEN_MODE_CHANGE   104
-#define TMSG_BROWSER_CLOSE            105
-#define TMSG_SET_LOADING_STATE        106
-#define TMSG_SET_TOOLTIP              107
-#define TMSG_SET_STATUS_MESSAGE       108
-#define TMSG_HANDLE_ON_PAINT          109
+#define TMSG_BROWSER_CLOSE            104
+#define TMSG_SET_LOADING_STATE        105
+#define TMSG_SET_TOOLTIP              106
+#define TMSG_SET_STATUS_MESSAGE       107
+#define TMSG_HANDLE_ON_PAINT          108
+#define TMSG_FULLSCREEN_MODE_CHANGE   109
 
 struct MessageCallback
 {
@@ -81,31 +84,33 @@ typedef struct
 
 
 
+class CWebBrowser;
 
 class CWebBrowserClientBase
-  : public CefClient,
+  : public kodi::addon::CWebControl,
+    public CefClient,
     public CefDisplayHandler,
     public CefDragHandler,
-    public CefJSDialogHandler,
     public CefFindHandler,
     public CefFocusHandler,
-    public CefLoadHandler,
-//     public CefKeyboardHandler,
-    public CefContextMenuHandler,
     public CefLifeSpanHandler,
     public CefRenderHandler,
     public CefRequestHandler,
-    public CefRequestContextHandler
-
+    public CefRequestContextHandler,
+    public CefContextMenuHandler,
+    public CefLoadHandler
 {
 public:
-  CWebBrowserClientBase(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, CWebBrowser* instance);
+  CWebBrowserClientBase(KODI_HANDLE handle, int iUniqueClientId, CWebBrowser* instance);
   virtual ~CWebBrowserClientBase();
 
-  virtual CefRefPtr<CefDialogHandler> GetDialogHandler() override { return m_mainBrowserHandler->GetUploadHandler(); }
-  virtual CefRefPtr<CefDownloadHandler> GetDownloadHandler() override { return m_mainBrowserHandler->GetDownloadHandler(); }
-  virtual CefRefPtr<CefGeolocationHandler> GetGeolocationHandler() override { return m_mainBrowserHandler->GetGeolocationPermission(); }
-  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
+  virtual CefRefPtr<CefDialogHandler> GetDialogHandler() override;
+  virtual CefRefPtr<CefDownloadHandler> GetDownloadHandler() override;
+  virtual CefRefPtr<CefGeolocationHandler> GetGeolocationHandler() override;
+  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() override;
+  virtual CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
+  virtual CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
+  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override;
 
   /*!
    * @brief CefDisplayHandler methods
@@ -123,22 +128,23 @@ public:
   virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString&  message, const CefString& source, int line) override;
   //@}
 
+  void OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefDOMNode> node);
 
 
-  virtual CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() OVERRIDE { return this; }
   virtual CefRefPtr<CefDragHandler> GetDragHandler() OVERRIDE { return this; }
-  virtual CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() OVERRIDE { return this; }
   virtual CefRefPtr<CefFindHandler> GetFindHandler() OVERRIDE { return this; }
   virtual CefRefPtr<CefFocusHandler> GetFocusHandler() OVERRIDE { return this; }
-  //virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() OVERRIDE { return this; }
   virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE { return this; }
-  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE { return this; }
   virtual CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE { return this; }
   virtual CefRefPtr<CefRequestHandler> GetRequestHandler() OVERRIDE { return this; }
   //virtual CefRefPtr<CefRequestContextHandler> GetHandler() OVERRIDE { return this; }
 
 
-
+  virtual void Reload() override;
+  virtual void StopLoad() override;
+  virtual void GoBack() override;
+  virtual void GoForward() override;
+  virtual void OpenOwnContextMenu() override;
 
 
 
@@ -148,12 +154,6 @@ public:
    * @brief return the unique identification id of this control client
    */
   int GetUniqueId() { return m_iUniqueClientId; }
-
-  /*!
-   * @brief return the from Kodi given identifier name of this browser client
-   * Used to identify opened browser on related GUI control.
-   */
-  std::string GetIdName() { return m_strIdName; }
 
   /*!
    * @brief Used to inform client to stay inactive and store the time.
@@ -179,7 +179,7 @@ public:
    */
   int GetBrowserCount() const { return m_iBrowserCount; }
 
-  bool OnAction(int actionId, int &nextItem);
+  bool OnAction(int actionId, uint32_t buttoncode, wchar_t unicode, int &nextItem);
   bool OnMouseEvent(int id, double x, double y, double offsetX, double offsetY, int state);
 
   /*!
@@ -200,23 +200,8 @@ public:
   bool OpenWebsite(const std::string& strURL, bool single, bool allowMenus);
 
   /*!
-   * @brief Handle given command
-   */
-  void CallSingleCommand(WEB_ADDON_SINGLE_COMMANDS command);
-
-  /*!
-   * @brief Used to give client the add-on handle data for callbacks.
-   * During usage of them must be on dataAddress the m_pControlIdent
-   * inserted.
-   * @param addonHandle The handle
-   */
-  void SetAddonHandle(ADDON_HANDLE addonHandle);
-
-  /*!
    * Kodi add-on render functions
    */
-  virtual void Cleanup() = 0;
-  virtual void Render() = 0;
   virtual bool Dirty();
 
   /*!
@@ -225,48 +210,9 @@ public:
    * Implement this interface to provide handler implementations.
    */
   //{
-  virtual bool OnProcessMessageReceived(                           ///<-- Called when a new message is received from a different process. Return true
-      CefRefPtr<CefBrowser>                 browser,                  /// if the message was handled or false otherwise. Do not keep a reference to
-      CefProcessId                          source_process,           /// or attempt to access the message outside of this callback.
-      CefRefPtr<CefProcessMessage>          message)                  ///
-                        OVERRIDE;                                     ///
-  //}
-
-  /*!
-   * @brief CefContextMenuHandler methods
-   *
-   * Implement this interface to handle context menu events. The methods of this
-   * class will be called on the UI thread.
-   */
-  //{
-
-  virtual void OnBeforeContextMenu(                                ///<-- Called before a context menu is displayed. |params| provides information
-      CefRefPtr<CefBrowser>                 browser,                  /// about the context menu state. |model| initially contains the default
-      CefRefPtr<CefFrame>                   frame,                    /// context menu. The |model| can be cleared to show no context menu or
-      CefRefPtr<CefContextMenuParams>       params,                   /// modified to show a custom menu. Do not keep references to |params| or
-      CefRefPtr<CefMenuModel>               model)                    /// |model| outside of this callback.
-                        OVERRIDE;                                     ///
-
-  virtual bool RunContextMenu(
-      CefRefPtr<CefBrowser>                 browser,
-      CefRefPtr<CefFrame>                   frame,
-      CefRefPtr<CefContextMenuParams>       params,
-      CefRefPtr<CefMenuModel>               model,
-      CefRefPtr<CefRunContextMenuCallback>  callback)
-                        OVERRIDE;
-
-  virtual bool OnContextMenuCommand(                               ///<-- Called to execute a command selected from the context menu. Return true if
-      CefRefPtr<CefBrowser>                 browser,                  /// the command was handled or false for the default implementation. See
-      CefRefPtr<CefFrame>                   frame,                    /// cef_menu_id_t for the command ids that have default implementations. All
-      CefRefPtr<CefContextMenuParams>       params,                   /// user-defined command ids should be between MENU_ID_USER_FIRST and
-      int                                   command_id,               /// MENU_ID_USER_LAST. |params| will have the same values as what was passed to
-      EventFlags                            event_flags)              /// OnBeforeContextMenu(). Do not keep a reference to |params| outside of this
-                        OVERRIDE;                                     /// callback.
-
-  virtual void OnContextMenuDismissed(                             ///<-- Called when the context menu is dismissed irregardless of whether the menu
-      CefRefPtr<CefBrowser>                 browser,                  /// was empty or a command was selected.
-      CefRefPtr<CefFrame>                   frame)                    ///
-                        OVERRIDE;                                     ///
+  virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                        CefProcessId source_process,
+                                        CefRefPtr<CefProcessMessage> message) override;
   //}
 
 
@@ -282,40 +228,6 @@ public:
       CefRefPtr<CefBrowser>                 browser,                  /// contains the drag event data and |mask| represents the type of drag
       CefRefPtr<CefDragData>                dragData,                 /// operation. Return false for default drag handling behavior or true to
       CefRenderHandler::DragOperationsMask  mask)                     /// cancel the drag event.
-                        OVERRIDE;                                     ///
-  //}
-
-  /*!
-   * @brief CefJSDialogHandler methods
-   *
-   * Implement this interface to handle events related to JavaScript dialogs. The
-   * methods of this class will be called on the UI thread.
-   */
-  //{
-
-  virtual bool OnJSDialog(                                         ///<--
-      CefRefPtr<CefBrowser>                 browser,                  ///
-      const CefString&                      origin_url,               ///
-      JSDialogType                          dialog_type,              ///
-      const CefString&                      message_text,             ///
-      const CefString&                      default_prompt_text,      ///
-      CefRefPtr<CefJSDialogCallback>        callback,                 ///
-      bool&                                 suppress_message)         ///
-                        OVERRIDE;                                     ///
-
-  virtual bool OnBeforeUnloadDialog(                               ///<--
-      CefRefPtr<CefBrowser>                 browser,                  ///
-      const CefString&                      message_text,             ///
-      bool                                  is_reload,                ///
-      CefRefPtr<CefJSDialogCallback>        callback)                 ///
-                        OVERRIDE;                                     ///
-
-  virtual void OnResetDialogState(                                 ///<--
-      CefRefPtr<CefBrowser>                 browser)                  ///
-                        OVERRIDE;                                     ///
-
-  virtual void OnDialogClosed(                                     ///<--
-      CefRefPtr<CefBrowser>                 browser)                  ///
                         OVERRIDE;                                     ///
   //}
 
@@ -360,28 +272,6 @@ public:
                         OVERRIDE;                                     ///
   //}
 
-  /*!
-   * @brief CefKeyboardHandler methods
-   *
-   * Implement this interface to handle events related to keyboard input. The
-   * methods of this class will be called on the UI thread.
-   */
-  //{
-/*
-
-  virtual bool OnPreKeyEvent(                                         /// Called before a keyboard event is sent to the renderer. |event| contains
-      CefRefPtr<CefBrowser>                 browser,                  /// information about the keyboard event. |os_event| is the operating system
-      const CefKeyEvent&                    event,                    /// event message, if any. Return true if the event was handled or false
-      CefEventHandle                        os_event,                 /// otherwise. If the event will be handled in OnKeyEvent() as a keyboard
-      bool* is_keyboard_shortcut)                                     /// shortcut set |is_keyboard_shortcut| to true and return false.
-                        OVERRIDE;                                     ///
-
-  virtual bool OnKeyEvent(                                            /// Called after the renderer and JavaScript in the page has had a chance to
-      CefRefPtr<CefBrowser>                 browser,                  /// handle the event. |event| contains information about the keyboard event.
-      const CefKeyEvent&                    event,                    /// |os_event| is the operating system event message, if any. Return true if
-      CefEventHandle                        os_event)                 /// the keyboard event was handled or false otherwise.
-                        OVERRIDE;  */                                   ///
-  //}
   /*!
    * @brief CefLifeSpanHandler methods
    *
@@ -466,42 +356,8 @@ public:
                         OVERRIDE;                                     /// is a modal window and a custom modal loop implementation was provided in RunModal() this callback
                                                                       /// should be used to exit the custom modal loop. See DoClose() documentation for additional usage information.
   //}
-  /*!
-   * @brief CefLoadHandler methods
-   *
-   * Implement this interface to handle events related to browser load status. The
-   * methods of this class will be called on the browser process UI thread or
-   * render process main thread (TID_RENDERER).
-   */
-  //{
 
-  virtual void OnLoadingStateChange(                                  /// Called when the loading state has changed. This callback will be executed
-      CefRefPtr<CefBrowser>                 browser,                  /// twice -- once when loading is initiated either programmatically or by user
-      bool                                  isLoading,                /// action, and once when loading is terminated due to completion, cancellation
-      bool                                  canGoBack,                /// of failure.
-      bool                                  canGoForward)             ///
-                        OVERRIDE;                                     ///
 
- virtual void OnLoadStart(                                           /// Called when the browser begins loading a frame. The |frame| value will never be empty -- call
-     CefRefPtr<CefBrowser>                 browser,                  /// the IsMain() method to check if this frame is the main frame. Multiple frames may be loading
-     CefRefPtr<CefFrame>                   frame,                    /// at the same time. Sub-frames may start or continue loading after the main frame load has ended.
-     TransitionType                        transition_type)
-                       OVERRIDE;                                     /// This method may not be called for a particular frame if the load request for that frame fails.
-                                                                     /// For notification of overall browser load status use OnLoadingStateChange instead.
- virtual void OnLoadEnd(
-     CefRefPtr<CefBrowser>                 browser,                  /// Called when the browser is done loading a frame. The |frame| value will never be empty -- call
-     CefRefPtr<CefFrame>                   frame,                    /// the IsMain() method to check if this frame is the main frame. Multiple frames may be loading at
-     int                                   httpStatusCode)           /// the same time. Sub-frames may start or continue loading after the main frame load has ended.
-                       OVERRIDE;                                     /// Thismethod will always be called for all frames irrespective of whether the request completes
-                                                                     /// successfully.
-  virtual void OnLoadError(
-      CefRefPtr<CefBrowser>                 browser,                  /// Called when the resource load for a navigation fails or is canceled.
-      CefRefPtr<CefFrame>                   frame,                    /// |errorCode| is the error code number, |errorText| is the error text and
-      ErrorCode                             errorCode,                /// |failedUrl| is the URL that failed to load. See net\base\net_error_list.h
-      const CefString&                      errorText,                /// for complete descriptions of the error codes.
-      const CefString&                      failedUrl)                ///
-                        OVERRIDE;                                     ///
-  //}
   /*!
    * @brief CefRenderHandler methods
    *
@@ -691,31 +547,36 @@ public:
 
   CWebBrowser* m_mainBrowserHandler;
 
+
+
+
+
+
+
+  /// CefContextMenuHandler methods
+  //@{
+  virtual void OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                   CefRefPtr<CefContextMenuParams> params, CefRefPtr<CefMenuModel> model) override;
+  virtual bool RunContextMenu(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefContextMenuParams> params,
+                                           CefRefPtr<CefMenuModel> model, CefRefPtr<CefRunContextMenuCallback> callback) override;
+  virtual bool OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefContextMenuParams> params,
+                                                 int command_id, EventFlags event_flags) override;
+  //@}
+
+  /// CefLoadHandler methods
+  //@{
+  virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward) override;
+  virtual void OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type) override;
+  virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode) override;
+  virtual void OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode errorCode,
+                           const CefString& errorText, const CefString& failedUrl) override;
+  //@}
+
+  bool IsLoading() { return m_isLoading; }
+  CefRefPtr<CefBrowser> GetBrowser() { return m_Browser; }
+
 protected:
   void SendMessage(Message& message, bool wait);
-
-  /*!
-   * Given Kodi's settings data
-   */
-  void         *m_pDevice;
-  int           m_iLeaveOpenTime;
-  int           m_iXPos;
-  int           m_iYPos;
-  int           m_iWidth;
-  int           m_iHeight;
-  float         m_fPixelRatio;
-  int           m_iSkinXPos;
-  int           m_iSkinYPos;
-  int           m_iSkinWidth;
-  int           m_iSkinHeight;
-  std::string   m_strIdName;
-  int           m_iGUIItemLeft;
-  int           m_iGUIItemRight;
-  int           m_iGUIItemTop;
-  int           m_iGUIItemBottom;
-  int           m_iGUIItemBack;
-  bool          m_bTransparentBackground;
-  void         *m_pControlIdent;
 
   float         m_BackgroundColor[4];
 
@@ -734,21 +595,9 @@ private:
   int                     m_BrowserId;
   CefRefPtr<CefBrowser>   m_Browser;
 
-  CefRefPtr<CefMessageRouterBrowserSide> m_pMessageRouter;
-  ADDON_HANDLE_STRUCT m_addonHandle;
 
-  CWebGUIDialogContextMenu  m_contextMenu;
+//  CWebGUIDialogContextMenu  m_contextMenu;
 
-  /*!
-   * @brief Own internal handle functions
-   */
-  //{
-  void LoadErrorPage(                                              ///<--  Load a data: URI containing the error message.
-      CefRefPtr<CefFrame>                   frame,                    ///
-      const std::string&                    failed_url,               ///
-      cef_errorcode_t                       error_code,               ///
-      const std::string&                    other_info);              ///
-  //}
   void HandleMessages();
 
   std::queue <Message*> m_processQueue;
@@ -782,9 +631,34 @@ private:
   std::string m_lastFocusedType;
 
 
-  void OpenOwnContextMenu();
-  void HandleFieldInput(std::string& text, const std::string& type);
+  bool m_isFullScreen;
+
+
+  struct SFocusedField
+  {
+    bool focusOnEditableField;
+    bool isEditable;
+    int x;
+    int y;
+    int width;
+    int height;
+    std::string type;
+    std::string value;
+  };
+
+  SFocusedField m_focusedField;
+  bool m_isLoading;
 
   int ZoomLevelToPercentage(double zoomlevel);
   double PercentageToZoomLevel(int percent);
+  void LoadErrorPage(CefRefPtr<CefFrame> frame,
+                     const std::string& failed_url,
+                     cef_errorcode_t error_code,
+                     const std::string& other_info);
+  std::string GetErrorString(cef_errorcode_t code);
+  std::string GetDataURI(const std::string& data, const std::string& mime_type);
+
+  CJSHandler* m_jsHandler;
+  CefRefPtr<CJSDialogHandler> m_jsDialogHandler;
+  CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
 };

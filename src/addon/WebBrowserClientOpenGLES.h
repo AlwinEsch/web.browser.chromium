@@ -27,7 +27,7 @@ class CWebBrowserClientOpenGLES :
   public CefRenderHandler
 {
 public:
-  CWebBrowserClientOpenGLES(int iUniqueClientId, const WEB_ADDON_GUI_PROPS *props, CWebBrowser* instance);
+  CWebBrowserClientOpenGLES(KODI_HANDLE handle, int iUniqueClientId, WebBrowserAddon instance);
   virtual ~CWebBrowserClientOpenGLES();
 
   virtual bool Initialize();
