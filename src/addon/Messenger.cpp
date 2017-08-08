@@ -1,4 +1,3 @@
-#pragma once
 /*
  *      Copyright (C) 2015-2017 Team KODI
  *      http:/kodi.tv
@@ -17,21 +16,4 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "include/wrapper/cef_message_router.h"
-
-class CWebBrowserClient;
-
-class CJSHandler : public CefMessageRouterBrowserSide::Handler
-{
-public:
-  CJSHandler(CWebBrowserClient* client);
-
-  virtual bool OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int64 query_id, const CefString& request,
-                       bool persistent, CefRefPtr<Callback> callback) override;
-  virtual void OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int64 query_id) override;
-
-private:
-  bool ParseString(std::string& in, std::string& out, size_t& delim);
-
-  CWebBrowserClient* m_client;
-};
+#include "Messenger.h"

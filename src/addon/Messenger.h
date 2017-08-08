@@ -17,21 +17,26 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "include/wrapper/cef_message_router.h"
+#include <string>
+#include <memory>
+#include <vector>
 
-class CWebBrowserClient;
+#include <p8-platform/threads/mutex.h>
 
-class CJSHandler : public CefMessageRouterBrowserSide::Handler
+struct MessageCallback
 {
-public:
-  CJSHandler(CWebBrowserClient* client);
-
-  virtual bool OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int64 query_id, const CefString& request,
-                       bool persistent, CefRefPtr<Callback> callback) override;
-  virtual void OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int64 query_id) override;
-
-private:
-  bool ParseString(std::string& in, std::string& out, size_t& delim);
-
-  CWebBrowserClient* m_client;
+  void (*callback)(void *userptr);
+  void *userptr;
 };
+
+typedef struct
+{
+  unsigned int dwMessage;
+  int param1;
+  int param2;
+  int param3;
+  std::string strParam;
+  std::vector<std::string> params;
+  std::shared_ptr<P8PLATFORM::CEvent> waitEvent;
+  void* lpVoid;
+} Message;

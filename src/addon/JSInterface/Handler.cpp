@@ -26,7 +26,7 @@
 const std::string& msg_kodi_log = "kodi.Log";
 const std::string& msg_queue_notification = "kodi.QueueNotification";
 
-CJSHandler::CJSHandler(CWebBrowserClientBase* client)
+CJSHandler::CJSHandler(CWebBrowserClient* client)
   : m_client(client)
 {
 

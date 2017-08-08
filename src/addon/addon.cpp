@@ -19,7 +19,7 @@
 #include "addon.h"
 
 #include "DOMVisitor.h"
-#include "WebBrowserManager.h"
+#include "WebBrowserClient.h"
 #include "Utils.h"
 #include "JSInterface/V8Handler.h"
 

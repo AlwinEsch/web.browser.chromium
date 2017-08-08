@@ -26,10 +26,13 @@
 #include "include/cef_app.h"
 #include "include/cef_client.h"
 #include "include/base/cef_thread_checker.h"
+#include "include/wrapper/cef_message_router.h"
 
 #include <kodi/addon-instance/Web.h>
 #include <p8-platform/threads/threads.h>
 #include <queue>
+
+class CWebBrowserClient;
 
 class CWebBrowser
   : public kodi::addon::CInstanceWeb,

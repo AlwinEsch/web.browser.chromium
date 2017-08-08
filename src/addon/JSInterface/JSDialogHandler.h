@@ -19,12 +19,12 @@
 
 #include "include/cef_jsdialog_handler.h"
 
-class CWebBrowserClientBase;
+class CWebBrowserClient;
 
 class CJSDialogHandler : public CefJSDialogHandler
 {
 public:
-  CJSDialogHandler(CWebBrowserClientBase* client) : m_client(client) { }
+  CJSDialogHandler(CWebBrowserClient* client) : m_client(client) { }
 
   virtual bool OnJSDialog(CefRefPtr<CefBrowser> browser,
                           const CefString& origin_url,
@@ -41,5 +41,5 @@ public:
 private:
   IMPLEMENT_REFCOUNTING(CJSDialogHandler);
 
-  CWebBrowserClientBase* m_client;
+  CWebBrowserClient* m_client;
 };

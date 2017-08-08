@@ -218,8 +218,8 @@ if(NOT WIN32)
   find_package(OpenGL)
   if(OPENGL_FOUND)
     add_definitions(-DHAVE_GL)
-    set(KODICHROMIUM_SOURCES src/addon/WebBrowserClientOpenGL.cpp)
-    set(KODICHROMIUM_HEADERS src/addon/WebBrowserClientOpenGL.h)
+    set(KODICHROMIUM_SOURCES src/addon/Renderer/RendererOpenGL.cpp)
+    set(KODICHROMIUM_HEADERS src/addon/Renderer/RendererOpenGL.h)
     set(INCLUDES ${OPENGL_INCLUDE_DIR})
     set(DEPLIBS ${OPENGL_LIBRARIES})
     message(STATUS "Web Browser support enabled via ${BoldGreen}OpenGL${ColourReset}")
@@ -227,11 +227,11 @@ if(NOT WIN32)
     find_package(OpenGLES2)
     if(OPENGLES2_FOUND)
       add_definitions(-DHAVE_GLES2)
-      set(KODICHROMIUM_SOURCES src/addon/WebBrowserClientOpenGLES.cpp
+      set(KODICHROMIUM_SOURCES src/addon/Renderer/RendererOpenGLES.cpp
                                src/addon/EGLHelpers/VisGUIShader.cpp
                                src/addon/EGLHelpers/VisMatrixGLES.cpp
                                src/addon/EGLHelpers/VisShader.cpp)
-      set(KODICHROMIUM_HEADERS src/addon/WebBrowserClientOpenGLES.h
+      set(KODICHROMIUM_HEADERS src/addon/Renderer/RendererOpenGLES.h
                                src/addon/EGLHelpers/VisGUIShader.h
                                src/addon/EGLHelpers/VisMatrixGLES.h
                                src/addon/EGLHelpers/VisShader.h)
@@ -246,8 +246,8 @@ else()
   find_package(D3DX9)
   if(D3DX9_FOUND)
     add_definitions(-DHAS_DX)
-    set(KODICHROMIUM_SOURCES src/addon/WebBrowserClientDirectX.cpp)
-    set(KODICHROMIUM_HEADERS src/addon/WebBrowserClientDirectX.h)
+    set(KODICHROMIUM_SOURCES src/addon/Renderer/RendererDirectX.cpp)
+    set(KODICHROMIUM_HEADERS src/addon/Renderer/RendererDirectX.h)
     set(INCLUDES ${D3DX9_INCLUDE_DIR})
     set(DEPLIBS ${D3DX9_LIBRARIES})
     message(STATUS "Web Browser support enabled via ${BoldGreen}DirectX${ColourReset}")
@@ -277,10 +277,11 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/DOMVisitor.cpp
                                  src/addon/GeolocationPermission.cpp
                                  src/addon/MessageIds.cpp
+                                 src/addon/Messenger.cpp
                                  src/addon/SystemTranslator.cpp
                                  src/addon/UploadHandler.cpp
                                  src/addon/URICheckHandler.cpp
-                                 src/addon/WebBrowserClientBase.cpp
+                                 src/addon/WebBrowserClient.cpp
                                  src/addon/WebBrowserManager.cpp
                                  src/addon/Cookies/CookieHandler.cpp
                                  src/addon/JSInterface/Handler.cpp
@@ -293,10 +294,11 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/DOMVisitor.h
                                  src/addon/GeolocationPermission.h
                                  src/addon/MessageIds.h
+                                 src/addon/Messenger.h
                                  src/addon/SystemTranslator.h
                                  src/addon/UploadHandler.h
                                  src/addon/URICheckHandler.h
-                                 src/addon/WebBrowserClientBase.h
+                                 src/addon/WebBrowserClient.h
                                  src/addon/WebBrowserManager.h
                                  src/addon/Cookies/CookieHandler.cpp
                                  src/addon/JSInterface/Handler.h
