@@ -35,6 +35,8 @@
 
 #include <p8-platform/threads/mutex.h>
 
+using namespace P8PLATFORM;
+
 #ifndef GL_BGR
 #define GL_BGR 0x80E0
 #endif
@@ -56,8 +58,6 @@
 #define VERIFY_NO_ERROR
 #endif
 
-using namespace P8PLATFORM;
-
 #define MAX_MESSAGE_QUEUE_FILL_SIZE 100
 
 CRendererClientOpenGL::CRendererClientOpenGL(CWebBrowserClient* client) :
@@ -75,7 +75,6 @@ CRendererClientOpenGL::CRendererClientOpenGL(CWebBrowserClient* client) :
 
 CRendererClientOpenGL::~CRendererClientOpenGL()
 {
-  Cleanup();
 }
 
 bool CRendererClientOpenGL::Initialize()
@@ -112,7 +111,6 @@ bool CRendererClientOpenGL::Initialize()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); VERIFY_NO_ERROR;
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); VERIFY_NO_ERROR;
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); VERIFY_NO_ERROR;
-
   m_initialized = true;
   return true;
 }
@@ -120,7 +118,10 @@ bool CRendererClientOpenGL::Initialize()
 void CRendererClientOpenGL::Cleanup()
 {
   if (m_textureId != 0)
+  {
     glDeleteTextures(1, &m_textureId);
+    m_textureId = 0;
+  }
 }
 
 void CRendererClientOpenGL::Render()
@@ -416,4 +417,39 @@ void CRendererClientOpenGL::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementT
   message->width = width;
   message->height = height;
   m_paintQueue.push(message);
+}
+
+void CRendererClientOpenGL::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, CursorType type, const CefCursorInfo& custom_cursor_info)
+{
+  ///TODO Use to improve human readable view of mouse area over far distance?
+}
+
+void CRendererClientOpenGL::OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser, double x, double y)
+{
+  ///TODO Use to replace chromium scroll bars with Kodi's one?
+}
+
+void CRendererClientOpenGL::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show)
+{
+  ///TODO Is this usable for Kodi?
+}
+
+void CRendererClientOpenGL::OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect)
+{
+  ///TODO Is this usable for Kodi?
+}
+
+bool CRendererClientOpenGL::StartDragging(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> drag_data, DragOperationsMask allowed_ops, int x, int y)
+{
+  ///TODO Is this usable for Kodi?
+  return false;
+}
+void CRendererClientOpenGL::UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperation operation)
+{
+  ///TODO Is this usable for Kodi?
+}
+
+void CRendererClientOpenGL::OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& selected_range, const RectList& character_bounds)
+{
+  ///TODO Is this usable for Kodi?
 }

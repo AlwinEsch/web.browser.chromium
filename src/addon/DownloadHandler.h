@@ -76,7 +76,7 @@ class CWebBrowserDownloadHandler : public CefDownloadHandler, public kodi::gui::
 {
 public:
   CWebBrowserDownloadHandler();
-  virtual ~CWebBrowserDownloadHandler();
+  virtual ~CWebBrowserDownloadHandler() = default;
 
   void Open();
 
@@ -84,6 +84,7 @@ public:
 
   virtual bool OnInit() override;
   virtual bool OnClick(int controlId) override;
+  virtual bool OnAction(int actionId) override;
   virtual void GetContextButtons(int itemNumber, std::vector< std::pair<unsigned int, std::string> > &buttons) override;
   virtual bool OnContextButton(int itemNumber, unsigned int button) override;
 
@@ -103,8 +104,11 @@ public:
   const std::map<std::string, std::shared_ptr<CDownloadItem>>& GetActiveDownloads() { return m_activeDownloads; }
   const std::map<std::string, std::shared_ptr<CDownloadItem>>& GetFinishedDownloads() { return m_finishedDownloads; }
 
+  void AddRef() const override { }
+  bool Release() const override { return false; }
+  bool HasOneRef() const override { return false; }
+
 private:
-  IMPLEMENT_REFCOUNTING(CWebBrowserDownloadHandler);
   DISALLOW_COPY_AND_ASSIGN(CWebBrowserDownloadHandler);
 
   bool LoadDownloadHistory(bool initial);

@@ -75,7 +75,7 @@ bool CV8Handler::Execute(const CefString& name,
   return false;
 }
 
-void CV8Handler::OnWebKitInitialized(CWebBrowser* browser)
+void CV8Handler::OnWebKitInitialized()
 {
   // Register the client_app extension.
   std::string app_code =
@@ -115,5 +115,5 @@ void CV8Handler::OnWebKitInitialized(CWebBrowser* browser)
     "  };"
     "})();";
 
-  CefRegisterExtension("kodi", app_code, new CV8Handler(browser));
+  CefRegisterExtension("kodi", app_code, new CV8Handler());
 }

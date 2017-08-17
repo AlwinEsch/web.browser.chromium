@@ -14,30 +14,35 @@ ClientAppRenderer::ClientAppRenderer() {
 
 void ClientAppRenderer::OnRenderThreadCreated(
     CefRefPtr<CefListValue> extra_info) {
+fprintf(stderr, "------------------------------ %s\n", __FUNCTION__);
   DelegateSet::iterator it = delegates_.begin();
   for (; it != delegates_.end(); ++it)
     (*it)->OnRenderThreadCreated(this, extra_info);
 }
 
 void ClientAppRenderer::OnWebKitInitialized() {
+fprintf(stderr, "------------------------------ %s\n", __FUNCTION__);
   DelegateSet::iterator it = delegates_.begin();
   for (; it != delegates_.end(); ++it)
     (*it)->OnWebKitInitialized(this);
 }
 
 void ClientAppRenderer::OnBrowserCreated(CefRefPtr<CefBrowser> browser) {
+fprintf(stderr, "------------------------------ %s\n", __FUNCTION__);
   DelegateSet::iterator it = delegates_.begin();
   for (; it != delegates_.end(); ++it)
     (*it)->OnBrowserCreated(this, browser);
 }
 
 void ClientAppRenderer::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) {
+fprintf(stderr, "------------------------------ %s\n", __FUNCTION__);
   DelegateSet::iterator it = delegates_.begin();
   for (; it != delegates_.end(); ++it)
     (*it)->OnBrowserDestroyed(this, browser);
 }
 
 CefRefPtr<CefLoadHandler> ClientAppRenderer::GetLoadHandler() {
+fprintf(stderr, "------------------------------ %s\n", __FUNCTION__);
   CefRefPtr<CefLoadHandler> load_handler;
   DelegateSet::iterator it = delegates_.begin();
   for (; it != delegates_.end() && !load_handler.get(); ++it)
@@ -51,6 +56,7 @@ bool ClientAppRenderer::OnBeforeNavigation(CefRefPtr<CefBrowser> browser,
                                            CefRefPtr<CefRequest> request,
                                            NavigationType navigation_type,
                                            bool is_redirect) {
+fprintf(stderr, "------------------------------ %s\n", __FUNCTION__);
   DelegateSet::iterator it = delegates_.begin();
   for (; it != delegates_.end(); ++it) {
     if ((*it)->OnBeforeNavigation(this, browser, frame, request,
@@ -65,6 +71,7 @@ bool ClientAppRenderer::OnBeforeNavigation(CefRefPtr<CefBrowser> browser,
 void ClientAppRenderer::OnContextCreated(CefRefPtr<CefBrowser> browser,
                                          CefRefPtr<CefFrame> frame,
                                          CefRefPtr<CefV8Context> context) {
+fprintf(stderr, "------------------------------ %s\n", __FUNCTION__);
   DelegateSet::iterator it = delegates_.begin();
   for (; it != delegates_.end(); ++it)
     (*it)->OnContextCreated(this, browser, frame, context);

@@ -278,6 +278,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/GeolocationPermission.cpp
                                  src/addon/MessageIds.cpp
                                  src/addon/Messenger.cpp
+                                 src/addon/RequestContextHandler.cpp
                                  src/addon/SystemTranslator.cpp
                                  src/addon/UploadHandler.cpp
                                  src/addon/URICheckHandler.cpp
@@ -287,7 +288,8 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/JSInterface/Handler.cpp
                                  src/addon/JSInterface/JSDialogHandler.cpp
                                  src/addon/JSInterface/V8Handler.cpp
-                                 src/addon/utils/Utils.cpp)
+                                 src/addon/utils/Utils.cpp
+                                 src/addon/webApp/RenderProcess.cpp)
 
 list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/DownloadHandler.h
@@ -295,22 +297,30 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/GeolocationPermission.h
                                  src/addon/MessageIds.h
                                  src/addon/Messenger.h
+                                 src/addon/RequestContextHandler.h
                                  src/addon/SystemTranslator.h
                                  src/addon/UploadHandler.h
                                  src/addon/URICheckHandler.h
                                  src/addon/WebBrowserClient.h
                                  src/addon/WebBrowserManager.h
-                                 src/addon/Cookies/CookieHandler.cpp
+                                 src/addon/Cookies/CookieHandler.h
                                  src/addon/JSInterface/Handler.h
                                  src/addon/JSInterface/JSDialogHandler.h
                                  src/addon/JSInterface/V8Handler.h
-                                 src/addon/utils/Utils.h)
+                                 src/addon/utils/Utils.h
+                                 src/addon/webApp/RenderProcess.h)
 
-list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main.cpp
-                                     src/app/client_app.cpp
-                                     src/app/client_app_other.cpp
-                                     src/app/client_app_renderer.cpp
-                                     src/app/client_switches.cpp)
+# list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main.cpp
+#                                      src/app/client_app.cpp
+#                                      src/app/client_app_other.cpp
+#                                      src/app/client_app_renderer.cpp
+#                                      src/app/client_switches.cpp)
+
+list(APPEND KODICHROMIUM_BIN_SOURCES src/app/WebMain.cpp
+                                     src/app/WebApp.cpp
+                                     src/app/WebAppBrowser.cpp
+                                     src/app/WebAppOther.cpp
+                                     src/app/WebAppRenderer.cpp)
 
 list(APPEND DEPLIBS ${p8-platform_LIBRARIES}
                     ${kodiplatform_LIBRARIES}

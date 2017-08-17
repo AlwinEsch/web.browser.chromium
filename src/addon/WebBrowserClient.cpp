@@ -35,6 +35,7 @@
 #include <kodi/gui/dialogs/FileBrowser.h>
 #include <kodi/gui/dialogs/Keyboard.h>
 #include <kodi/gui/dialogs/Select.h>
+#include <kodi/gui/dialogs/YesNo.h>
 
 #include "include/cef_app.h"
 #include "include/cef_browser.h"
@@ -75,6 +76,7 @@ enum DOMTestType {
 // Custom menu command Ids.
 enum client_menu_ids {
   CLIENT_ID_OPEN_SELECTED_SIDE = MENU_ID_USER_FIRST,
+  CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB,
   CLIENT_ID_OPEN_KEYBOARD,
 };
 
@@ -166,7 +168,31 @@ fprintf(stderr, "ACTION_MOUSE_LONG_CLICK\n");
 
 
 
+class CNavigationEntryVisitor : public CefNavigationEntryVisitor
+{
+public:
+  CNavigationEntryVisitor() { }
 
+  virtual bool Visit(CefRefPtr<CefNavigationEntry> entry, bool current, int index, int total) override;
+
+private:
+  IMPLEMENT_REFCOUNTING(CNavigationEntryVisitor);
+};
+
+bool CNavigationEntryVisitor::Visit(CefRefPtr<CefNavigationEntry> entry, bool current, int index, int total)
+{
+  fprintf(stderr, "-- %s\n", __PRETTY_FUNCTION__);
+  fprintf(stderr, " - current %i\n", current);
+  fprintf(stderr, " - index %i\n", index);
+  fprintf(stderr, " - total %i\n", total);
+  if (entry && index >= 0)
+  {
+  fprintf(stderr, " - entry->GetURL() %s\n", entry->GetURL().ToString().c_str());
+  fprintf(stderr, " - entry->GetDisplayURL() %s\n", entry->GetDisplayURL().ToString().c_str());
+  fprintf(stderr, " - entry->GetTitle() %s\n", entry->GetTitle().ToString().c_str());
+  }
+  return true;
+}
 
 
 
@@ -193,328 +219,90 @@ fprintf(stderr, "ACTION_MOUSE_LONG_CLICK\n");
 CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int iUniqueClientId, CWebBrowser* instance)
   : CWebControl(handle, iUniqueClientId),
     m_mainBrowserHandler(instance),
+    m_renderViewReady(false),
     m_iUniqueClientId(iUniqueClientId),
-    m_iBrowserCount(0),
     m_iMousePreviousFlags(0),
     m_iMousePreviousControl(MBT_LEFT),
-    m_BrowserId(-1),
-    m_Browser(NULL),
-    m_isClosing(false),
+    m_browserId(-1),
+    m_browser(nullptr),
+    m_browserCount(0),
     m_isFullScreen(false),
     m_focusedField{0},
     m_isLoading{false}
 {
-  uint32_t color = GetBackgroundColorARGB();
-  m_BackgroundColor[3] = float(CefColorGetA(color)) / 255.0f;
-  m_BackgroundColor[2] = float(CefColorGetR(color)) / 255.0f;
-  m_BackgroundColor[1] = float(CefColorGetG(color)) / 255.0f;
-  m_BackgroundColor[0] = float(CefColorGetB(color)) / 255.0f;
   m_fMouseXScaleFactor = (GetXPos() + GetWidth()) / (GetSkinXPos() + GetSkinWidth());
   m_fMouseYScaleFactor = (GetYPos() + GetHeight()) / (GetSkinYPos() + GetSkinHeight());
 
   // CEF related sub classes to manage web parts
-  m_resourceManager     = new CefResourceManager();
-
-
-  fprintf(stderr, " -1- %s ---------- %i\n", __PRETTY_FUNCTION__, m_iUniqueClientId);
-  fprintf(stderr, " -2- %s ---------- %i\n", __PRETTY_FUNCTION__, GetDataIdentifier());
+  m_resourceManager = new CefResourceManager();
 
   // Create the browser-side router for query handling.
   m_jsDialogHandler = new CJSDialogHandler(this);
-  m_jsHandler = new CJSHandler(this);
-  CefMessageRouterConfig config;
-  m_messageRouter = CefMessageRouterBrowserSide::Create(config);
-  m_messageRouter->AddHandler(m_jsHandler, false);
   m_renderer = new CRendererClient(this);
 }
 
 CWebBrowserClient::~CWebBrowserClient()
 {
-  delete m_jsHandler;
 }
-
-CefRefPtr<CefDialogHandler> CWebBrowserClient::GetDialogHandler()
-{
-  return m_mainBrowserHandler->GetUploadHandler();
-}
-
-CefRefPtr<CefDownloadHandler> CWebBrowserClient::GetDownloadHandler()
-{
-  return m_mainBrowserHandler->GetDownloadHandler();
-}
-
-CefRefPtr<CefGeolocationHandler> CWebBrowserClient::GetGeolocationHandler()
-{
-  return m_mainBrowserHandler->GetGeolocationPermission();
-}
-
-CefRefPtr<CefDisplayHandler> CWebBrowserClient::GetDisplayHandler()
-{
-  return this;
-}
-
-CefRefPtr<CefJSDialogHandler> CWebBrowserClient::GetJSDialogHandler()
-{
-  return m_jsDialogHandler;
-}
-
-CefRefPtr<CefContextMenuHandler> CWebBrowserClient::GetContextMenuHandler()
-{
-  return this;
-}
-
-CefRefPtr<CefLoadHandler> CWebBrowserClient::GetLoadHandler()
-{
-  return this;
-}
-
-CefRefPtr<CefRenderHandler> CWebBrowserClient::GetRenderHandler()
-{
-  return m_renderer;
-}
-
-/*!
- * @brief CefDisplayHandler methods
- */
-//@{
-void CWebBrowserClient::OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& url)
-{
-  if (frame->IsMain())
-  {
-    SetOpenedAddress(url.ToString());
-//     Message tMsg = {TMSG_SET_OPENED_ADDRESS};
-//     tMsg.strParam = url.ToString().c_str();
-//     SendMessage(tMsg, false);
-  }
-}
-
-void CWebBrowserClient::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title)
-{
-  if (m_lastTitle != title.ToString().c_str())
-  {
-    m_lastTitle = title.ToString().c_str();
-
-//     Message tMsg = {TMSG_SET_OPENED_TITLE};
-//     tMsg.strParam = m_lastTitle.c_str();
-//     SendMessage(tMsg, false);
-    SetOpenedTitle(m_lastTitle);
-  }
-}
-
-void CWebBrowserClient::OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const std::vector<CefString>& icon_urls)
-{
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "From currently opened web site given icon urls (first one used)");
-  unsigned int listSize = icon_urls.size();
-  for (unsigned int i = 0; i < listSize; ++i)
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - Icon %i - %s", i+1, icon_urls[i].ToString().c_str());
-
-//   Message tMsg = {TMSG_SET_ICON_URL};
-  if (listSize > 0)
-    SetIconURL(icon_urls[0].ToString());
-  else
-    SetIconURL("");
-//   SendMessage(tMsg, false);
-//   SetIconURL(m_lastTitle);
-}
-
-void CWebBrowserClient::OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bool fullscreen)
-{
-  if (m_isFullScreen != fullscreen)
-  {
-    m_isFullScreen = fullscreen;
-
-//     Message tMsg = {TMSG_FULLSCREEN_MODE_CHANGE};
-//     tMsg.param1 = fullscreen ? 1 : 0;
-//     SendMessage(tMsg, false);
-    SetFullscreen(fullscreen);
-  }
-}
-
-bool CWebBrowserClient::OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text)
-{
-  if (m_lastTooltip != text.ToString().c_str())
-  {
-    m_lastTooltip = text.ToString().c_str();
-
-//     Message tMsg = {TMSG_SET_TOOLTIP};
-//     tMsg.strParam = m_lastTooltip.c_str();
-//     SendMessage(tMsg, false);
-    SetTooltip(m_lastTooltip);
-  }
-
-  return true;
-}
-
-void CWebBrowserClient::OnStatusMessage(CefRefPtr<CefBrowser> browser, const CefString& value)
-{
-  if (m_lastStatusMsg != value.ToString().c_str())
-  {
-    m_lastStatusMsg = value.ToString().c_str();
-/*
-    Message tMsg = {TMSG_SET_STATUS_MESSAGE};
-    tMsg.strParam = m_lastStatusMsg.c_str();
-    SendMessage(tMsg, false);*/
-    SetStatusMessage(m_lastStatusMsg);
-  }
-}
-
-bool CWebBrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString& message, const CefString& source, int line)
-{
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Message: %s - Source: %s - Line: %i", __FUNCTION__,
-                       message.ToString().c_str(), source.ToString().c_str(), line);
-  return true;
-}
-//@}
-
-void CWebBrowserClient::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefDOMNode> node)
-{
-//   fprintf(stderr, " -1- %s ---------- %i\n", __PRETTY_FUNCTION__, m_iUniqueClientId);
-//   fprintf(stderr, " -2- %s ---------- %i\n", __PRETTY_FUNCTION__, GetDataIdentifier());
-}
-
-void CWebBrowserClient::HandleMessages()
-{
-  // process threadmessages
-  CLockObject lock(m_Mutex);
-  while (!m_processQueue.empty())
-  {
-    Message* pMsg = m_processQueue.front();
-    m_processQueue.pop();
-
-    std::shared_ptr<CEvent> waitEvent = pMsg->waitEvent;
-    lock.Unlock(); // <- see the large comment in SendMessage ^
-    switch (pMsg->dwMessage)
-    {
-      case TMSG_SET_CONTROL_READY:
-      {
-        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Web control %s", pMsg->param1 ? "ready" : "failed");
-        SetControlReady(pMsg->param1);
-        break;
-      }
-      case TMSG_SET_OPENED_ADDRESS:
-      {
-        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site url '%s'", pMsg->strParam.c_str());
-        SetOpenedAddress(pMsg->strParam);
-        break;
-      }
-      case TMSG_SET_OPENED_TITLE:
-      {
-        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site title '%s'", pMsg->strParam.c_str());
-        SetOpenedTitle(pMsg->strParam);
-        break;
-      }
-      case TMSG_SET_ICON_URL:
-      {
-        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site set icon url '%s'", pMsg->strParam.c_str());
-        SetIconURL(pMsg->strParam);
-        break;
-      }
-      case TMSG_FULLSCREEN_MODE_CHANGE:
-      {
-        bool fullscreen = pMsg->param1 != 0;
-        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "From currently opened web site becomes fullsreen requested as '%s'", fullscreen ? "yes" : "no");
-        SetFullscreen(fullscreen);
-        break;
-      }
-      case TMSG_SET_LOADING_STATE:
-      {
-        SetLoadingState(pMsg->param1, pMsg->param2, pMsg->param3);
-        break;
-      }
-      case TMSG_SET_TOOLTIP:
-      {
-        SetTooltip(pMsg->strParam);
-        break;
-      }
-      case TMSG_SET_STATUS_MESSAGE:
-      {
-        SetStatusMessage(pMsg->strParam);
-        break;
-      }
-      case TMSG_HANDLE_ON_PAINT:
-      {
-        OnPaintMessage *data = static_cast<OnPaintMessage*>(pMsg->lpVoid);
-        data->client.callback(pMsg->lpVoid);
-        break;
-      }
-      case TMSG_BROWSER_CLOSE:
-      {
-        CefRefPtr<CefBrowser> browser = (CefBrowser*)pMsg->lpVoid;
-
-        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Browser close");
-        break;
-      }
-      default:
-        break;
-    };
-
-    if (waitEvent)
-      waitEvent->Signal();
-    delete pMsg;
-
-    lock.Lock();
-  }
-}
-
 
 
 
 void CWebBrowserClient::SetBrowser(CefRefPtr<CefBrowser> browser)
 {
 //   fprintf(stderr, "-- %s\n", __func__);
-  m_Browser = browser;
+  m_browser = browser;
 }
 
 bool CWebBrowserClient::SetInactive()
 {
-  m_inactivateTime = time(nullptr);
-  return GetLeaveOpenTime() < 0;
+  m_renderViewReady = false;
+  if (m_browser.get())
+  {
+    m_browser->GetHost()->SetFocus(false);
+    return true;
+  }
+
+  return false;
 }
 
 bool CWebBrowserClient::SetActive()
 {
-  return true;
-}
-
-int CWebBrowserClient::CurrentInactiveCountdown()
-{
-  return time(nullptr) - m_inactivateTime + GetLeaveOpenTime();
-}
-
-void CWebBrowserClient::SendMessage(Message& message, bool wait)
-{
-  std::shared_ptr<CEvent> waitEvent;
-  if (wait)
+  m_renderViewReady = true;
+  if (m_browser.get())
   {
-    message.waitEvent.reset(new CEvent(true));
-    waitEvent = message.waitEvent;
+    m_browser->GetHost()->SetFocus(true);
+    SetOpenedAddress(m_currentURL);
+    SetOpenedTitle(m_currentTitle);
+    SetIconURL(m_currentIcon);
+    return true;
   }
 
-  CLockObject lock(m_Mutex);
+  return false;
+}
 
-  Message* msg    = new Message();
-  msg->dwMessage  = message.dwMessage;
-  msg->param1     = message.param1;
-  msg->param2     = message.param2;
-  msg->param3     = message.param3;
-  msg->lpVoid     = message.lpVoid;
-  msg->strParam   = message.strParam;
-  msg->params     = message.params;
-  msg->waitEvent  = message.waitEvent;
+bool CWebBrowserClient::CloseComplete()
+{
+  if (m_browser.get())
+  {
+    m_browser->GetHost()->CloseBrowser(true);
+    m_browser = nullptr;
+    return true;
+  }
 
-  m_processQueue.push(msg);
-  lock.Unlock();
+  return false;
+}
 
-  if (waitEvent)
-    waitEvent->Wait(1000);
+void CWebBrowserClient::DestroyRenderer()
+{
+  m_renderer = nullptr;
 }
 
 bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unicode, int &nextItem)
 {
-  if (!m_Browser.get())
+  if (!m_browser.get())
     return false;
 
-  CefRefPtr<CefBrowserHost> host = m_Browser->GetHost();
+  CefRefPtr<CefBrowserHost> host = m_browser->GetHost();
 
   fprintf(stderr, "----------int actionId %i, uint32_t buttoncode %X, wchar_t unicode %i, int &nextItem %i\n",
           actionId, buttoncode, unicode, nextItem);
@@ -534,24 +322,24 @@ bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unic
         return false;
       case ACTION_ZOOM_OUT:
       {
-        int zoomTo = kodi::GetSettingInt("zoomlevel") - kodi::GetSettingInt("zoom_step_size");
+        int zoomTo = kodi::GetSettingInt("main.zoomlevel") - kodi::GetSettingInt("main.zoom_step_size");
         if (zoomTo < 30)
           break;
 
         LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - Zoom out to %i %%", __FUNCTION__, zoomTo);
-        m_Browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(zoomTo));
-        kodi::SetSettingInt("zoomlevel", zoomTo);
+        m_browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(zoomTo));
+        kodi::SetSettingInt("main.zoomlevel", zoomTo);
         break;
       }
       case ACTION_ZOOM_IN:
       {
-        int zoomTo = kodi::GetSettingInt("zoomlevel") + kodi::GetSettingInt("zoom_step_size");
+        int zoomTo = kodi::GetSettingInt("main.zoomlevel") + kodi::GetSettingInt("main.zoom_step_size");
         if (zoomTo > 330)
           break;
 
-        LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - Zoom in to %i %%", __FUNCTION__, zoomTo);
-        m_Browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(zoomTo));
-        kodi::SetSettingInt("zoomlevel", zoomTo);
+        LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - Zoom in to %i %% - %i %i", __FUNCTION__, zoomTo, kodi::GetSettingInt("main.zoomlevel"), kodi::GetSettingInt("main.zoom_step_size"));
+        m_browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(zoomTo));
+        kodi::SetSettingInt("main.zoomlevel", zoomTo);
         break;
       }
       default:
@@ -587,12 +375,12 @@ bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unic
 
 bool CWebBrowserClient::OnMouseEvent(int id, double x, double y, double offsetX, double offsetY, int state)
 {
-  if (!m_Browser.get())
+  if (!m_browser.get())
     return true;
 
   static const int scrollbarPixelsPerTick = 40;
 
-  CefRefPtr<CefBrowserHost> host = m_Browser->GetHost();
+  CefRefPtr<CefBrowserHost> host = m_browser->GetHost();
 
   CefMouseEvent mouse_event;
   mouse_event.x = x * m_fMouseXScaleFactor;
@@ -609,7 +397,7 @@ bool CWebBrowserClient::OnMouseEvent(int id, double x, double y, double offsetX,
           mouse_event.y <= m_focusedField.y + m_focusedField.height)
       {
         CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(AddonClientMessage::FocusedSelected);
-        m_Browser->SendProcessMessage(PID_RENDERER, message);
+        m_browser->SendProcessMessage(PID_RENDERER, message);
       }
       else
       {
@@ -674,39 +462,42 @@ bool CWebBrowserClient::OnMouseEvent(int id, double x, double y, double offsetX,
 
 bool CWebBrowserClient::Initialize()
 {
-  if (!m_Browser.get())
+  if (!m_browser.get())
   {
     LOG_MESSAGE(ADDON_LOG_ERROR, "%s - Called without present browser", __FUNCTION__);
     return false;
   }
 
-  m_Browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(kodi::GetSettingInt("zoomlevel")));
-
+  m_browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(kodi::GetSettingInt("main.zoomlevel")));
 
   return true;
 }
 
 void CWebBrowserClient::Render()
 {
-  m_renderer->Render();
+  if (m_renderViewReady)
+    m_renderer->Render();
 }
 
 bool CWebBrowserClient::Dirty()
 {
-//   HandleMessages();
+  if (!m_renderViewReady)
+    return false;
+
+  HandleMessages();
   return m_renderer->Dirty();
 }
 
 bool CWebBrowserClient::OpenWebsite(const std::string& strURL, bool single, bool allowMenus)
 {
 //   fprintf(stderr, "-- %s\n", __func__);
-  if (!m_Browser.get())
+  if (!m_browser.get())
   {
     LOG_MESSAGE(ADDON_LOG_ERROR, "%s - Called without present browser", __FUNCTION__);
     return false;
   }
 
-  CefRefPtr<CefFrame> frame = m_Browser->GetMainFrame();
+  CefRefPtr<CefFrame> frame = m_browser->GetMainFrame();
   if (!frame.get())
   {
     LOG_MESSAGE(ADDON_LOG_ERROR, "%s - Called without present frame", __FUNCTION__);
@@ -716,6 +507,11 @@ bool CWebBrowserClient::OpenWebsite(const std::string& strURL, bool single, bool
   if (m_strStartupURL.empty())
     m_strStartupURL = strURL;
 
+  m_currentIcon = "";
+  Message tMsg = {TMSG_SET_ICON_URL};
+  tMsg.strParam = m_currentIcon;
+  SendMessage(tMsg, false);
+
   frame->LoadURL(strURL);
 
   return true;
@@ -723,22 +519,22 @@ bool CWebBrowserClient::OpenWebsite(const std::string& strURL, bool single, bool
 
 void CWebBrowserClient::Reload()
 {
-  m_Browser->Reload();
+  m_browser->Reload();
 }
 
 void CWebBrowserClient::StopLoad()
 {
-  m_Browser->StopLoad();
+  m_browser->StopLoad();
 }
 
 void CWebBrowserClient::GoBack()
 {
-  m_Browser->GoBack();
+  m_browser->GoBack();
 }
 
 void CWebBrowserClient::GoForward()
 {
-  m_Browser->GoForward();
+  m_browser->GoForward();
 }
 
 void CWebBrowserClient::OpenOwnContextMenu()
@@ -775,14 +571,80 @@ void CWebBrowserClient::OpenOwnContextMenu()
 }
 
 
-/*!
- * @brief CefClient methods
- *
- * Implement this interface to provide handler implementations.
- */
-//{
+bool CWebBrowserClient::GetHistory(std::vector<std::string>& historyWebsiteNames, bool behindCurrent)
+{
+  if (!m_browser)
+    return false;
+
+  bool currentFound = false;
+  for (const auto& entry : m_historyWebsiteNames)
+  {
+    if (!behindCurrent && entry.second)
+      break;
+    if (entry.second)
+    {
+      currentFound = true;
+      continue;
+    }
+
+    if (behindCurrent && !currentFound)
+      continue;
+
+    historyWebsiteNames.push_back(entry.first);
+  }
+
+  return true;
+}
+
+void CWebBrowserClient::SearchText(const std::string& text, bool forward, bool matchCase, bool findNext)
+{
+  if (m_browser)
+  {
+    if (m_currentSearchText != text)
+      m_browser->GetHost()->StopFinding(true);
+    m_browser->GetHost()->Find(0, text, forward, matchCase, findNext);
+    m_currentSearchText = text;
+  }
+}
+
+void CWebBrowserClient::StopSearch(bool clearSelection)
+{
+  if (m_browser)
+    m_browser->GetHost()->StopFinding(clearSelection);
+  m_currentSearchText.clear();
+}
+
+// -----------------------------------------------------------------------------
+
+CefRefPtr<CefDialogHandler> CWebBrowserClient::GetDialogHandler()
+{
+  return m_mainBrowserHandler->GetUploadHandler();
+}
+
+CefRefPtr<CefDownloadHandler> CWebBrowserClient::GetDownloadHandler()
+{
+  return m_mainBrowserHandler->GetDownloadHandler();
+}
+
+CefRefPtr<CefGeolocationHandler> CWebBrowserClient::GetGeolocationHandler()
+{
+  return m_mainBrowserHandler->GetGeolocationPermission();
+}
+
+CefRefPtr<CefJSDialogHandler> CWebBrowserClient::GetJSDialogHandler()
+{
+  return m_jsDialogHandler;
+}
+
+CefRefPtr<CefRenderHandler> CWebBrowserClient::GetRenderHandler()
+{
+  return m_renderer;
+}
+
+/// CefClient methods
+//@{
 bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process,
-                                                     CefRefPtr<CefProcessMessage> message)
+                                                 CefRefPtr<CefProcessMessage> message)
 {
   CEF_REQUIRE_UI_THREAD();
 
@@ -817,7 +679,7 @@ bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, 
       CefRange replacement_range;
       replacement_range.from = 0;
       replacement_range.to = -1;
-      m_Browser->GetHost()->ImeCommitText(message->GetArgumentList()->GetString(0), replacement_range, 0);
+      m_browser->GetHost()->ImeCommitText(message->GetArgumentList()->GetString(0), replacement_range, 0);
     }
     return true;
   }
@@ -914,288 +776,297 @@ bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, 
 
   return false;
 }
-//}
+//@}
 
-
-
-
-
-/*!
- * @brief CefDragHandler methods
- */
-//{
-bool CWebBrowserClient::OnDragEnter(
-    CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefDragData> dragData,
-    CefRenderHandler::DragOperationsMask mask)
+/// CefDisplayHandler methods
+//@{
+void CWebBrowserClient::OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& url)
 {
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-  CEF_REQUIRE_UI_THREAD();
+  if (frame->IsMain())
+  {
+    m_currentURL = url.ToString();
 
-  /* Forbid dragging of link URLs */
-  if(mask & DRAG_OPERATION_LINK)
-    return true;
-
-  return false;
-}
-//}
-
-
-/*!
- * @brief CefFindHandler methods
- *
- * Implement this interface to handle events related to find results. The
- * methods of this class will be called on the UI thread.
- */
-//{
-void CWebBrowserClient::OnFindResult(
-    CefRefPtr<CefBrowser>                 browser,
-    int                                   identifier,
-    int                                   count,
-    const CefRect&                        selectionRect,
-    int                                   activeMatchOrdinal,
-    bool                                  finalUpdate)
-{
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-}
-//}
-
-/*!
- * @brief CefFocusHandler methods
- */
-//{
-void CWebBrowserClient::OnTakeFocus(
-    CefRefPtr<CefBrowser>                 browser,
-    bool                                  next)
-{
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+    Message tMsg = {TMSG_SET_OPENED_ADDRESS};
+    tMsg.strParam = url.ToString().c_str();
+    SendMessage(tMsg, false);
+  }
 }
 
-bool CWebBrowserClient::OnSetFocus(
-    CefRefPtr<CefBrowser>                 browser,
-    FocusSource                           source)
+void CWebBrowserClient::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title)
 {
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-  return false;
+  if (m_currentTitle != title.ToString().c_str())
+  {
+    m_currentTitle = title.ToString().c_str();
+
+    Message tMsg = {TMSG_SET_OPENED_TITLE};
+    tMsg.strParam = m_currentTitle.c_str();
+    SendMessage(tMsg, false);
+  }
 }
 
-void CWebBrowserClient::OnGotFocus(
-    CefRefPtr<CefBrowser>                 browser)
+void CWebBrowserClient::OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const std::vector<CefString>& icon_urls)
 {
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "From currently opened web site given icon urls (first one used)");
+  unsigned int listSize = icon_urls.size();
+  for (unsigned int i = 0; i < listSize; ++i)
+    LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - Icon %i - %s", i+1, icon_urls[i].ToString().c_str());
+
+  Message tMsg = {TMSG_SET_ICON_URL};
+  if (listSize > 0)
+    m_currentIcon = icon_urls[0].ToString();
+  else
+    m_currentIcon = "";
+
+  tMsg.strParam = m_currentIcon;
+  SendMessage(tMsg, false);
 }
-//}
 
-/*!
- * @brief CefLifeSpanHandler methods
- */
-//{
-bool CWebBrowserClient::OnBeforePopup(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefFrame>                   frame,
-    const CefString&                      target_url,
-    const CefString&                      target_frame_name,
-    CefRequestHandler::WindowOpenDisposition target_disposition,
-    bool                                  user_gesture,
-    const CefPopupFeatures&               popupFeatures,
-    CefWindowInfo&                        windowInfo,
-    CefRefPtr<CefClient>&                 client,
-    CefBrowserSettings&                   settings,
-    bool*                                 no_javascript_access)
+void CWebBrowserClient::OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bool fullscreen)
 {
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - %s", __FUNCTION__, std::string(target_url).c_str());
+  if (m_isFullScreen != fullscreen)
+  {
+    m_isFullScreen = fullscreen;
 
-  OpenWebsite(std::string(target_url), false, false);
-  return true; /* Cancel popups in off-screen rendering mode */
+    Message tMsg = {TMSG_FULLSCREEN_MODE_CHANGE};
+    tMsg.param1 = fullscreen ? 1 : 0;
+    SendMessage(tMsg, false);
+  }
+}
+
+bool CWebBrowserClient::OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text)
+{
+  if (m_currentTooltip != text.ToString().c_str())
+  {
+    m_currentTooltip = text.ToString().c_str();
+
+    Message tMsg = {TMSG_SET_TOOLTIP};
+    tMsg.strParam = m_currentTooltip.c_str();
+    SendMessage(tMsg, false);
+  }
+
+  return true;
+}
+
+void CWebBrowserClient::OnStatusMessage(CefRefPtr<CefBrowser> browser, const CefString& value)
+{
+  if (m_currentStatusMsg != value.ToString().c_str())
+  {
+    m_currentStatusMsg = value.ToString().c_str();
+
+    Message tMsg = {TMSG_SET_STATUS_MESSAGE};
+    tMsg.strParam = m_currentStatusMsg.c_str();
+    SendMessage(tMsg, false);
+  }
+}
+
+bool CWebBrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString& message, const CefString& source, int line)
+{
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Message: %s - Source: %s - Line: %i", __FUNCTION__,
+                       message.ToString().c_str(), source.ToString().c_str(), line);
+  return true;
+}
+//@}
+
+/// CefLifeSpanHandler methods
+//@{
+bool CWebBrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
+                                      CefRefPtr<CefFrame> frame,
+                                      const CefString& target_url,
+                                      const CefString& target_frame_name,
+                                      CefRequestHandler::WindowOpenDisposition target_disposition,
+                                      bool user_gesture,
+                                      const CefPopupFeatures& popupFeatures,
+                                      CefWindowInfo& windowInfo,
+                                      CefRefPtr<CefClient>& client,
+                                      CefBrowserSettings& settings,
+                                      bool* no_javascript_access)
+{
+// #ifdef DEBUG_LOGS
+  LOG_MESSAGE(ADDON_LOG_DEBUG, "--------------------------------------->%s - %s", __FUNCTION__, std::string(target_url).c_str());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - target_url '%s'", std::string(target_url).c_str());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - target_frame_name '%s'", std::string(target_frame_name).c_str());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - user_gesture '%i'", user_gesture);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - no_javascript_access '%i'", *no_javascript_access);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - windowInfo.x '%i'", windowInfo.x);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - windowInfo.y '%i'", windowInfo.y);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - windowInfo.height '%i'", windowInfo.height);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - windowInfo.width '%i'", windowInfo.width);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - windowInfo.windowless_rendering_enabled '%i'", windowInfo.windowless_rendering_enabled);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.dialog '%i'", popupFeatures.dialog);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.fullscreen '%i'", popupFeatures.fullscreen);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.height '%i'", popupFeatures.height);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.width '%i'", popupFeatures.width);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.heightSet '%i'", popupFeatures.heightSet);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.widthSet '%i'", popupFeatures.widthSet);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.locationBarVisible '%i'", popupFeatures.locationBarVisible);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.menuBarVisible '%i'", popupFeatures.menuBarVisible);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.resizable '%i'", popupFeatures.resizable);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.scrollbarsVisible '%i'", popupFeatures.scrollbarsVisible);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.statusBarVisible '%i'", popupFeatures.statusBarVisible);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.toolBarVisible '%i'", popupFeatures.toolBarVisible);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - target_disposition '%i'", target_disposition);
+// #endif
+
+  if (target_disposition == WOD_UNKNOWN)
+  {
+    kodi::Log(ADDON_LOG_ERROR, "Browser popup requested with unknown target disposition");
+    return false;
+  }
+
+  windowInfo.windowless_rendering_enabled = true;
+
+  if (kodi::GetSettingBoolean("main.allow_open_to_tabs") && target_disposition != WOD_CURRENT_TAB)
+    RequestOpenSiteInNewTab(target_url); /* Request to do on kodi itself */
+  else
+    OpenWebsite(std::string(target_url), false, false);
+  return false; /* Cancel popups in off-screen rendering mode */
 }
 
 void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
 
-  if (!m_Browser.get())
-  {
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "---------------------------------------------------------%s", __FUNCTION__);
-    m_Browser   = browser;
-    m_BrowserId = browser->GetIdentifier();
+  m_browserCount++;
 
-//     Message tMsg = {TMSG_SET_CONTROL_READY};
-//     tMsg.param1 = true;
-//     SendMessage(tMsg, false);
+  if (m_messageRouter == nullptr)
+  {
+    // Create the browser-side router for query handling.
+    CefMessageRouterConfig config;
+    m_messageRouter = CefMessageRouterBrowserSide::Create(config);
+
+    // Register handlers with the router.
+    CreateMessageHandlers(m_messageHandlers);
+    for (const auto& entry : m_messageHandlers)
+      m_messageRouter->AddHandler(entry, false);
+  }
+
+  CLockObject lock(m_Mutex);
+  if (!m_browser.get())
+  {
+    m_browser = browser;
+    m_browserId = browser->GetIdentifier();
+
+    /* Inform Kodi the control is ready */
     SetControlReady(true);
   }
-  else if(browser->IsPopup())
-    m_popupBrowsers.push_back(browser); /* Add to the list of popup browsers */
 
-  m_iBrowserCount++;
+  if (kodi::GetSettingBoolean("system.mouse_cursor_change_disabled"))
+    browser->GetHost()->SetMouseCursorChangeDisabled(true);
 }
-
-// bool CWebBrowserClient::RunModal(CefRefPtr<CefBrowser> browser)
-// {
-//     LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-//   return false;
-// }
 
 bool CWebBrowserClient::DoClose(CefRefPtr<CefBrowser> browser)
 {
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
-
-  /*
-   * Closing the main window requires special handling. See the DoClose()
-   * documentation in the CEF header for a detailed destription of this process
-   */
-
-  if (m_BrowserId == browser->GetIdentifier())
-  {
-    //FIXME: browser->GetHost(); /* Notify the browser that the parent window is about to close. */
-    m_isClosing = true; /* Set a flag to indicate that the window close should be allowed */
-  }
-
   return false; /* Allow the close. For windowed browsers this will result in the OS close event being sent */
 }
 
 void CWebBrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-
   CEF_REQUIRE_UI_THREAD();
 
   m_messageRouter->OnBeforeClose(browser);
-
-  if (m_BrowserId == browser->GetIdentifier())
+  if (--m_browserCount == 0)
   {
-    m_Browser = nullptr;/* Free the browser pointer so that the browser can be destroyed */
-
-    Message tMsg = {TMSG_BROWSER_CLOSE};
-    tMsg.lpVoid = browser;
-    SendMessage(tMsg, true);
-  }
-  else if (browser->IsPopup())
-  {
-    // Remove from the browser popup list.
-    for (browserList::iterator it = m_popupBrowsers.begin(); it != m_popupBrowsers.end(); ++it)
-    {
-      if((*it)->IsSame(browser))
-      {
-        m_popupBrowsers.erase(it);
-        break;
-      }
-    }
+    for (const auto& entry : m_messageHandlers)
+      m_messageRouter->RemoveHandler(entry);
+    m_messageHandlers.clear();
+    m_messageRouter = nullptr;
   }
 }
-//}
+//@}
 
-/*!
- * @brief CefRequestHandler methods
- */
-//{
-bool CWebBrowserClient::OnBeforeBrowse(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefFrame>                   frame,
-    CefRefPtr<CefRequest>                 request,
-    bool                                  is_redirect)
+/// CefRequestHandler methods
+//@{
+bool CWebBrowserClient::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool is_redirect)
 {
-  std::string strURL = request->GetURL();
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - %s", __FUNCTION__, strURL.c_str());
-
-  // We only care about these on the main frame
-  if (!frame.get() || !frame->IsMain())
-    return false;
+  CEF_REQUIRE_UI_THREAD();
 
   m_messageRouter->OnBeforeBrowse(browser, frame);
   return false;
 }
 
-bool CWebBrowserClient::OnOpenURLFromTab(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefFrame>                   frame,
-    const CefString&                      target_url,
-    CefRequestHandler::WindowOpenDisposition target_disposition,
-    bool                                  user_gesture)
+bool CWebBrowserClient::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url,
+                                         CefRequestHandler::WindowOpenDisposition target_disposition, bool user_gesture)
 {
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
   return false;
 }
 
-CefRequestHandler::ReturnValue CWebBrowserClient::OnBeforeResourceLoad(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefFrame>                   frame,
-    CefRefPtr<CefRequest>                 request,
-    CefRefPtr<CefRequestCallback>         callback)
+CefRequestHandler::ReturnValue CWebBrowserClient::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                                                       CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
 {
   CEF_REQUIRE_IO_THREAD();
+
+#if DEBUG_LOGS
+  LOG_MESSAGE(ADDON_LOG_DEBUG, "OnBeforeResourceLoad:");
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - url = '%s'", request->GetURL().ToString().c_str());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - method = '%s'", request->GetMethod().ToString().c_str());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - flags = %i", request->GetFlags());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - resourceType = %i", static_cast<int>(request->GetResourceType()));
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - transitionType = %i", static_cast<int>(request->GetTransitionType()));
+#endif
 
   return m_resourceManager->OnBeforeResourceLoad(browser, frame, request, callback);
 }
 
-CefRefPtr<CefResourceHandler> CWebBrowserClient::GetResourceHandler(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefFrame>                   frame,
-    CefRefPtr<CefRequest>                 request)
+CefRefPtr<CefResourceHandler> CWebBrowserClient::GetResourceHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                                                    CefRefPtr<CefRequest> request)
 {
   CEF_REQUIRE_IO_THREAD();
 
   return m_resourceManager->GetResourceHandler(browser, frame, request);
 }
 
-void CWebBrowserClient::OnResourceRedirect(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefFrame>                   frame,
-    CefRefPtr<CefRequest>                 request,
-    CefRefPtr<CefResponse>                response,
-    CefString&                            new_url)
+void CWebBrowserClient::OnResourceRedirect(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                           CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response, CefString& new_url)
 {
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+#if DEBUG_LOGS
+  LOG_MESSAGE(ADDON_LOG_DEBUG, "OnResourceRedirect:");
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - status = %i", response->GetStatus());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - statusText = '%s'", response->GetStatusText().ToString().c_str());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - contentType = '%s'", response->GetMimeType().ToString().c_str());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - url = '%s'", request->GetURL().ToString().c_str());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - id = %lu", request->GetIdentifier());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - new_url = '%s'", new_url.ToString().c_str());
+#endif
 }
 
-bool CWebBrowserClient::OnResourceResponse(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefFrame>                   frame,
-    CefRefPtr<CefRequest>                 request,
-    CefRefPtr<CefResponse>                response)
+bool CWebBrowserClient::OnResourceResponse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                           CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response)
 {
-//     LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+#if DEBUG_LOGS
+  LOG_MESSAGE(ADDON_LOG_DEBUG, "onResourceReceived:");
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - status = %i", response->GetStatus());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - statusText = '%s'", response->GetStatusText().ToString().c_str());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - contentType = '%s'", response->GetMimeType().ToString().c_str());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - url = '%s'", request->GetURL().ToString().c_str());
+  LOG_MESSAGE(ADDON_LOG_DEBUG, " - id = %lu", request->GetIdentifier());
+#endif
   return false;
 }
 
-bool CWebBrowserClient::GetAuthCredentials(
-    CefRefPtr<CefBrowser>                 browser,
-    CefRefPtr<CefFrame>                   frame,
-    bool                                  isProxy,
-    const CefString&                      host,
-    int                                   port,
-    const CefString&                      realm,
-    const CefString&                      scheme,
-    CefRefPtr<CefAuthCallback>            callback)
+bool CWebBrowserClient::GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, bool isProxy, const CefString& host,
+                                           int port, const CefString& realm, const CefString& scheme, CefRefPtr<CefAuthCallback> callback)
 {
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+  ///TODO Useful and secure?
   return false;
 }
 
-bool CWebBrowserClient::OnQuotaRequest(
-    CefRefPtr<CefBrowser>                 browser,
-    const CefString&                      origin_url,
-    int64                                 new_size,
-    CefRefPtr<CefRequestCallback>         callback)
+bool CWebBrowserClient::OnQuotaRequest(CefRefPtr<CefBrowser> browser, const CefString& origin_url, int64 new_size, CefRefPtr<CefRequestCallback> callback)
 {
   CEF_REQUIRE_IO_THREAD();
 
   static const int64 max_size = 1024 * 1024 * 20;  // 20mb.
+  if (new_size > max_size)
+    kodi::Log(ADDON_LOG_DEBUG, "JavaScript on '%s' requests a specific storage quota with size %li MBytes who becomes not granded",
+                                origin_url.ToString().c_str(), new_size/1024/1024);
 
   // Grant the quota request if the size is reasonable.
   callback->Continue(new_size <= max_size);
   return true;
 }
 
-void CWebBrowserClient::OnProtocolExecution(
-    CefRefPtr<CefBrowser>                 browser,
-    const CefString&                      url,
-    bool&                                 allow_os_execution)
+void CWebBrowserClient::OnProtocolExecution(CefRefPtr<CefBrowser> browser, const CefString& url, bool& allow_os_execution)
 {
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-
   CEF_REQUIRE_UI_THREAD();
 
   std::string urlStr = url;
@@ -1205,28 +1076,46 @@ void CWebBrowserClient::OnProtocolExecution(
     allow_os_execution = true;
 }
 
-bool CWebBrowserClient::OnCertificateError(
-    CefRefPtr<CefBrowser>                 browser,
-    ErrorCode                             cert_error,
-    const CefString&                      request_url,
-    CefRefPtr<CefSSLInfo>                 ssl_info,
-    CefRefPtr<CefRequestCallback>         callback)
+bool CWebBrowserClient::OnCertificateError(CefRefPtr<CefBrowser> browser, ErrorCode cert_error,
+                                           const CefString& request_url, CefRefPtr<CefSSLInfo> ssl_info,
+                                           CefRefPtr<CefRequestCallback> callback)
 {
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-  return false;
+  CEF_REQUIRE_UI_THREAD();
+
+  CefRefPtr<CefX509Certificate> cert = ssl_info->GetX509Certificate();
+  if (cert.get())
+  {
+    bool canceled = false;
+    std::string subject = cert->GetSubject()->GetDisplayName().ToString();
+    std::string certStatusString = GetCertStatusString(ssl_info->GetCertStatus());
+    std::string text = StringUtils::Format(kodi::GetLocalizedString(31001).c_str(), subject.c_str(), certStatusString.c_str(), subject.c_str());
+    bool ret = kodi::gui::dialogs::YesNo::ShowAndGetInput(kodi::GetLocalizedString(31000), text, canceled,
+                                                          kodi::GetLocalizedString(31003), kodi::GetLocalizedString(31002));
+
+#ifdef SHOW_ERROR_PAGE
+    if (!ret)
+    {
+      //Load the error page.
+      LoadErrorPage(browser->GetMainFrame(), request_url, cert_error, GetCertificateInformation(cert, ssl_info->GetCertStatus()));
+    }
+#endif
+    callback->Continue(ret);
+    return true;
+  }
+
+  return false;  // Cancel the request.
 }
 
-void CWebBrowserClient::OnPluginCrashed(
-    CefRefPtr<CefBrowser>                 browser,
-    const CefString&                      plugin_path)
+void CWebBrowserClient::OnPluginCrashed(CefRefPtr<CefBrowser> browser, const CefString& plugin_path)
 {
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+  kodi::Log(ADDON_LOG_ERROR, "Browser Plugin '%s' crashed (URL: '%s'", plugin_path.ToString().c_str(),
+                                                                       browser->GetFocusedFrame()->GetURL().ToString().c_str());
 }
 
-void CWebBrowserClient::OnRenderViewReady(
-    CefRefPtr<CefBrowser>                 browser)
+void CWebBrowserClient::OnRenderViewReady(CefRefPtr<CefBrowser> browser)
 {
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
+  fprintf(stderr, "void CWebBrowserClient::OnRenderViewReady(CefRefPtr<CefBrowser> browser)\n");
+  m_renderViewReady = true;
 }
 
 void CWebBrowserClient::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status)
@@ -1258,72 +1147,21 @@ void CWebBrowserClient::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 
   frame->LoadURL(m_strStartupURL);
 }
-//}
+//@}
 
-
-/*!
- * @brief CefRequestContextHandler methods
- */
-//{
-CefRefPtr<CefCookieManager> CWebBrowserClient::GetCookieManager()
+/// CefFindHandler methods
+//@{
+void CWebBrowserClient::OnFindResult(CefRefPtr<CefBrowser> browser, int identifier, int count, const CefRect& selectionRect,
+                                     int activeMatchOrdinal, bool finalUpdate)
 {
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-  return NULL;
-}
-
-bool CWebBrowserClient::OnBeforePluginLoad(
-    const CefString&                      mime_type,
-    const CefString&                      plugin_url,
-    bool                                  is_main_frame,
-    const CefString&                      top_origin_url,
-    CefRefPtr<CefWebPluginInfo>           plugin_info,
-    PluginPolicy*                         plugin_policy)
-{
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
-  // Always allow the PDF plugin to load.
-  if (*plugin_policy != PLUGIN_POLICY_ALLOW && mime_type == "application/pdf")
+  if (finalUpdate && activeMatchOrdinal <= 1)
   {
-    *plugin_policy = PLUGIN_POLICY_ALLOW;
-    return true;
+    std::string text = StringUtils::Format(kodi::GetLocalizedString(30038).c_str(), count, m_currentSearchText.c_str());
+    kodi::QueueNotification(QUEUE_INFO, kodi::GetLocalizedString(30037), text);
   }
-
-  return false;
+  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s -identifier %i, count %i finalUpdate %i activeMatchOrdinal %i", __FUNCTION__, identifier, count, finalUpdate, activeMatchOrdinal);
 }
-//}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//@}
 
 /// CefContextMenuHandler methods
 //@{
@@ -1332,7 +1170,11 @@ void CWebBrowserClient::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRe
 {
   std::string url = params->GetLinkUrl().ToString();
   if (!url.empty())
+  {
     model->InsertItemAt(0, CLIENT_ID_OPEN_SELECTED_SIDE, kodi::GetLocalizedString(30000 + CLIENT_ID_OPEN_SELECTED_SIDE));
+    model->InsertItemAt(0, CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB, kodi::GetLocalizedString(30000 + CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB));
+
+  }
 
   int flags = params->GetTypeFlags();
   if (flags & CM_TYPEFLAG_EDITABLE)
@@ -1422,6 +1264,11 @@ bool CWebBrowserClient::OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefR
     std::string url = params->GetLinkUrl().ToString();
     OpenWebsite(url, false, false);
   }
+  if (command_id == CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB)
+  {
+    std::string url = params->GetLinkUrl().ToString();
+    RequestOpenSiteInNewTab(url);
+  }
   else if (command_id == CLIENT_ID_OPEN_KEYBOARD)
   {
     if (m_focusedField.focusOnEditableField)
@@ -1471,6 +1318,7 @@ void CWebBrowserClient::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool
   SetLoadingState(isLoading, canGoBack, canGoForward);
 }
 
+
 void CWebBrowserClient::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type)
 {
   LOG_MESSAGE(ADDON_LOG_DEBUG, "Load started (id='%d', URL='%s'", browser->GetIdentifier(), frame->GetURL().ToString().c_str());
@@ -1485,6 +1333,25 @@ void CWebBrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFr
   LOG_MESSAGE(ADDON_LOG_DEBUG, "Load done with status code '%i'", httpStatusCode);
   CEF_REQUIRE_UI_THREAD();
   m_isLoading = false;
+
+  class CHistoryReporter : public CefNavigationEntryVisitor
+  {
+  public:
+    CHistoryReporter(std::vector<std::pair<std::string, bool>>& historyWebsiteNames) : m_historyWebsiteNames(historyWebsiteNames)
+    {
+      m_historyWebsiteNames.clear();
+    }
+    virtual bool Visit(CefRefPtr<CefNavigationEntry> entry, bool current, int index, int total) override
+    {
+      m_historyWebsiteNames.push_back(std::pair<std::string, bool>(entry->GetTitle(), current));
+      return true;
+    }
+
+  private:
+    std::vector<std::pair<std::string, bool>>& m_historyWebsiteNames;
+    IMPLEMENT_REFCOUNTING(CHistoryReporter);
+  };
+  browser->GetHost()->GetNavigationEntries(new CHistoryReporter(m_historyWebsiteNames), false);
 }
 
 void CWebBrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode errorCode,
@@ -1511,6 +1378,8 @@ void CWebBrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
   LoadErrorPage(frame, failedUrl, errorCode, errorText);
 }
 //@}
+
+// -----------------------------------------------------------------------------
 
 int CWebBrowserClient::ZoomLevelToPercentage(double zoomlevel)
 {
@@ -1541,6 +1410,55 @@ void CWebBrowserClient::LoadErrorPage(CefRefPtr<CefFrame> frame,
 
   ss << "</body></html>";
   frame->LoadURL(GetDataURI(ss.str(), "text/html"));
+}
+
+std::string CWebBrowserClient::GetCertStatusString(cef_cert_status_t status)
+{
+#define FLAG(flag)                          \
+  if (status & flag) {                      \
+    result += std::string(#flag); \
+  }
+
+  std::string result;
+
+  FLAG(CERT_STATUS_COMMON_NAME_INVALID);
+  FLAG(CERT_STATUS_DATE_INVALID);
+  FLAG(CERT_STATUS_AUTHORITY_INVALID);
+  FLAG(CERT_STATUS_NO_REVOCATION_MECHANISM);
+  FLAG(CERT_STATUS_UNABLE_TO_CHECK_REVOCATION);
+  FLAG(CERT_STATUS_REVOKED);
+  FLAG(CERT_STATUS_INVALID);
+  FLAG(CERT_STATUS_WEAK_SIGNATURE_ALGORITHM);
+  FLAG(CERT_STATUS_NON_UNIQUE_NAME);
+  FLAG(CERT_STATUS_WEAK_KEY);
+  FLAG(CERT_STATUS_PINNED_KEY_MISSING);
+  FLAG(CERT_STATUS_NAME_CONSTRAINT_VIOLATION);
+  FLAG(CERT_STATUS_VALIDITY_TOO_LONG);
+  FLAG(CERT_STATUS_IS_EV);
+  FLAG(CERT_STATUS_REV_CHECKING_ENABLED);
+  FLAG(CERT_STATUS_SHA1_SIGNATURE_PRESENT);
+  FLAG(CERT_STATUS_CT_COMPLIANCE_FAILED);
+
+  if (result.empty())
+    return "&nbsp;";
+  return result;
+}
+
+std::string CWebBrowserClient::GetSSLVersionString(cef_ssl_version_t version)
+{
+#define VALUE(val, def)       \
+  if (val == def) {           \
+    return std::string(#def); \
+  }
+
+  VALUE(version, SSL_CONNECTION_VERSION_UNKNOWN);
+  VALUE(version, SSL_CONNECTION_VERSION_SSL2);
+  VALUE(version, SSL_CONNECTION_VERSION_SSL3);
+  VALUE(version, SSL_CONNECTION_VERSION_TLS1);
+  VALUE(version, SSL_CONNECTION_VERSION_TLS1_1);
+  VALUE(version, SSL_CONNECTION_VERSION_TLS1_2);
+  VALUE(version, SSL_CONNECTION_VERSION_QUIC);
+  return std::string();
 }
 
 std::string CWebBrowserClient::GetErrorString(cef_errorcode_t code)
@@ -1610,4 +1528,203 @@ std::string CWebBrowserClient::GetDataURI(const std::string& data, const std::st
   return "data:" + mime_type + ";base64," +
          CefURIEncode(CefBase64Encode(data.data(), data.size()), false)
              .ToString();
+}
+
+std::string GetTimeString(const CefTime& value)
+{
+  if (value.GetTimeT() == 0)
+    return "Unspecified";
+
+  static const char* kMonths[] = {
+      "January", "February", "March",     "April",   "May",      "June",
+      "July",    "August",   "September", "October", "November", "December"};
+  std::string month;
+  if (value.month >= 1 && value.month <= 12)
+    month = kMonths[value.month - 1];
+  else
+    month = "Invalid";
+
+  std::stringstream ss;
+  ss << month << " " << value.day_of_month << ", " << value.year << " "
+     << std::setfill('0') << std::setw(2) << value.hour << ":"
+     << std::setfill('0') << std::setw(2) << value.minute << ":"
+     << std::setfill('0') << std::setw(2) << value.second;
+  return ss.str();
+}
+
+std::string GetBinaryString(CefRefPtr<CefBinaryValue> value)
+{
+  if (!value.get())
+    return "&nbsp;";
+
+  // Retrieve the value.
+  const size_t size = value->GetSize();
+  std::string src;
+  src.resize(size);
+  value->GetData(const_cast<char*>(src.data()), size, 0);
+
+  // Encode the value.
+  return CefBase64Encode(src.data(), src.size());
+}
+
+// Return HTML string with information about a certificate.
+std::string CWebBrowserClient::GetCertificateInformation(CefRefPtr<CefX509Certificate> cert, cef_cert_status_t certstatus)
+{
+  CefRefPtr<CefX509CertPrincipal> subject = cert->GetSubject();
+  CefRefPtr<CefX509CertPrincipal> issuer = cert->GetIssuer();
+
+  // Build a table showing certificate information. Various types of invalid
+  // certificates can be tested using https://badssl.com/.
+  std::stringstream ss;
+  ss << "<h3>X.509 Certificate Information:</h3>"
+        "<table border=1><tr><th>Field</th><th>Value</th></tr>";
+
+  if (certstatus != CERT_STATUS_NONE)
+  {
+    ss << "<tr><td>Status</td><td>" << GetCertStatusString(certstatus) + "<br/>"
+       << "</td></tr>";
+  }
+
+  ss << "<tr><td>Subject</td><td>"
+     << (subject.get() ? subject->GetDisplayName().ToString() : "&nbsp;")
+     << "</td></tr>"
+        "<tr><td>Issuer</td><td>"
+     << (issuer.get() ? issuer->GetDisplayName().ToString() : "&nbsp;")
+     << "</td></tr>"
+        "<tr><td>Serial #*</td><td>"
+     << GetBinaryString(cert->GetSerialNumber()) << "</td></tr>"
+     << "<tr><td>Valid Start</td><td>" << GetTimeString(cert->GetValidStart())
+     << "</td></tr>"
+        "<tr><td>Valid Expiry</td><td>"
+     << GetTimeString(cert->GetValidExpiry()) << "</td></tr>";
+
+  CefX509Certificate::IssuerChainBinaryList der_chain_list;
+  CefX509Certificate::IssuerChainBinaryList pem_chain_list;
+  cert->GetDEREncodedIssuerChain(der_chain_list);
+  cert->GetPEMEncodedIssuerChain(pem_chain_list);
+  DCHECK_EQ(der_chain_list.size(), pem_chain_list.size());
+
+  der_chain_list.insert(der_chain_list.begin(), cert->GetDEREncoded());
+  pem_chain_list.insert(pem_chain_list.begin(), cert->GetPEMEncoded());
+
+  for (size_t i = 0U; i < der_chain_list.size(); ++i)
+  {
+    ss << "<tr><td>DER Encoded*</td>"
+          "<td style=\"max-width:800px;overflow:scroll;\">"
+       << GetBinaryString(der_chain_list[i])
+       << "</td></tr>"
+          "<tr><td>PEM Encoded*</td>"
+          "<td style=\"max-width:800px;overflow:scroll;\">"
+       << GetBinaryString(pem_chain_list[i]) << "</td></tr>";
+  }
+
+  ss << "</table> * Displayed value is base64 encoded.";
+  return ss.str();
+}
+
+void CWebBrowserClient::CreateMessageHandlers(MessageHandlerSet& handlers)
+{
+  handlers.insert(new CJSHandler(this));
+}
+
+void CWebBrowserClient::SendMessage(Message& message, bool wait)
+{
+  if (!m_renderViewReady)
+    return;
+
+  std::shared_ptr<CEvent> waitEvent;
+  if (wait)
+  {
+    message.waitEvent.reset(new CEvent(true));
+    waitEvent = message.waitEvent;
+  }
+
+  CLockObject lock(m_Mutex);
+
+  Message* msg    = new Message();
+  msg->dwMessage  = message.dwMessage;
+  msg->param1     = message.param1;
+  msg->param2     = message.param2;
+  msg->param3     = message.param3;
+  msg->lpVoid     = message.lpVoid;
+  msg->strParam   = message.strParam;
+  msg->params     = message.params;
+  msg->waitEvent  = message.waitEvent;
+
+  m_processQueue.push(msg);
+  lock.Unlock();
+
+  if (waitEvent)
+    waitEvent->Wait(1000);
+}
+
+void CWebBrowserClient::HandleMessages()
+{
+  // process threadmessages
+  CLockObject lock(m_Mutex);
+  while (!m_processQueue.empty())
+  {
+    Message* pMsg = m_processQueue.front();
+    m_processQueue.pop();
+
+    std::shared_ptr<CEvent> waitEvent = pMsg->waitEvent;
+    lock.Unlock(); // <- see the large comment in SendMessage ^
+    switch (pMsg->dwMessage)
+    {
+      case TMSG_SET_CONTROL_READY:
+      {
+        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Web control %s", pMsg->param1 ? "ready" : "failed");
+        SetControlReady(pMsg->param1);
+        break;
+      }
+      case TMSG_SET_OPENED_ADDRESS:
+      {
+        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site url '%s'", pMsg->strParam.c_str());
+        SetOpenedAddress(pMsg->strParam);
+        break;
+      }
+      case TMSG_SET_OPENED_TITLE:
+      {
+        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site title '%s'", pMsg->strParam.c_str());
+        SetOpenedTitle(pMsg->strParam);
+        break;
+      }
+      case TMSG_SET_ICON_URL:
+      {
+        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Opened web site set icon url '%s'", pMsg->strParam.c_str());
+        SetIconURL(pMsg->strParam);
+        break;
+      }
+      case TMSG_FULLSCREEN_MODE_CHANGE:
+      {
+        bool fullscreen = pMsg->param1 != 0;
+        LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "From currently opened web site becomes fullsreen requested as '%s'", fullscreen ? "yes" : "no");
+        SetFullscreen(fullscreen);
+        break;
+      }
+      case TMSG_SET_LOADING_STATE:
+      {
+        SetLoadingState(pMsg->param1, pMsg->param2, pMsg->param3);
+        break;
+      }
+      case TMSG_SET_TOOLTIP:
+      {
+        SetTooltip(pMsg->strParam);
+        break;
+      }
+      case TMSG_SET_STATUS_MESSAGE:
+      {
+        SetStatusMessage(pMsg->strParam);
+        break;
+      }
+      default:
+        break;
+    };
+
+    if (waitEvent)
+      waitEvent->Signal();
+    delete pMsg;
+
+    lock.Lock();
+  }
 }

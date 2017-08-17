@@ -31,42 +31,57 @@
 #include <kodi/addon-instance/Web.h>
 #include <p8-platform/threads/threads.h>
 #include <queue>
+#include <unordered_map>
 
 class CWebBrowserClient;
+class CRenderProcess;
 
 class CWebBrowser
   : public kodi::addon::CInstanceWeb,
     public P8PLATFORM::CThread,
     public CefApp,
     public CefResourceBundleHandler,
-    public CefBrowserProcessHandler,
-    public CefRenderProcessHandler
+    public CefBrowserProcessHandler
 {
 public:
   CWebBrowser(KODI_HANDLE instance);
   virtual ~CWebBrowser();
 
+  // ---------------------------------------------------------------------------
+  // Internal interface parts
+
   bool IsActive() const { return m_isActive; }
+  void OpenDownloadDialog();
+  void OpenCookieHandler();
+
+  // ---------------------------------------------------------------------------
+  // Kodi interface parts
 
   virtual WEB_ADDON_ERROR GetCapabilities(WEB_ADDON_CAPABILITIES& capabilities) override;
   virtual WEB_ADDON_ERROR StartInstance() override;
   virtual void StopInstance() override;
-
   virtual bool SetLanguage(const char *language) override;
+  virtual kodi::addon::CWebControl* CreateControl(const std::string& sourceName, KODI_HANDLE handle) override;
+  virtual bool DestroyControl(kodi::addon::CWebControl* control, bool complete) override;
 
-  virtual kodi::addon::CWebControl* CreateControl(const std::string& sourceName, const std::string& webType, KODI_HANDLE handle) override;
-  virtual bool DestroyControl(kodi::addon::CWebControl* control) override;
+  // ---------------------------------------------------------------------------
+  // CEF interface parts
 
   virtual CefRefPtr<CefResourceBundleHandler> GetResourceBundleHandler() override { return this; }
   virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override { return this; }
-  virtual CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override { return this; }
-  virtual CefRefPtr<CWebBrowserDownloadHandler> GetDownloadHandler() { return m_downloadHandler; }
+  virtual CefRefPtr<CWebBrowserDownloadHandler> GetDownloadHandler() { return &m_downloadHandler; }
   virtual CefRefPtr<CWebBrowserUploadHandler> GetUploadHandler() { return m_uploadHandler; }
   virtual CefRefPtr<CWebBrowserGeolocationPermission> GetGeolocationPermission() { return m_geolocationPermission; }
 
   const std::string& GetHTMLCachePath() { return m_strHTMLCachePath; }
   const std::string& GetCookiePath() { return m_strCookiePath; }
   const std::string& GetResourcePath() { return m_strResourcesPath; }
+
+  void AddRef() const override { }
+  bool Release() const override { return false; }
+  bool HasOneRef() const override { return false; }
+
+  virtual void OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line) override;
 
   /// CefResourceBundleHandler
   //@{
@@ -84,36 +99,17 @@ public:
   virtual void OnScheduleMessagePumpWork(int64 delay_ms) override;
   //@}
 
-  /// CefRenderProcessHandler
-  //@{
-  virtual void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info) override;
-  virtual void OnWebKitInitialized() override;
-  virtual void OnBrowserCreated(CefRefPtr<CefBrowser> browser) override;
-  virtual void OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) override;
-  virtual bool OnBeforeNavigation(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request,
-                                  NavigationType navigation_type, bool is_redirect) override;
-  virtual void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) override;
-  virtual void OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) override;
-  virtual void OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context,
-                                   CefRefPtr<CefV8Exception> exception, CefRefPtr<CefV8StackTrace> stackTrace) override;
-  virtual void OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefDOMNode> node) override;
-  virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;
-  //@}
-
-  void OpenDownloadDialog();
-  void OpenCookieHandler();
-
 protected:
   virtual void* Process(void) override;
 
 private:
-  IMPLEMENT_REFCOUNTING(CWebBrowser);
   DISALLOW_COPY_AND_ASSIGN(CWebBrowser);
 
-  CefRefPtr<CWebBrowserDownloadHandler> m_downloadHandler;
+  static int m_iUniqueClientId;
+
+  CWebBrowserDownloadHandler m_downloadHandler;
   CefRefPtr<CWebBrowserUploadHandler> m_uploadHandler;
   CefRefPtr<CWebBrowserGeolocationPermission> m_geolocationPermission;
-  CefRefPtr<CefMessageRouterRendererSide> m_messageRouter;
 
   bool SetSandbox();
 
@@ -125,24 +121,14 @@ private:
   std::string m_strLocalesPath;
   std::string m_strLibPath;
   std::string m_strSandboxBinary;
+
   base::ThreadChecker m_threadChecker;   // Used to verify that methods are called on the correct thread.
+  P8PLATFORM::CMutex m_mutex;
 
-
-
-
-
-
-
-
-  static int m_iUniqueClientId;
-
-  CefRefPtr<CefApp> m_CefApp;
-
-  P8PLATFORM::CMutex  m_Mutex;
-  std::map<int, CWebBrowserClient*> m_BrowserClients;
-  std::map<std::string, CWebBrowserClient*> m_BrowserClientsInactive;
-
-  // Schemes that will be registered with the global cookie manager.
-  std::vector<CefString> m_cookieable_schemes;
+  std::unordered_map<int, CWebBrowserClient*> m_browserClients;
+  std::unordered_map<std::string, CWebBrowserClient*> m_browserClientsInactive;
+  std::vector<CWebBrowserClient*> m_browserClientsToDelete;
   CCookieHandler m_cookieHandler;
+  CefRefPtr<CRenderProcess> m_renderProcess;
+  CefRefPtr<CefMessageRouterRendererSide> m_messageRouter;
 };

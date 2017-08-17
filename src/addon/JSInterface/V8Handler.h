@@ -25,7 +25,7 @@ class CWebBrowser;
 class CV8Handler : public CefV8Handler
 {
 public:
-  CV8Handler(CWebBrowser* browser) : m_browser(browser) { }
+  CV8Handler() = default;
 
   virtual bool Execute(const CefString& name,
                        CefRefPtr<CefV8Value> object,
@@ -33,10 +33,8 @@ public:
                        CefRefPtr<CefV8Value>& retval,
                        CefString& exception) override;
 
-  static void OnWebKitInitialized(CWebBrowser* browser);
+  static void OnWebKitInitialized();
 
 private:
   IMPLEMENT_REFCOUNTING(CV8Handler);
-
-  CWebBrowser* m_browser;
 };
