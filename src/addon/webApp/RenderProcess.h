@@ -39,7 +39,7 @@ protected:
 
 private:
   // CefApp methods.
-  CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override { return this; }
+  CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override { fprintf(stderr, "--1-----------------------<> %s\n", __PRETTY_FUNCTION__); return this; }
 
   // CefRenderProcessHandler
   //@{

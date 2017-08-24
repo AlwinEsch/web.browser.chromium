@@ -93,7 +93,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
 
   std::string language = kodi::GetLanguage(LANG_FMT_ISO_639_1, true);
 
-  m_cefSettings.single_process                      = 0; /// TODO remove this singe process usage! Need then a new addon system interface!
+  m_cefSettings.single_process                      = 1; /// TODO remove this singe process usage! Need then a new addon system interface!
   m_cefSettings.no_sandbox                          = 0;
   CefString(&m_cefSettings.browser_subprocess_path) = m_strLibPath;
   CefString(&m_cefSettings.framework_dir_path)      = "";
@@ -143,7 +143,7 @@ bool CWebBrowser::SetLanguage(const char *language)
   return true;
 }
 
-kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceName, KODI_HANDLE handle)
+kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceName, const std::string& startURL, KODI_HANDLE handle)
 {
   CEF_REQUIRE_UI_THREAD();
 
@@ -163,7 +163,15 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
   }
   else
   {
-    pBrowserClient = new CWebBrowserClient(handle, m_iUniqueClientId++, this);
+    for (const auto& entry : m_browserClients)
+    {
+      if (entry.second->GetName() == sourceName)
+      {
+        return entry.second;
+      }
+    }
+
+    pBrowserClient = new CWebBrowserClient(handle, m_iUniqueClientId++, startURL, this);
 
     CefWindowInfo info;
     info.SetAsWindowless(kNullWindowHandle);
@@ -196,7 +204,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
     settings.local_storage                      = STATE_DEFAULT;
     settings.databases                          = STATE_DEFAULT;
     settings.application_cache                  = STATE_DEFAULT;
-    settings.webgl                              = STATE_ENABLED;//STATE_DISABLED;//STATE_ENABLED
+    settings.webgl                              = STATE_DISABLED;//STATE_DISABLED;//STATE_ENABLED
     settings.background_color                   = 0;
     CefString(&settings.accept_language_list)   = "";
 

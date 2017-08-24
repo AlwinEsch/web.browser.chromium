@@ -77,6 +77,12 @@ CRendererClientOpenGL::~CRendererClientOpenGL()
 {
 }
 
+void CRendererClientOpenGL::ScreenSizeChange(float x, float y, float width, float height)
+{
+//   Cleanup();
+//   Initialize();
+}
+
 bool CRendererClientOpenGL::Initialize()
 {
   if (m_initialized)
@@ -122,6 +128,7 @@ void CRendererClientOpenGL::Cleanup()
     glDeleteTextures(1, &m_textureId);
     m_textureId = 0;
   }
+  m_initialized = false;
 }
 
 void CRendererClientOpenGL::Render()
@@ -377,7 +384,8 @@ bool CRendererClientOpenGL::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& 
 
   // The simulated screen and view rectangle are the same. This is necessary
   // for popup menus to be located and sized inside the view.
-  rect.x = rect.y = 0;
+  rect.x = 0.0f;
+  rect.y = 0.0f;
   rect.width = m_client->GetWidth();
   rect.height = m_client->GetHeight();
   return true;
@@ -387,8 +395,8 @@ bool CRendererClientOpenGL::GetScreenPoint(CefRefPtr<CefBrowser> browser, int vi
 {
   CEF_REQUIRE_UI_THREAD();
 
-  screenX = m_client->GetXPos() + viewX;
-  screenY = m_client->GetYPos() + viewY;
+  screenX = viewX;
+  screenY = viewY;
   return true;
 }
 

@@ -16,26 +16,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <algorithm>
-#include <iomanip>
-#include <sstream>
-#include <string>
-
-#include <X11/Xatom.h>
-#include <X11/Xlib.h>
-#undef Success     // Definition conflicts with cef_message_router.h
-#undef RootWindow  // Definition conflicts with root_window.h
-
-#include <kodi/ActionIDs.h>
-#include <kodi/Filesystem.h>
-#include <kodi/General.h>
-#include <kodi/XBMC_vkeys.h>
-#include <kodi/gui/dialogs/ContextMenu.h>
-#include <kodi/gui/dialogs/FileBrowser.h>
-#include <kodi/gui/dialogs/Keyboard.h>
-#include <kodi/gui/dialogs/Select.h>
-#include <kodi/gui/dialogs/YesNo.h>
+#include "addon.h"
+#include "WebBrowserClient.h"
+#include "URICheckHandler.h"
+#include "Utils.h"
+#include "DOMVisitor.h"
+#include "MessageIds.h"
+#include "SystemTranslator.h"
+#include "JSInterface/Handler.h"
+#include "JSInterface/JSDialogHandler.h"
 
 #include "include/cef_app.h"
 #include "include/cef_browser.h"
@@ -47,31 +36,25 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_stream_resource_handler.h"
 
-#include "p8-platform/util/StringUtils.h"
-
-#include "addon.h"
-#include "WebBrowserClient.h"
-#include "WebBrowserManager.h"
-#include "URICheckHandler.h"
-#include "Utils.h"
-#include "DOMVisitor.h"
-#include "MessageIds.h"
-#include "SystemTranslator.h"
-#include "JSInterface/Handler.h"
-#include "JSInterface/JSDialogHandler.h"
-
+#include <kodi/ActionIDs.h>
+#include <kodi/Filesystem.h>
+#include <kodi/General.h>
+#include <kodi/XBMC_vkeys.h>
+#include <kodi/gui/dialogs/ContextMenu.h>
+#include <kodi/gui/dialogs/FileBrowser.h>
+#include <kodi/gui/dialogs/Keyboard.h>
+#include <kodi/gui/dialogs/YesNo.h>
+#include <p8-platform/util/StringUtils.h>
+#include <stdio.h>
+#include <algorithm>
+#include <iomanip>
+#include <sstream>
+#include <string>
 
 #define ZOOM_MULTIPLY 25.0
 
 using namespace std;
 using namespace P8PLATFORM;
-
-
-enum DOMTestType {
-  DOM_TEST_STRUCTURE,
-  DOM_TEST_MODIFY,
-};
-
 
 // Custom menu command Ids.
 enum client_menu_ids {
@@ -80,158 +63,33 @@ enum client_menu_ids {
   CLIENT_ID_OPEN_KEYBOARD,
 };
 
-
-//#define ACTION_MOUSE_START            100
-//#define ACTION_MOUSE_LEFT_CLICK       100
-//#define ACTION_MOUSE_RIGHT_CLICK      101
-//#define ACTION_MOUSE_MIDDLE_CLICK     102
-//#define ACTION_MOUSE_DOUBLE_CLICK     103
-//#define ACTION_MOUSE_WHEEL_UP         104
-//#define ACTION_MOUSE_WHEEL_DOWN       105
-//#define ACTION_MOUSE_DRAG             106
-//#define ACTION_MOUSE_MOVE             107
-//#define ACTION_MOUSE_LONG_CLICK       108
-//#define ACTION_MOUSE_END              109
-
-int GetCefStateModifiers(int actionId)
-{
-  int modifiers = 0;
-  switch (actionId)
-  {
-    case ACTION_MOUSE_LEFT_CLICK:
-      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-      fprintf(stderr, "ACTION_MOUSE_LEFT_CLICK\n");
-      break;
-    case ACTION_MOUSE_RIGHT_CLICK:
-      modifiers |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
-      fprintf(stderr, "ACTION_MOUSE_RIGHT_CLICK\n");
-      break;
-    case ACTION_MOUSE_MIDDLE_CLICK:
-      modifiers |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
-      fprintf(stderr, "EVENTFLAG_MIDDLE_MOUSE_BUTTON\n");
-      break;
-    case ACTION_MOUSE_DOUBLE_CLICK:
-//      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-fprintf(stderr, "ACTION_MOUSE_DOUBLE_CLICK\n");
-      break;
-    case ACTION_MOUSE_WHEEL_UP:
-//      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-fprintf(stderr, "ACTION_MOUSE_WHEEL_UP\n");
-      break;
-    case ACTION_MOUSE_WHEEL_DOWN:
-//      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-fprintf(stderr, "ACTION_MOUSE_WHEEL_DOWN\n");
-      break;
-    case ACTION_MOUSE_DRAG:
-//      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-fprintf(stderr, "ACTION_MOUSE_DRAG\n");
-      break;
-    case ACTION_MOUSE_MOVE:
-//      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-fprintf(stderr, "ACTION_MOUSE_MOVE\n");
-      break;
-    case ACTION_MOUSE_LONG_CLICK:
-//      modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-fprintf(stderr, "ACTION_MOUSE_LONG_CLICK\n");
-      break;
-    default:
-      break;
-  }
-
-
-
-//  if (state & GDK_SHIFT_MASK)
-////    modifiers |= EVENTFLAG_SHIFT_DOWN;
-////  if (state & GDK_LOCK_MASK)
-////    modifiers |= EVENTFLAG_CAPS_LOCK_ON;
-////  if (state & GDK_CONTROL_MASK)
-////    modifiers |= EVENTFLAG_CONTROL_DOWN;
-////  if (state & GDK_MOD1_MASK)
-////    modifiers |= EVENTFLAG_ALT_DOWN;
-////  if (state & GDK_BUTTON1_MASK)
-////    modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-////  if (state & GDK_BUTTON2_MASK)
-////    modifiers |= EVENTFLAG_MIDDLE_MOUSE_BUTTON;
-////  if (state & GDK_BUTTON3_MASK)
-////    modifiers |= EVENTFLAG_RIGHT_MOUSE_BUTTON;
-  return modifiers;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-class CNavigationEntryVisitor : public CefNavigationEntryVisitor
-{
-public:
-  CNavigationEntryVisitor() { }
-
-  virtual bool Visit(CefRefPtr<CefNavigationEntry> entry, bool current, int index, int total) override;
-
-private:
-  IMPLEMENT_REFCOUNTING(CNavigationEntryVisitor);
-};
-
-bool CNavigationEntryVisitor::Visit(CefRefPtr<CefNavigationEntry> entry, bool current, int index, int total)
-{
-  fprintf(stderr, "-- %s\n", __PRETTY_FUNCTION__);
-  fprintf(stderr, " - current %i\n", current);
-  fprintf(stderr, " - index %i\n", index);
-  fprintf(stderr, " - total %i\n", total);
-  if (entry && index >= 0)
-  {
-  fprintf(stderr, " - entry->GetURL() %s\n", entry->GetURL().ToString().c_str());
-  fprintf(stderr, " - entry->GetDisplayURL() %s\n", entry->GetDisplayURL().ToString().c_str());
-  fprintf(stderr, " - entry->GetTitle() %s\n", entry->GetTitle().ToString().c_str());
-  }
-  return true;
-}
-
-
-
-
-
-
-// class ClientDownloadImageCallback : public CefDownloadImageCallback
-// {
-//  public:
-//   explicit ClientDownloadImageCallback() {}
-//
-//   void OnDownloadImageFinished(const CefString& image_url,
-//                                int http_status_code,
-//                                CefRefPtr<CefImage> image) OVERRIDE
-//   {
-//
-//   }
-//
-//  private:
-//   IMPLEMENT_REFCOUNTING(ClientDownloadImageCallback);
-//   DISALLOW_COPY_AND_ASSIGN(ClientDownloadImageCallback);
-// };
-
-CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int iUniqueClientId, CWebBrowser* instance)
-  : CWebControl(handle, iUniqueClientId),
-    m_mainBrowserHandler(instance),
-    m_renderViewReady(false),
-    m_iUniqueClientId(iUniqueClientId),
-    m_iMousePreviousFlags(0),
-    m_iMousePreviousControl(MBT_LEFT),
-    m_browserId(-1),
-    m_browser(nullptr),
-    m_browserCount(0),
-    m_isFullScreen(false),
+CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int uniqueClientId, const std::string& startURL, CWebBrowser* instance)
+  : CWebControl(handle, uniqueClientId),
+    m_mainBrowserHandler{instance},
+    m_renderViewReady{false},
+    m_uniqueClientId{uniqueClientId},
+    m_iMousePreviousFlags{0},
+    m_iMousePreviousControl{MBT_LEFT},
+    m_browserId{-1},
+    m_browser{nullptr},
+    m_browserCount{0},
+    m_isFullScreen{false},
     m_focusedField{0},
     m_isLoading{false}
 {
-  m_fMouseXScaleFactor = (GetXPos() + GetWidth()) / (GetSkinXPos() + GetSkinWidth());
-  m_fMouseYScaleFactor = (GetYPos() + GetHeight()) / (GetSkinYPos() + GetSkinHeight());
+  m_fMouseXScaleFactor = GetWidth() / GetSkinWidth();
+  m_fMouseYScaleFactor = GetHeight() / GetSkinHeight();
+
+  fprintf(stderr, "m_fMouseXScaleFactor %f\n", m_fMouseYScaleFactor);
+  fprintf(stderr, "m_fMouseYScaleFactor %f\n", m_fMouseYScaleFactor);
+  fprintf(stderr, "GetXPos %f\n", GetXPos());
+  fprintf(stderr, "GetWidth %f\n", GetWidth());
+  fprintf(stderr, "GetSkinXPos %f\n", GetSkinXPos());
+  fprintf(stderr, "GetSkinWidth %f\n", GetSkinWidth());
+  fprintf(stderr, "GetYPos %f\n", GetYPos());
+  fprintf(stderr, "GetHeight %f\n", GetHeight());
+  fprintf(stderr, "GetSkinYPos %f\n", GetSkinYPos());
+  fprintf(stderr, "GetSkinHeight %f\n", GetSkinHeight());
 
   // CEF related sub classes to manage web parts
   m_resourceManager = new CefResourceManager();
@@ -239,18 +97,12 @@ CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int iUniqueClientId, CW
   // Create the browser-side router for query handling.
   m_jsDialogHandler = new CJSDialogHandler(this);
   m_renderer = new CRendererClient(this);
+  CreateThread();
 }
 
 CWebBrowserClient::~CWebBrowserClient()
 {
-}
-
-
-
-void CWebBrowserClient::SetBrowser(CefRefPtr<CefBrowser> browser)
-{
-//   fprintf(stderr, "-- %s\n", __func__);
-  m_browser = browser;
+  StopThread();
 }
 
 bool CWebBrowserClient::SetInactive()
@@ -303,10 +155,6 @@ bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unic
     return false;
 
   CefRefPtr<CefBrowserHost> host = m_browser->GetHost();
-
-  fprintf(stderr, "----------int actionId %i, uint32_t buttoncode %X, wchar_t unicode %i, int &nextItem %i\n",
-          actionId, buttoncode, unicode, nextItem);
-
   if (!m_focusedField.isEditable)
   {
     switch (actionId)
@@ -343,8 +191,9 @@ bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unic
         break;
       }
       default:
-        break;
+        return false;
     };
+    return true;
   }
 
   CefKeyEvent key_event;
@@ -383,19 +232,20 @@ bool CWebBrowserClient::OnMouseEvent(int id, double x, double y, double offsetX,
   CefRefPtr<CefBrowserHost> host = m_browser->GetHost();
 
   CefMouseEvent mouse_event;
-  mouse_event.x = x * m_fMouseXScaleFactor;
-  mouse_event.y = y * m_fMouseYScaleFactor;
+  mouse_event.x = (x - GetSkinXPos()) * m_fMouseXScaleFactor;
+  mouse_event.y = (y - GetSkinYPos()) * m_fMouseYScaleFactor;
 
   switch (id)
   {
     case ACTION_MOUSE_LEFT_CLICK:
     {
-      if (m_focusedField.isEditable &&
+      if (m_focusedField.focusOnEditableField &&
           mouse_event.x >= m_focusedField.x &&
           mouse_event.x <= m_focusedField.x + m_focusedField.width &&
           mouse_event.y >= m_focusedField.y &&
           mouse_event.y <= m_focusedField.y + m_focusedField.height)
       {
+        fprintf(stderr, "----ACTION_MOUSE_LEFT_CLICK---------------------<> %s\n", __PRETTY_FUNCTION__);
         CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(AddonClientMessage::FocusedSelected);
         m_browser->SendProcessMessage(PID_RENDERER, message);
       }
@@ -484,13 +334,13 @@ bool CWebBrowserClient::Dirty()
   if (!m_renderViewReady)
     return false;
 
-  HandleMessages();
+  HandleGUIMessages();
   return m_renderer->Dirty();
 }
 
-bool CWebBrowserClient::OpenWebsite(const std::string& strURL, bool single, bool allowMenus)
+bool CWebBrowserClient::OpenWebsite(const std::string& url)
 {
-//   fprintf(stderr, "-- %s\n", __func__);
+  fprintf(stderr, "--sssssssssssssssss------------------------bool CWebBrowserClient::OpenWebsite(const std::string& url)\n");
   if (!m_browser.get())
   {
     LOG_MESSAGE(ADDON_LOG_ERROR, "%s - Called without present browser", __FUNCTION__);
@@ -504,37 +354,23 @@ bool CWebBrowserClient::OpenWebsite(const std::string& strURL, bool single, bool
     return false;
   }
 
-  if (m_strStartupURL.empty())
-    m_strStartupURL = strURL;
+  std::string usedURL;
+  if (url.empty())
+    usedURL = kodi::GetSettingString("main.starturl");
+  else
+    usedURL = url;
 
-  m_currentIcon = "";
+  if (m_strStartupURL.empty())
+    m_strStartupURL = usedURL;
+
+  m_currentIcon = "DefaultFile.png"; // Use default image from Kodi itself
   Message tMsg = {TMSG_SET_ICON_URL};
   tMsg.strParam = m_currentIcon;
-  SendMessage(tMsg, false);
+  SendGUIMessage(tMsg, false);
 
-  frame->LoadURL(strURL);
+  frame->LoadURL(usedURL);
 
   return true;
-}
-
-void CWebBrowserClient::Reload()
-{
-  m_browser->Reload();
-}
-
-void CWebBrowserClient::StopLoad()
-{
-  m_browser->StopLoad();
-}
-
-void CWebBrowserClient::GoBack()
-{
-  m_browser->GoBack();
-}
-
-void CWebBrowserClient::GoForward()
-{
-  m_browser->GoForward();
 }
 
 void CWebBrowserClient::OpenOwnContextMenu()
@@ -543,6 +379,7 @@ void CWebBrowserClient::OpenOwnContextMenu()
   entries.push_back(kodi::GetLocalizedString(30009));
   entries.push_back(kodi::GetLocalizedString(30323));
   entries.push_back(kodi::GetLocalizedString(30032));
+  entries.push_back(kodi::GetLocalizedString(30324));
 
   int ret = kodi::gui::dialogs::ContextMenu::Show("", entries);
   if (ret >= 0)
@@ -562,6 +399,12 @@ void CWebBrowserClient::OpenOwnContextMenu()
       case 2:
       {
         kodi::OpenSettings();
+        break;
+      }
+      case 3:
+      {
+        if (!m_currentURL.empty())
+          kodi::SetSettingString("main.starturl", m_currentURL);
         break;
       }
       default:
@@ -612,6 +455,24 @@ void CWebBrowserClient::StopSearch(bool clearSelection)
   if (m_browser)
     m_browser->GetHost()->StopFinding(clearSelection);
   m_currentSearchText.clear();
+}
+
+void CWebBrowserClient::ScreenSizeChange(float x, float y, float width, float height, bool fullscreen)
+{
+  m_isFullScreen = true;
+  m_renderer->ScreenSizeChange(x, y, width, height);
+  if (m_browser.get())
+    m_browser->GetHost()->WasResized();
+}
+
+float CWebBrowserClient::GetWidth() const
+{
+  return kodi::addon::CWebControl::GetWidth();
+}
+
+float CWebBrowserClient::GetHeight() const
+{
+  return kodi::addon::CWebControl::GetHeight();
 }
 
 // -----------------------------------------------------------------------------
@@ -670,6 +531,12 @@ bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, 
     m_focusedField.height = message->GetArgumentList()->GetInt(5);
     m_focusedField.type = message->GetArgumentList()->GetString(6);
     m_focusedField.value = message->GetArgumentList()->GetString(7);
+
+    if (kodi::GetSettingBoolean("main.editdialogdirect"))
+    {
+      CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(AddonClientMessage::FocusedSelected);
+      browser->SendProcessMessage(PID_RENDERER, message);
+    }
     return true;
   }
   else if (message_name == RendererMessage::SendString)
@@ -685,93 +552,46 @@ bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, 
   }
   else if (message_name == RendererMessage::ShowKeyboard)
   {
-    std::string type = message->GetArgumentList()->GetString(0);
-    std::string header = message->GetArgumentList()->GetString(1);
-    std::string value = message->GetArgumentList()->GetString(2);
-    std::string id = message->GetArgumentList()->GetString(3);
-    std::string name = message->GetArgumentList()->GetString(4);
-    std::string markup = message->GetArgumentList()->GetString(5);
+    if (m_isLoading)
+      return true;
 
-    if (header.empty())
-    {
-      if (type == "password")
-        header = kodi::GetLocalizedString(30012);
-      else if (type == "text")
-        header = kodi::GetLocalizedString(30013);
-      else if (type == "textarea")
-        header = kodi::GetLocalizedString(30014);
-    }
+    ThreadMessage tMsg(TMSG_CLIENTTHREAD_DIALOG_KEYBOARD);
 
-    if (kodi::gui::dialogs::Keyboard::ShowAndGetInput(value, header, true, type == "password"))
-    {
-      std::string code;
-      if (!id.empty())
-        code = "document.getElementById(\"" + id + "\").value = \"" + value + "\"\n";
-      else
-      {
-        code =
-          "var myelements = document.getElementsByName(\"" + name + "\")\n"
-          "for (var i=0; i<myelements.length; i++) {\n"
-          "  if (myelements[i].nodeType != 1) {\n"
-          "    break;\n"
-          "  }\n"
-          "  myelements[i].value = \"" + value + "\"\n"
-          "}\n";
-      }
-      browser->GetMainFrame()->ExecuteJavaScript(code, browser->GetFocusedFrame()->GetURL(), 0);
-    }
+    ClientThreadData_DialogKeyboard* data = dynamic_cast<ClientThreadData_DialogKeyboard*>(tMsg.data);
+    data->url = browser->GetFocusedFrame()->GetURL();
+    data->type = message->GetArgumentList()->GetString(0);
+    data->header = message->GetArgumentList()->GetString(1);
+    data->value = message->GetArgumentList()->GetString(2);
+
+    SendThreadMessage(tMsg, false);
+    return true;
   }
   else if (message_name == RendererMessage::ShowSelect)
   {
-    std::string type = message->GetArgumentList()->GetString(0);
-    std::string header = message->GetArgumentList()->GetString(1);
-    std::string value = message->GetArgumentList()->GetString(2);
-    std::string id = message->GetArgumentList()->GetString(3);
-    std::string name = message->GetArgumentList()->GetString(4);
-    std::string markup = message->GetArgumentList()->GetString(5);
+    if (m_isLoading)
+      return true;
 
-    std::vector<SSelectionEntry> entries;
+    ThreadMessage tMsg(TMSG_CLIENTTHREAD_DIALOG_SELECT);
+
+    ClientThreadData_DialogSelect* data = dynamic_cast<ClientThreadData_DialogSelect*>(tMsg.data);
+    data->url = browser->GetFocusedFrame()->GetURL();
+    data->type = message->GetArgumentList()->GetString(0);
+    data->header = message->GetArgumentList()->GetString(1);
+    data->value = message->GetArgumentList()->GetString(2);
+    data->id = message->GetArgumentList()->GetString(3);
+    data->name = message->GetArgumentList()->GetString(4);
+    data->markup = message->GetArgumentList()->GetString(5);
     for (int i = 0; i < message->GetArgumentList()->GetInt(6); ++i)
     {
       SSelectionEntry entry;
       entry.id = message->GetArgumentList()->GetString(i*3+0+7);
       entry.name = message->GetArgumentList()->GetString(i*3+1+7);
       entry.selected = message->GetArgumentList()->GetBool(i*3+2+7);
-      entries.push_back(std::move(entry));
+      data->entries.push_back(std::move(entry));
     }
 
-    if (!entries.empty())
-    {
-      bool ret = false;
-      if (type == "select-multiple")
-        ret = kodi::gui::dialogs::Select::ShowMultiSelect("", entries);
-      else
-        ret = kodi::gui::dialogs::Select::Show("", entries) >= 0;
-
-      if (ret)
-      {
-        std::string values = "";
-        for (const auto& entry : entries)
-        {
-          if (entry.selected)
-            values += entry.id + ",";
-        }
-        const std::string& code =
-            "var values = \"" + values + "\";\n"
-            "var myselect = document.getElementsByName(\"" + name +"\");\n"
-            "for (var i=0; i<myselect.length; i++) {\n"
-            "  if (myselect[i].nodeType != 1)\n"
-            "    continue;\n"
-            "  for (var j=0; j<myselect[i].options.length; j++) {\n"
-            "    myselect[i].options[j].selected=false;\n"
-            "  }\n"
-            "  values.split(',').forEach(function(v) {\n"
-            "    Array.from(myselect[i]).find(c => c.value == v).selected = true;\n"
-            "  });\n"
-            "}\n";
-        browser->GetMainFrame()->ExecuteJavaScript(code, browser->GetFocusedFrame()->GetURL(), 0);
-      }
-    }
+    SendThreadMessage(tMsg, false);
+    return true;
   }
 
   return false;
@@ -788,7 +608,7 @@ void CWebBrowserClient::OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr
 
     Message tMsg = {TMSG_SET_OPENED_ADDRESS};
     tMsg.strParam = url.ToString().c_str();
-    SendMessage(tMsg, false);
+    SendGUIMessage(tMsg, false);
   }
 }
 
@@ -800,16 +620,18 @@ void CWebBrowserClient::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefSt
 
     Message tMsg = {TMSG_SET_OPENED_TITLE};
     tMsg.strParam = m_currentTitle.c_str();
-    SendMessage(tMsg, false);
+    SendGUIMessage(tMsg, false);
   }
 }
 
 void CWebBrowserClient::OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const std::vector<CefString>& icon_urls)
 {
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "From currently opened web site given icon urls (first one used)");
   unsigned int listSize = icon_urls.size();
+#ifdef DEBUG_LOGS
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "From currently opened web site given icon urls (first one used)");
   for (unsigned int i = 0; i < listSize; ++i)
     LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - Icon %i - %s", i+1, icon_urls[i].ToString().c_str());
+#endif
 
   Message tMsg = {TMSG_SET_ICON_URL};
   if (listSize > 0)
@@ -818,7 +640,7 @@ void CWebBrowserClient::OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const 
     m_currentIcon = "";
 
   tMsg.strParam = m_currentIcon;
-  SendMessage(tMsg, false);
+  SendGUIMessage(tMsg, false);
 }
 
 void CWebBrowserClient::OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bool fullscreen)
@@ -829,7 +651,7 @@ void CWebBrowserClient::OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bo
 
     Message tMsg = {TMSG_FULLSCREEN_MODE_CHANGE};
     tMsg.param1 = fullscreen ? 1 : 0;
-    SendMessage(tMsg, false);
+    SendGUIMessage(tMsg, false);
   }
 }
 
@@ -841,7 +663,7 @@ bool CWebBrowserClient::OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text
 
     Message tMsg = {TMSG_SET_TOOLTIP};
     tMsg.strParam = m_currentTooltip.c_str();
-    SendMessage(tMsg, false);
+    SendGUIMessage(tMsg, false);
   }
 
   return true;
@@ -855,7 +677,7 @@ void CWebBrowserClient::OnStatusMessage(CefRefPtr<CefBrowser> browser, const Cef
 
     Message tMsg = {TMSG_SET_STATUS_MESSAGE};
     tMsg.strParam = m_currentStatusMsg.c_str();
-    SendMessage(tMsg, false);
+    SendGUIMessage(tMsg, false);
   }
 }
 
@@ -915,10 +737,10 @@ bool CWebBrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
 
   windowInfo.windowless_rendering_enabled = true;
 
-  if (kodi::GetSettingBoolean("main.allow_open_to_tabs") && target_disposition != WOD_CURRENT_TAB)
+  if (!m_isFullScreen && kodi::GetSettingBoolean("main.allow_open_to_tabs") && target_disposition != WOD_CURRENT_TAB)
     RequestOpenSiteInNewTab(target_url); /* Request to do on kodi itself */
   else
-    OpenWebsite(std::string(target_url), false, false);
+    OpenWebsite(std::string(target_url));
   return false; /* Cancel popups in off-screen rendering mode */
 }
 
@@ -940,7 +762,7 @@ void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
       m_messageRouter->AddHandler(entry, false);
   }
 
-  CLockObject lock(m_Mutex);
+  CLockObject lock(m_processGUIMutex);
   if (!m_browser.get())
   {
     m_browser = browser;
@@ -1114,7 +936,6 @@ void CWebBrowserClient::OnPluginCrashed(CefRefPtr<CefBrowser> browser, const Cef
 
 void CWebBrowserClient::OnRenderViewReady(CefRefPtr<CefBrowser> browser)
 {
-  fprintf(stderr, "void CWebBrowserClient::OnRenderViewReady(CefRefPtr<CefBrowser> browser)\n");
   m_renderViewReady = true;
 }
 
@@ -1172,15 +993,15 @@ void CWebBrowserClient::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRe
   if (!url.empty())
   {
     model->InsertItemAt(0, CLIENT_ID_OPEN_SELECTED_SIDE, kodi::GetLocalizedString(30000 + CLIENT_ID_OPEN_SELECTED_SIDE));
-    model->InsertItemAt(0, CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB, kodi::GetLocalizedString(30000 + CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB));
-
+    if (!m_isFullScreen)
+      model->InsertItemAt(0, CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB, kodi::GetLocalizedString(30000 + CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB));
   }
 
   int flags = params->GetTypeFlags();
   if (flags & CM_TYPEFLAG_EDITABLE)
     model->InsertItemAt(0, CLIENT_ID_OPEN_KEYBOARD, kodi::GetLocalizedString(30000 + CLIENT_ID_OPEN_KEYBOARD));
 
-#ifdef DEBUG_LOGS
+// #ifdef DEBUG_LOGS
   LOG_MESSAGE(ADDON_LOG_DEBUG, "CefContextMenuParams");
   LOG_MESSAGE(ADDON_LOG_DEBUG, "- %ix%i - TypeFlags: 0x%X - ImageContents: %s - MediaType: %i - MediaStateFlags %i - EditStateFlags %i", params->GetXCoord(),
       params->GetYCoord(), (int)params->GetTypeFlags(), params->HasImageContents() ? "yes" : "no",
@@ -1206,7 +1027,7 @@ void CWebBrowserClient::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRe
   for (unsigned int i = 0; i < model->GetCount(); i++)
     LOG_MESSAGE(ADDON_LOG_DEBUG, "  - %02i: ID '%i' Type '%i' - Name '%s'",
                     i, model->GetCommandIdAt(i), model->GetTypeAt(i), model->GetLabelAt(i).ToString().c_str());
-#endif
+// #endif
 }
 
 bool CWebBrowserClient::RunContextMenu(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefContextMenuParams> params,
@@ -1262,7 +1083,7 @@ bool CWebBrowserClient::OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefR
   if (command_id == CLIENT_ID_OPEN_SELECTED_SIDE)
   {
     std::string url = params->GetLinkUrl().ToString();
-    OpenWebsite(url, false, false);
+    OpenWebsite(url);
   }
   if (command_id == CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB)
   {
@@ -1278,21 +1099,13 @@ bool CWebBrowserClient::OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefR
     }
     else
     {
-      std::string header;
-      if (m_focusedField.type == "password")
-        header = kodi::GetLocalizedString(30012);
-      else if (m_focusedField.type == "text")
-        header = kodi::GetLocalizedString(30013);
-      else if (m_focusedField.type == "textarea")
-        header = kodi::GetLocalizedString(30014);
+      ThreadMessage tMsg(TMSG_CLIENTTHREAD_DIALOG_KEYBOARD);
 
-      if (kodi::gui::dialogs::Keyboard::ShowAndGetInput(m_focusedField.value, header, true, m_focusedField.type == "password"))
-      {
-        CefRange replacement_range;
-        replacement_range.from = 0;
-        replacement_range.to = -1;
-        browser->GetHost()->ImeCommitText(m_focusedField.value, replacement_range, 0);
-      }
+      ClientThreadData_DialogKeyboard* data = dynamic_cast<ClientThreadData_DialogKeyboard*>(tMsg.data);
+      data->url = params->GetLinkUrl().ToString();
+      data->type = m_focusedField.type;
+      data->value = m_focusedField.value;
+      SendThreadMessage(tMsg, false);
     }
   }
   else
@@ -1310,12 +1123,11 @@ void CWebBrowserClient::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool
 {
   CEF_REQUIRE_UI_THREAD();
 
-//   Message tMsg = {TMSG_SET_LOADING_STATE};
-//   tMsg.param1 = isLoading;
-//   tMsg.param2 = canGoBack;
-//   tMsg.param3 = canGoForward;
-//   SendMessage(tMsg, false);
-  SetLoadingState(isLoading, canGoBack, canGoForward);
+  Message tMsg = {TMSG_SET_LOADING_STATE};
+  tMsg.param1 = isLoading;
+  tMsg.param2 = canGoBack;
+  tMsg.param3 = canGoForward;
+  SendGUIMessage(tMsg, false);
 }
 
 
@@ -1355,7 +1167,7 @@ void CWebBrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFr
 }
 
 void CWebBrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode errorCode,
-                                        const CefString& errorText, const CefString& failedUrl)
+                                    const CefString& errorText, const CefString& failedUrl)
 {
   CEF_REQUIRE_UI_THREAD();
 
@@ -1367,8 +1179,8 @@ void CWebBrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
   // handle. See OnProtocolExecution().
   if (errorCode == ERR_UNKNOWN_URL_SCHEME)
   {
-    std::string urlStr = frame->GetURL();
-    if (urlStr.find("spotify:") == 0)
+    std::string url = frame->GetURL();
+    if (url.find("spotify:") == 0)
       return;
   }
 
@@ -1379,16 +1191,323 @@ void CWebBrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
 }
 //@}
 
+void CWebBrowserClient::OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int audio_stream_id, int channels, ChannelLayout channel_layout,
+                                             int sample_rate, int original_bits_per_sample, int frames_per_buffer)
+{
+  m_frames = 0;
+  AudioEngineFormat format;
+  format.m_dataFormat = AE_FMT_FLOAT;
+  format.m_channelCount = channels;
+  int ptr = 0;
+  switch (channel_layout)
+  {
+    case CEF_CHANNEL_LAYOUT_MONO:
+      format.m_channels[ptr++] = AE_CH_FL;
+      break;
+
+    // Front L, Front R
+    case CEF_CHANNEL_LAYOUT_STEREO:
+    case CEF_CHANNEL_LAYOUT_STEREO_DOWNMIX:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      break;
+
+    // Front L, Front R, Back C
+    case CEF_CHANNEL_LAYOUT_2_1:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_BC;
+      break;
+
+    // Front L, Front R, Front C
+    case CEF_CHANNEL_LAYOUT_SURROUND:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      break;
+
+    // Front L, Front R, Front C, Back C
+    case CEF_CHANNEL_LAYOUT_4_0:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_BC;
+      break;
+
+    // Front L, Front R, Side L, Side R
+    case CEF_CHANNEL_LAYOUT_2_2:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      break;
+
+    // Front L, Front R, Back L, Back R
+    case CEF_CHANNEL_LAYOUT_QUAD:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_BL;
+      format.m_channels[ptr++] = AE_CH_BR;
+      break;
+
+    // Front L, Front R, Front C, Side L, Side R
+    case CEF_CHANNEL_LAYOUT_5_0:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      break;
+
+    // Front L, Front R, Front C, LFE, Side L, Side R
+    case CEF_CHANNEL_LAYOUT_5_1:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_LFE;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      break;
+
+    // Front L, Front R, Front C, Back L, Back R
+    case CEF_CHANNEL_LAYOUT_5_0_BACK:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_BL;
+      format.m_channels[ptr++] = AE_CH_BR;
+      break;
+
+    // Front L, Front R, Front C, LFE, Back L, Back R
+    case CEF_CHANNEL_LAYOUT_5_1_BACK:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_LFE;
+      format.m_channels[ptr++] = AE_CH_BL;
+      format.m_channels[ptr++] = AE_CH_BR;
+      break;
+
+    // Front L, Front R, Front C, Side L, Side R, Back L, Back R
+    case CEF_CHANNEL_LAYOUT_7_0:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      format.m_channels[ptr++] = AE_CH_BL;
+      format.m_channels[ptr++] = AE_CH_BR;
+      break;
+
+    // Front L, Front R, Front C, LFE, Side L, Side R, Back L, Back R
+    case CEF_CHANNEL_LAYOUT_7_1:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_LFE;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      format.m_channels[ptr++] = AE_CH_BL;
+      format.m_channels[ptr++] = AE_CH_BR;
+      break;
+
+    // Front L, Front R, Front C, LFE, Side L, Side R, Front LofC, Front RofC
+    case CEF_CHANNEL_LAYOUT_7_1_WIDE:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_LFE;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      format.m_channels[ptr++] = AE_CH_FLOC;
+      format.m_channels[ptr++] = AE_CH_FROC;
+      break;
+
+    // Stereo L, Stereo R, LFE
+    case CEF_CHANNEL_LAYOUT_2POINT1:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_LFE;
+      break;
+
+    // Stereo L, Stereo R, Front C, LFE
+    case CEF_CHANNEL_LAYOUT_3_1:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_LFE;
+      break;
+
+    // Stereo L, Stereo R, Front C, Rear C, LFE
+    case CEF_CHANNEL_LAYOUT_4_1:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_BC;
+      format.m_channels[ptr++] = AE_CH_LFE;
+      break;
+
+    // Stereo L, Stereo R, Front C, Side L, Side R, Back C
+    case CEF_CHANNEL_LAYOUT_6_0:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      format.m_channels[ptr++] = AE_CH_BC;
+      break;
+
+    // Stereo L, Stereo R, Side L, Side R, Front LofC, Front RofC
+    case CEF_CHANNEL_LAYOUT_6_0_FRONT:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      format.m_channels[ptr++] = AE_CH_FLOC;
+      format.m_channels[ptr++] = AE_CH_FROC;
+      break;
+
+    // Stereo L, Stereo R, Front C, Rear L, Rear R, Rear C
+    case CEF_CHANNEL_LAYOUT_HEXAGONAL:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_BL;
+      format.m_channels[ptr++] = AE_CH_BR;
+      format.m_channels[ptr++] = AE_CH_BC;
+      break;
+
+    // Stereo L, Stereo R, Front C, LFE, Side L, Side R, Rear Center
+    case CEF_CHANNEL_LAYOUT_6_1:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_LFE;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      format.m_channels[ptr++] = AE_CH_BC;
+      break;
+
+    // Stereo L, Stereo R, Front C, LFE, Back L, Back R, Rear Center
+    case CEF_CHANNEL_LAYOUT_6_1_BACK:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_LFE;
+      format.m_channels[ptr++] = AE_CH_BL;
+      format.m_channels[ptr++] = AE_CH_BR;
+      format.m_channels[ptr++] = AE_CH_BC;
+      break;
+
+    // Stereo L, Stereo R, Side L, Side R, Front LofC, Front RofC, LFE
+    case CEF_CHANNEL_LAYOUT_6_1_FRONT:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      format.m_channels[ptr++] = AE_CH_FLOC;
+      format.m_channels[ptr++] = AE_CH_FROC;
+      format.m_channels[ptr++] = AE_CH_LFE;
+      break;
+
+    // Front L, Front R, Front C, Side L, Side R, Front LofC, Front RofC
+    case CEF_CHANNEL_LAYOUT_7_0_FRONT:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      format.m_channels[ptr++] = AE_CH_FLOC;
+      format.m_channels[ptr++] = AE_CH_FROC;
+      break;
+
+    // Front L, Front R, Front C, LFE, Back L, Back R, Front LofC, Front RofC
+    case CEF_CHANNEL_LAYOUT_7_1_WIDE_BACK:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_LFE;
+      format.m_channels[ptr++] = AE_CH_BL;
+      format.m_channels[ptr++] = AE_CH_BR;
+      format.m_channels[ptr++] = AE_CH_FLOC;
+      format.m_channels[ptr++] = AE_CH_FROC;
+      break;
+
+    // Front L, Front R, Front C, Side L, Side R, Rear L, Back R, Back C.
+    case CEF_CHANNEL_LAYOUT_OCTAGONAL:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_FC;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      format.m_channels[ptr++] = AE_CH_BL;
+      format.m_channels[ptr++] = AE_CH_BR;
+      format.m_channels[ptr++] = AE_CH_BC;
+      break;
+
+    // Front L, Front R, Side L, Side R, LFE
+    case CEF_CHANNEL_LAYOUT_4_1_QUAD_SIDE:
+      format.m_channels[ptr++] = AE_CH_FL;
+      format.m_channels[ptr++] = AE_CH_FR;
+      format.m_channels[ptr++] = AE_CH_SL;
+      format.m_channels[ptr++] = AE_CH_SR;
+      format.m_channels[ptr++] = AE_CH_LFE;
+      break;
+
+    // Channels are not explicitly mapped to speakers.
+    case CEF_CHANNEL_LAYOUT_DISCRETE:
+      break;
+
+    // Front L, Front R, Front C. Front C contains the keyboard mic audio. This
+    // layout is only intended for input for WebRTC. The Front C channel
+    // is stripped away in the WebRTC audio input pipeline and never seen outside
+    // of that.
+    case CEF_CHANNEL_LAYOUT_STEREO_AND_KEYBOARD_MIC:
+      break;
+
+    case CEF_CHANNEL_LAYOUT_NONE:
+    case CEF_CHANNEL_LAYOUT_UNSUPPORTED:
+    default: ;
+  }
+  format.m_channels[ptr++] = AE_CH_NULL;
+  format.m_sampleRate = sample_rate;
+  format.m_frameSize = sizeof(float)*channels;//bytes_per_frame;
+  format.m_frames = frames_per_buffer;
+  m_audioStreams[audio_stream_id] = new kodi::audioengine::CAddonAEStream(format);
+}
+
+void CWebBrowserClient::OnAudioStreamPacket(CefRefPtr<CefBrowser> browser,
+                                  int audio_stream_id,
+                                  const void* data,
+                                  int data_length, int64_t pts)
+{
+  const auto& handler = m_audioStreams.find(audio_stream_id);
+  if (handler != m_audioStreams.end())
+    handler->second->AddData((uint8_t* const *)(&data), 0, data_length, pts);
+}
+
+void CWebBrowserClient::OnAudioStreamStopped(CefRefPtr<CefBrowser> browser,
+                                  int audio_stream_id)
+{
+  fprintf(stderr, "----> %s\n", __PRETTY_FUNCTION__);
+  const auto& handler = m_audioStreams.find(audio_stream_id);
+  if (handler != m_audioStreams.end())
+  {
+    delete handler->second;
+    m_audioStreams.erase(audio_stream_id);
+  }
+}
+
 // -----------------------------------------------------------------------------
 
 int CWebBrowserClient::ZoomLevelToPercentage(double zoomlevel)
 {
-  return int((zoomlevel*ZOOM_MULTIPLY)+100.0);
+  return static_cast<int>((zoomlevel*ZOOM_MULTIPLY)+100.0);
 }
 
 double CWebBrowserClient::PercentageToZoomLevel(int percent)
 {
-  return (double(percent-100))/ZOOM_MULTIPLY;
+  return (static_cast<double>(percent-100))/ZOOM_MULTIPLY;
 }
 
 void CWebBrowserClient::LoadErrorPage(CefRefPtr<CefFrame> frame,
@@ -1627,7 +1746,7 @@ void CWebBrowserClient::CreateMessageHandlers(MessageHandlerSet& handlers)
   handlers.insert(new CJSHandler(this));
 }
 
-void CWebBrowserClient::SendMessage(Message& message, bool wait)
+void CWebBrowserClient::SendGUIMessage(Message& message, bool wait)
 {
   if (!m_renderViewReady)
     return;
@@ -1639,7 +1758,7 @@ void CWebBrowserClient::SendMessage(Message& message, bool wait)
     waitEvent = message.waitEvent;
   }
 
-  CLockObject lock(m_Mutex);
+  CLockObject lock(m_processGUIMutex);
 
   Message* msg    = new Message();
   msg->dwMessage  = message.dwMessage;
@@ -1651,24 +1770,24 @@ void CWebBrowserClient::SendMessage(Message& message, bool wait)
   msg->params     = message.params;
   msg->waitEvent  = message.waitEvent;
 
-  m_processQueue.push(msg);
+  m_processGUIQueue.push(msg);
   lock.Unlock();
 
   if (waitEvent)
     waitEvent->Wait(1000);
 }
 
-void CWebBrowserClient::HandleMessages()
+void CWebBrowserClient::HandleGUIMessages()
 {
   // process threadmessages
-  CLockObject lock(m_Mutex);
-  while (!m_processQueue.empty())
+  CLockObject lock(m_processGUIMutex);
+  while (!m_processGUIQueue.empty())
   {
-    Message* pMsg = m_processQueue.front();
-    m_processQueue.pop();
+    Message* pMsg = m_processGUIQueue.front();
+    m_processGUIQueue.pop();
 
     std::shared_ptr<CEvent> waitEvent = pMsg->waitEvent;
-    lock.Unlock(); // <- see the large comment in SendMessage ^
+    lock.Unlock(); // <- see the large comment in SendGUIMessage ^
     switch (pMsg->dwMessage)
     {
       case TMSG_SET_CONTROL_READY:
@@ -1723,6 +1842,149 @@ void CWebBrowserClient::HandleMessages()
 
     if (waitEvent)
       waitEvent->Signal();
+    delete pMsg;
+
+    lock.Lock();
+  }
+}
+
+void* CWebBrowserClient::Process(void)
+{
+  while (!IsStopped())
+  {
+    HandleThreadMessages();
+    m_processThreadEvent.Wait();
+  }
+
+  return nullptr;
+}
+
+void CWebBrowserClient::SendThreadMessage(ThreadMessage& message, bool wait)
+{
+  if (!m_renderViewReady)
+    return;
+
+  std::shared_ptr<CEvent> waitEvent;
+  if (wait)
+  {
+    message.waitEvent.reset(new CEvent(true));
+    waitEvent = message.waitEvent;
+  }
+
+  CLockObject lock(m_processThreadMutex);
+
+  ThreadMessage* msg = new ThreadMessage(message.dwMessage);
+  msg->dwMessage  = message.dwMessage;
+  msg->param1     = message.param1;
+  msg->param2     = message.param2;
+  msg->param3     = message.param3;
+  msg->lpVoid     = message.lpVoid;
+  msg->strParam   = message.strParam;
+  msg->params     = message.params;
+  msg->waitEvent  = message.waitEvent;
+  msg->data       = message.data;
+
+  m_processThreadQueue.push(msg);
+  m_processThreadEvent.Signal();
+  lock.Unlock();
+
+  if (waitEvent)
+    waitEvent->Wait(1000);
+}
+
+void CWebBrowserClient::HandleThreadMessages()
+{
+  // process threadmessages
+  CLockObject lock(m_processThreadMutex);
+  while (!m_processThreadQueue.empty())
+  {
+    ThreadMessage* pMsg = m_processThreadQueue.front();
+    m_processThreadQueue.pop();
+
+    std::shared_ptr<CEvent> waitEvent = pMsg->waitEvent;
+    lock.Unlock();
+    switch (pMsg->dwMessage)
+    {
+      case TMSG_CLIENTTHREAD_DIALOG_SELECT:
+      {
+        ClientThreadData_DialogSelect* data = dynamic_cast<ClientThreadData_DialogSelect*>(pMsg->data);
+        if (!data->entries.empty())
+        {
+          bool ret = false;
+          if (data->type == "select-multiple")
+            ret = kodi::gui::dialogs::Select::ShowMultiSelect(data->header, data->entries);
+          else
+            ret = kodi::gui::dialogs::Select::Show(data->header, data->entries) >= 0;
+
+          if (ret)
+          {
+            std::string values = "";
+            for (const auto& entry : data->entries)
+            {
+              if (entry.selected)
+                values += entry.id + ",";
+            }
+            const std::string& code =
+                "var values = \"" + values + "\";\n"
+                "var myselect = document.getElementsByName(\"" + data->name +"\");\n"
+                "for (var i=0; i<myselect.length; i++) {\n"
+                "  if (myselect[i].nodeType != 1)\n"
+                "    continue;\n"
+                "  for (var j=0; j<myselect[i].options.length; j++) {\n"
+                "    myselect[i].options[j].selected=false;\n"
+                "  }\n"
+                "  values.split(',').forEach(function(v) {\n"
+                "    Array.from(myselect[i]).find(c => c.value == v).selected = true;\n"
+                "  });\n"
+                "}\n";
+            m_browser->GetMainFrame()->ExecuteJavaScript(code, data->url, 0);
+          }
+        }
+        break;
+      }
+      case TMSG_CLIENTTHREAD_DIALOG_KEYBOARD:
+      {
+        ClientThreadData_DialogKeyboard* data = dynamic_cast<ClientThreadData_DialogKeyboard*>(pMsg->data);
+        if (data->header.empty())
+        {
+          if (data->type == "password")
+            data->header = kodi::GetLocalizedString(30012);
+          else if (data->type == "text")
+            data->header = kodi::GetLocalizedString(30013);
+          else if (data->type == "textarea")
+            data->header = kodi::GetLocalizedString(30014);
+        }
+
+        if (kodi::gui::dialogs::Keyboard::ShowAndGetInput(data->value, data->header, true, data->type == "password"))
+        {
+          m_browser->GetMainFrame()->SelectAll();
+          m_browser->GetMainFrame()->Delete();
+
+          CefRefPtr<CefBrowserHost> host = m_browser->GetHost();
+          CefKeyEvent keyEvent;
+
+          cef_string_wide_t retws = {0};
+          cef_string_utf8_to_wide(data->value.c_str(), data->value.size(), &retws);
+          for (size_t i = 0; i < retws.length; ++i)
+          {
+            keyEvent.character = retws.str[i];
+            keyEvent.type = KEYEVENT_KEYDOWN;
+            host->SendKeyEvent(keyEvent);
+            keyEvent.type = KEYEVENT_CHAR;
+            host->SendKeyEvent(keyEvent);
+            keyEvent.type = KEYEVENT_KEYUP;
+            host->SendKeyEvent(keyEvent);
+          }
+        }
+      }
+      default:
+        break;
+    };
+
+    if (waitEvent)
+      waitEvent->Signal();
+    if (pMsg->data)
+      delete pMsg->data;
     delete pMsg;
 
     lock.Lock();

@@ -29,14 +29,16 @@ CDOMVisitor::CDOMVisitor(CefRefPtr<CefBrowser> browser)
 
 void CDOMVisitor::Visit(CefRefPtr<CefDOMDocument> document)
 {
+  fprintf(stderr, "-------------------------<> %s\n", __PRETTY_FUNCTION__);
   CefRefPtr<CefDOMNode> node = document->GetFocusedNode();
   if (node == nullptr)
     return;
-
+fprintf(stderr, "-222------------------------<> %s\n", __PRETTY_FUNCTION__);
   std::string elementType = node->GetFormControlElementType();
   std::string elementName = node->GetName();
   if (elementName == "SELECT")
   {
+    fprintf(stderr, "---3333----------------------<> %s\n", __PRETTY_FUNCTION__);
     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(RendererMessage::ShowSelect);
     message->GetArgumentList()->SetString(0, elementType);
     message->GetArgumentList()->SetString(1, node->GetElementAttribute("title"));
@@ -61,6 +63,7 @@ void CDOMVisitor::Visit(CefRefPtr<CefDOMDocument> document)
   }
   else if (elementName == "INPUT" && node->IsEditable())
   {
+    fprintf(stderr, "--3333-----------------------<> %s\n", __PRETTY_FUNCTION__);
     CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(RendererMessage::ShowKeyboard);
     message->GetArgumentList()->SetString(0, elementType);
     message->GetArgumentList()->SetString(1, node->GetElementAttribute("title"));
@@ -69,6 +72,10 @@ void CDOMVisitor::Visit(CefRefPtr<CefDOMDocument> document)
     message->GetArgumentList()->SetString(4, node->GetElementAttribute("name"));
     message->GetArgumentList()->SetString(5, node->GetAsMarkup());
     m_browser->SendProcessMessage(PID_BROWSER, message);
+  }
+  else if (elementName == "DIV" && node->IsEditable())
+  {
+
   }
 
     fprintf(stderr, "---1: ----GetType %i\n", node->GetType());

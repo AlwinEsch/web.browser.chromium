@@ -34,6 +34,7 @@ public:
   void Render();
   bool Dirty();
   void Cleanup();
+  void ScreenSizeChange(float x, float y, float width, float height);
 
   /// CefRenderHandler functions
   //@{

@@ -61,7 +61,7 @@ public:
   virtual WEB_ADDON_ERROR StartInstance() override;
   virtual void StopInstance() override;
   virtual bool SetLanguage(const char *language) override;
-  virtual kodi::addon::CWebControl* CreateControl(const std::string& sourceName, KODI_HANDLE handle) override;
+  virtual kodi::addon::CWebControl* CreateControl(const std::string& sourceName, const std::string& startURL, KODI_HANDLE handle) override;
   virtual bool DestroyControl(kodi::addon::CWebControl* control, bool complete) override;
 
   // ---------------------------------------------------------------------------

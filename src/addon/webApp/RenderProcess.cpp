@@ -33,7 +33,7 @@ CRenderProcess::CRenderProcess(const CefSettings& cefSettings)
   : m_cefSettings(cefSettings)
 {
   CreateThread();
-
+fprintf(stderr, "-------------------------<> %s\n", __PRETTY_FUNCTION__);
 }
 
 CRenderProcess::~CRenderProcess()
@@ -50,16 +50,16 @@ void* CRenderProcess::Process(void)
   CefScopedSandboxInfo scoped_sandbox;
   windows_sandbox_info = scoped_sandbox.sandbox_info();
 #endif
-
+fprintf(stderr, "--1-----------------------<> %s\n", __PRETTY_FUNCTION__);
   CefMainArgs args;
   if (!CefInitialize(args, m_cefSettings, this, windows_sandbox_info))
   {
     LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
     return nullptr;
   }
-
+fprintf(stderr, "---2----------------------<> %s\n", __PRETTY_FUNCTION__);
   CefRunMessageLoop();
-
+fprintf(stderr, "--3-----------------------<> %s\n", __PRETTY_FUNCTION__);
   return nullptr;
 }
 
@@ -122,12 +122,14 @@ void CRenderProcess::OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefPt
 
 void CRenderProcess::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefDOMNode> node)
 {
+  fprintf(stderr, "-------------------------<> %s\n", __PRETTY_FUNCTION__);
   CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(RendererMessage::FocusedNodeChanged);
   if (node.get())
   {
     CefRect bounds = node->GetElementBounds();
     std::string name = node->GetName();
     bool editableForm = node->GetType() == 1 && (name == "SELECT" || name == "INPUT" || name == "TEXTAREA");
+    fprintf(stderr, "-------------------------<> %s editableForm %i\n", __PRETTY_FUNCTION__, editableForm);
 
     message->GetArgumentList()->SetBool(0, editableForm);
     message->GetArgumentList()->SetBool(1, node->IsEditable());
@@ -140,6 +142,8 @@ void CRenderProcess::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefP
   }
   else
   {
+    fprintf(stderr, "-------------------------<> %s xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n", __PRETTY_FUNCTION__);
+
     message->GetArgumentList()->SetBool(0, false);
     message->GetArgumentList()->SetBool(1, false);
     message->GetArgumentList()->SetInt(2, 0);
@@ -154,9 +158,10 @@ void CRenderProcess::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefP
 
 bool CRenderProcess::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
 {
+  fprintf(stderr, "-------------------------<> %s\n", __PRETTY_FUNCTION__);
   if (m_messageRouter->OnProcessMessageReceived(browser, source_process, message))
     return true;
-
+fprintf(stderr, "-222222222------------------------<> %s\n", __PRETTY_FUNCTION__);
   std::string message_name = message->GetName();
   if (message_name == AddonClientMessage::FocusedSelected)
   {

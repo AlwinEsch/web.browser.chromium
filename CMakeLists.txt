@@ -283,7 +283,6 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/UploadHandler.cpp
                                  src/addon/URICheckHandler.cpp
                                  src/addon/WebBrowserClient.cpp
-                                 src/addon/WebBrowserManager.cpp
                                  src/addon/Cookies/CookieHandler.cpp
                                  src/addon/JSInterface/Handler.cpp
                                  src/addon/JSInterface/JSDialogHandler.cpp
@@ -302,7 +301,6 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/UploadHandler.h
                                  src/addon/URICheckHandler.h
                                  src/addon/WebBrowserClient.h
-                                 src/addon/WebBrowserManager.h
                                  src/addon/Cookies/CookieHandler.h
                                  src/addon/JSInterface/Handler.h
                                  src/addon/JSInterface/JSDialogHandler.h
