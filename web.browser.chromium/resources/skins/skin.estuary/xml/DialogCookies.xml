@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+  <defaultcontrol always="true">36</defaultcontrol>
+  <include>Animation_DialogPopupOpenClose</include>
+  <allowoverlay>no</allowoverlay>
+  <views>36</views>
+  <controls>
+    <control type="group">
+      <centerleft>50%</centerleft>
+      <centertop>50%</centertop>
+      <width>1600</width>
+      <height>850</height>
+      <include content="DialogBackgroundCommons">
+        <param name="width" value="1600" />
+        <param name="height" value="850" />
+        <param name="header_label" value="$ADDON[web.browser.chromium 30300]" />
+        <param name="header_id" value="411" />
+      </include>
+      <control type="image">
+        <left>0</left>
+        <top>80</top>
+        <width>1580</width>
+        <height>740</height>
+        <texture border="40">buttons/dialogbutton-nofo.png</texture>
+      </control>
+      <control type="list" id="36">
+        <left>20</left>
+        <top>100</top>
+        <width>1540</width>
+        <height>700</height>
+        <onleft>60</onleft>
+        <onright>60</onright>
+        <onup>450</onup>
+        <ondown>450</ondown>
+        <pagecontrol>60</pagecontrol>
+        <scrolltime>200</scrolltime>
+        <onclick>Action(contextmenu)</onclick>
+        <itemlayout height="230" width="1540">
+          <control type="image">
+            <left>10</left>
+            <top>10</top>
+            <width>50</width>
+            <height>50</height>
+            <texture>ListItem.Icon</texture>
+            <aspectratio>keep</aspectratio>
+          </control>
+          <control type="label">
+            <left>50</left>
+            <top>0</top>
+            <right>20</right>
+            <height>70</height>
+            <aligny>center</aligny>
+            <textcolor>white</textcolor>
+            <selectedcolor>green</selectedcolor>
+            <info>ListItem.Label</info>
+          </control>
+          <control type="label">
+            <left>70</left>
+            <top>40</top>
+            <width>255</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30302]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>330</left>
+            <top>40</top>
+            <right>20</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(Content)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>70</left>
+            <top>75</top>
+            <width>255</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30303]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>330</left>
+            <top>75</top>
+            <right>770</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(Domain)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>800</left>
+            <top>75</top>
+            <width>225</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30304]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>1030</left>
+            <top>75</top>
+            <right>20</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(Path)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>70</left>
+            <top>110</top>
+            <width>255</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30308]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>330</left>
+            <top>110</top>
+            <right>20</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(creation)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>800</left>
+            <top>110</top>
+            <width>225</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30309]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>1030</left>
+            <top>110</top>
+            <right>10</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(lastAccess)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>70</left>
+            <top>145</top>
+            <width>255</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30307]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>330</left>
+            <top>145</top>
+            <right>40</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(hasExpires)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>800</left>
+            <top>145</top>
+            <width>225</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30310]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>1030</left>
+            <top>145</top>
+            <right>10</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(expires)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>70</left>
+            <top>180</top>
+            <width>255</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30305]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>330</left>
+            <top>180</top>
+            <right>20</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(secure)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>800</left>
+            <top>180</top>
+            <width>225</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30306]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>1030</left>
+            <top>180</top>
+            <right>10</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(forScripts)</info>
+            <font>font12</font>
+          </control>
+        </itemlayout>
+        <focusedlayout height="230" width="1540">
+          <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <right>0</right>
+            <height>240</height>
+            <texture colordiffuse="button_focus">lists/focus.png</texture>
+          </control>
+          <control type="label">
+            <left>50</left>
+            <top>0</top>
+            <right>20</right>
+            <height>70</height>
+            <aligny>center</aligny>
+            <textcolor>white</textcolor>
+            <selectedcolor>green</selectedcolor>
+            <info>ListItem.Label</info>
+          </control>
+          <control type="label">
+            <left>70</left>
+            <top>40</top>
+            <width>255</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30302]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>330</left>
+            <top>40</top>
+            <right>20</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(Content)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>70</left>
+            <top>75</top>
+            <width>255</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30303]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>330</left>
+            <top>75</top>
+            <right>770</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(Domain)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>800</left>
+            <top>75</top>
+            <width>225</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30304]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>1030</left>
+            <top>75</top>
+            <right>20</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(Path)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>70</left>
+            <top>110</top>
+            <width>255</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30308]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>330</left>
+            <top>110</top>
+            <right>20</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(creation)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>800</left>
+            <top>110</top>
+            <width>225</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30309]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>1030</left>
+            <top>110</top>
+            <right>10</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(lastAccess)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>70</left>
+            <top>145</top>
+            <width>255</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30307]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>330</left>
+            <top>145</top>
+            <right>40</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(hasExpires)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>800</left>
+            <top>145</top>
+            <width>225</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30310]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>1030</left>
+            <top>145</top>
+            <right>10</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(expires)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>70</left>
+            <top>180</top>
+            <width>255</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30305]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>330</left>
+            <top>180</top>
+            <right>20</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(secure)</info>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>800</left>
+            <top>180</top>
+            <width>225</width>
+            <height>60</height>
+            <aligny>center</aligny>
+            <selectedcolor>green</selectedcolor>
+            <textcolor>grey</textcolor>
+            <label>$ADDON[web.browser.chromium 30306]</label>
+            <font>font12</font>
+          </control>
+          <control type="label">
+            <left>1030</left>
+            <top>180</top>
+            <right>10</right>
+            <height>60</height>
+            <aligny>center</aligny>
+            <info>ListItem.Property(forScripts)</info>
+            <font>font12</font>
+          </control>
+        </focusedlayout>
+      </control>
+      <control type="scrollbar" id="60">
+        <left>1565</left>
+        <top>100</top>
+        <width>12</width>
+        <height>698</height>
+        <onleft>450</onleft>
+        <onright>450</onright>
+        <orientation>vertical</orientation>
+      </control>
+      <control type="label" id="20">
+        <left>0</left>
+        <bottom>10</bottom>
+        <width>1570</width>
+        <height>30</height>
+        <align>right</align>
+        <aligny>bottom</aligny>
+        <textcolor>grey</textcolor>
+        <font>font12</font>
+        <label>$INFO[Container(36).CurrentItem,, / ]$INFO[Container(36).NumItems]</label>
+      </control>
+    </control>
+    <include content="UpDownArrows">
+      <param name="container_id" value="450" />
+      <param name="posx" value="830" />
+      <param name="up_posy" value="50" />
+      <param name="down_posy" value="980" />
+      <param name="visible" value="!System.HasActiveModalDialog" />
+    </include>
+  </controls>
+</window>

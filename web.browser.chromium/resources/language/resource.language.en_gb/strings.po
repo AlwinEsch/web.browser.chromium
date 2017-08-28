@@ -144,6 +144,49 @@ msgctxt "#30031"
 msgid "Block"
 msgstr ""
 
+msgctxt "#30032"
+msgid "Settings"
+msgstr ""
+
+msgctxt "#30033"
+msgid "JavaScript Alert"
+msgstr ""
+
+msgctxt "#30034"
+msgid "JavaScript Confirm"
+msgstr ""
+
+msgctxt "#30035"
+msgid "JavaScript Prompt: %s"
+msgstr ""
+
+msgctxt "#30036"
+msgid "Is it OK to leave/reload this page?"
+msgstr ""
+
+msgctxt "#30037"
+msgid "Text search"
+msgstr ""
+
+msgctxt "#30038"
+msgid "%i times '%s' found"
+msgstr ""
+
+msgctxt "#30039"
+msgid "Allow websites to open new tabs"
+msgstr ""
+
+msgctxt "#30040"
+msgid "Mouse cursor change disabled"
+msgstr ""
+
+msgctxt "#30041"
+msgid "Control"
+msgstr ""
+
+msgctxt "#30042"
+msgid "Show editing dialog direct after field select"
+msgstr ""
 
 msgctxt "#30080"
 msgid "Chromium web browser"
@@ -267,12 +310,196 @@ msgctxt "#30132"
 msgid "View page source"
 msgstr ""
 
+msgctxt "#30133"
+msgid "Page failed to load"
+msgstr ""
+
+msgctxt "#30188"
+msgid "Start URL"
+msgstr ""
+
+msgctxt "#30189"
+msgid "Set URL of first opened site"
+msgstr ""
+
+msgctxt "#30190"
+msgid "System"
+msgstr ""
+
+
+msgctxt "#30200"
+msgid "Chromium log severity"
+msgstr ""
+
+msgctxt "#30201"
+msgid "Default logging"
+msgstr ""
+
+msgctxt "#30202"
+msgid "Verbose logging"
+msgstr ""
+
+msgctxt "#30203"
+msgid "Info logging"
+msgstr ""
+
+msgctxt "#30204"
+msgid "Warning logging"
+msgstr ""
+
+msgctxt "#30205"
+msgid "Error logging"
+msgstr ""
+
+msgctxt "#30206"
+msgid "Completely disable logging"
+msgstr ""
+
+
+msgctxt "#30300"
+msgid "Cookies"
+msgstr ""
+
+msgctxt "#30301"
+msgid "Name:"
+msgstr ""
+
+msgctxt "#30302"
+msgid "Content:"
+msgstr ""
+
+msgctxt "#30303"
+msgid "Domain:"
+msgstr ""
+
+msgctxt "#30304"
+msgid "Path:"
+msgstr ""
+
+msgctxt "#30305"
+msgid "Only HTTPS requests:"
+msgstr ""
+
+msgctxt "#30306"
+msgid "Accessible for script:"
+msgstr ""
+
+msgctxt "#30307"
+msgid "Has expire date:"
+msgstr ""
+
+msgctxt "#30308"
+msgid "Created:"
+msgstr ""
+
+msgctxt "#30309"
+msgid "Last access:"
+msgstr ""
+
+msgctxt "#30310"
+msgid "Expiry:"
+msgstr ""
+
+msgctxt "#30311"
+msgid "yes"
+msgstr ""
+
+msgctxt "#30312"
+msgid "no"
+msgstr ""
+
+msgctxt "#30313"
+msgid "Delete selected cookie"
+msgstr ""
+
+msgctxt "#30314"
+msgid "Delete all cookies"
+msgstr ""
+
+msgctxt "#30315"
+msgid "Search cookie"
+msgstr ""
+
+msgctxt "#30316"
+msgid "Open settings"
+msgstr ""
+
+msgctxt "#30317"
+msgid "Cookie '%s' not found"
+msgstr ""
+
+msgctxt "#30318"
+msgid "Continue search"
+msgstr ""
+
+msgctxt "#30319"
+msgid "Delete all of selected domain"
+msgstr ""
+
+msgctxt "#30320"
+msgid "Deleting Cookies"
+msgstr ""
+
+msgctxt "#30321"
+msgid "Work in progress"
+msgstr ""
+
+msgctxt "#30322"
+msgid "%i cookies deleted"
+msgstr ""
+
+msgctxt "#30323"
+msgid "Cookies"
+msgstr ""
+
+msgctxt "#30324"
+msgid "Use current as start site"
+msgstr ""
+
+msgctxt "#31000"
+msgid "This is not a secure connection"
+msgstr ""
+
+msgctxt "#31001"
+msgid "Unauthorized third parties could attempt to steal your information from %s, Such as passwords, messages, or credit card data. %s\n\nThis server could not prove that it is %s. His security certificate comes from * .badssl.com. Possible reasons are an incorrect configuration or an attacker that intercepts your connection."
+msgstr ""
+
+msgctxt "#31002"
+msgid "Next (unsafe !!!)"
+msgstr ""
+
+msgctxt "#31003"
+msgid "Cancel load"
+msgstr ""
+
+
+#   FLAG(CERT_STATUS_COMMON_NAME_INVALID);
+#   FLAG(CERT_STATUS_DATE_INVALID);
+#   FLAG(CERT_STATUS_AUTHORITY_INVALID);
+#   FLAG(CERT_STATUS_NO_REVOCATION_MECHANISM);
+#   FLAG(CERT_STATUS_UNABLE_TO_CHECK_REVOCATION);
+#   FLAG(CERT_STATUS_REVOKED);
+#   FLAG(CERT_STATUS_INVALID);
+#   FLAG(CERT_STATUS_WEAK_SIGNATURE_ALGORITHM);
+#   FLAG(CERT_STATUS_NON_UNIQUE_NAME);
+#   FLAG(CERT_STATUS_WEAK_KEY);
+#   FLAG(CERT_STATUS_PINNED_KEY_MISSING);
+#   FLAG(CERT_STATUS_NAME_CONSTRAINT_VIOLATION);
+#   FLAG(CERT_STATUS_VALIDITY_TOO_LONG);
+#   FLAG(CERT_STATUS_IS_EV);
+#   FLAG(CERT_STATUS_REV_CHECKING_ENABLED);
+#   FLAG(CERT_STATUS_SHA1_SIGNATURE_PRESENT);
+#   FLAG(CERT_STATUS_CT_COMPLIANCE_FAILED);
 
 
 msgctxt "#56500"
-msgid "Open Side"
+msgid "Open"
 msgstr ""
 
 msgctxt "#56501"
+msgid "Open on new Tab"
+msgstr ""
+
+msgctxt "#56502"
 msgid "Open Keyboard"
 msgstr ""

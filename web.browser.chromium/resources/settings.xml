@@ -1,9 +1,23 @@
 <settings version="1">
   <section id="addon" label="-1" help="-1">
     <category id="main" label="128" help="-1">
-      <group id="1" label="30007">
-        <setting id="zoomlevel" type="integer" label="30004" help="-1">
-          <default>20</default>
+      <group id="1" label="-1">
+        <setting id="main.starturl" type="string" label="30188" help="-1">
+          <default>http://kodi.tv</default>
+          <control type="edit" format="string">
+            <heading>30189</heading>
+          </control>
+        </setting>
+      </group>
+      <group id="2" label="30041">
+        <setting id="main.editdialogdirect" type="boolean" label="30042" help="-1">
+          <default>true</default>
+          <control type="toggle" />
+        </setting>
+      </group>
+      <group id="3" label="30007">
+        <setting id="main.zoomlevel" type="integer" label="30004" help="-1">
+          <default>200</default>
           <constraints>
             <minimum>40</minimum>
             <step>10</step>
@@ -13,7 +27,7 @@
             <formatlabel>30005</formatlabel>
           </control>
         </setting>
-        <setting id="zoom_step_size" type="integer" label="30006" help="-1">
+        <setting id="main.zoom_step_size" type="integer" label="30006" help="-1">
           <visible>false</visible>
           <default>10</default>
           <constraints>
@@ -22,6 +36,10 @@
             <maximum>50</maximum>
           </constraints>
           <control type="spinner" format="string" />
+        </setting>
+        <setting id="main.allow_open_to_tabs" type="boolean" label="30039" help="-1">
+          <default>true</default>
+          <control type="toggle" />
         </setting>
       </group>
     </category>
@@ -55,6 +73,29 @@
         </setting>
         <setting id="downloads.askfolder" type="boolean" label="30010" help="-1">
           <default>true</default>
+          <control type="toggle" />
+        </setting>
+      </group>
+    </category>
+    <category id="system" label="30190" help="-1">
+      <group id="1" label="-1">
+        <setting id="system.loglevelcef" type="integer" label="30200" help="-1">
+          <default>0</default>
+          <constraints>
+            <options>
+              <option label="30201">0</option>
+              <option label="30202">1</option>
+              <option label="30203">2</option>
+              <option label="30204">3</option>
+              <option label="30205">4</option>
+              <option label="30206">99</option>
+            </options>
+          </constraints>
+          <control type="list" format="string" />
+        </setting>
+        <setting id="system.mouse_cursor_change_disabled" type="boolean" label="30040" help="-1">
+          <visible>false</visible>
+          <default>false</default>
           <control type="toggle" />
         </setting>
       </group>
