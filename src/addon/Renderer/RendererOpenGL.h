@@ -1,6 +1,6 @@
 #pragma once
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2018 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify

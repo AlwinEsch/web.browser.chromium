@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2018 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -15,6 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <kodi/General.h>
 
 #include "RendererOpenGL.h"
 
@@ -94,6 +96,8 @@ bool CRendererClientOpenGL::Initialize()
 
   if (!m_shader->CompileAndLink())
   {
+    kodi::Log(ADDON_LOG_ERROR, "%s - failed to create texture", __FUNCTION__);
+
     delete m_shader;
     m_shader = nullptr;
     return false;

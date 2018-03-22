@@ -1,6 +1,6 @@
 #pragma once
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2018 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -16,6 +16,9 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "D3D9.h"
+#include "D3DX9.h"
 
 #include "include/cef_render_handler.h"
 
@@ -34,4 +37,10 @@ public:
   virtual void ScreenSizeChange(float x, float y, float width, float height) override;
 
 private:
+  LPDIRECT3DDEVICE9 m_device;
+  LPDIRECT3DTEXTURE9 m_texture;
+  int m_viewWidth;
+  int m_viewHeight;
+  CefRect m_popupRect;
+  CefRect m_updateRect;
 };
