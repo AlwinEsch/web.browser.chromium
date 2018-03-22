@@ -19,33 +19,28 @@
 *
 */
 
-#include "VisShader.h"
-#include "VisMatrixGLES.h"
+#include "Shader.h"
+#include "Matrix.h"
 
-class CVisGUIShader : public CVisGLSLShaderProgram, public CVisMatrixGLES
+class ATTRIBUTE_HIDDEN CGUIShader : public CShaderProgram, public CMatrix
 {
 public:
-  CVisGUIShader(const char *vert, const char *frag);
+  CGUIShader(std::string vert, std::string frag);
 
-  void OnCompiledAndLinked();
-  bool OnEnabled();
+  void OnCompiledAndLinked() override;
+  bool OnEnabled() override;
   void Free();
 
-  GLint GetPosLoc()   { return m_hPos;   }
-  GLint GetColLoc()   { return m_hCol;   }
-  GLint GetCord0Loc() { return m_hCord0; }
-  GLint GetCord1Loc() { return m_hCord1; }
+  GLint GetPosLoc() { return m_hPos; }
+  GLint GetCordLoc() { return m_hCord; }
 
 protected:
-  GLint m_hTex0;
-  GLint m_hTex1;
-  GLint m_hProj;
-  GLint m_hModel;
-  GLint m_hPos;
-  GLint m_hCol;
-  GLint m_hCord0;
-  GLint m_hCord1;
+  GLint m_hTex = -1;
+  GLint m_hProj = -1;
+  GLint m_hModel = -1;
+  GLint m_hPos = -1;
+  GLint m_hCord = -1;
 
-  GLfloat *m_proj;
-  GLfloat *m_model;
+  GLfloat *m_proj = nullptr;
+  GLfloat *m_model = nullptr;
 };

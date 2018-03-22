@@ -17,64 +17,21 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <queue>
-
 #include "include/cef_render_handler.h"
+
+#include "IRenderer.h"
 
 class CWebBrowserClient;
 
-class CRendererClientDirectX :
-  public CefRenderHandler
+class ATTRIBUTE_HIDDEN CRendererClientDirectX : public IRenderer
 {
 public:
-  CRendererClientDirectX(CWebBrowserClient* client);
+  CRendererClientDirectX(CWebBrowserClient const* client);
   virtual ~CRendererClientDirectX();
 
-  virtual bool Initialize();
-
-  void Render();
-  bool Dirty();
-
-  /*!
-   * Kodi add-on render functions
-   */
-  virtual void Cleanup();
-
-  /*!
-   * CEF class handler alignment
-   */
-  IMPLEMENT_REFCOUNTING(CRendererClientDirectX);
-
-  /*!
-   * CefRenderHandler functions
-   */
-  virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
-  virtual bool GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY) override;
-  virtual void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width, int height) override;
+  virtual bool Initialize() override;
+  virtual void Render() override;
+  virtual void ScreenSizeChange(float x, float y, float width, float height) override;
 
 private:
-  CWebBrowserClient* m_client;
-  bool m_initialized; /*!< Render initialization done flag, becomes called on first OnPaint call */
-  unsigned int m_textureId;
-  int m_viewWidth;
-  int m_viewHeight;
-  float m_fSpinX;
-  float m_fSpinY;
-  CefRect m_popupRect;
-  CefRect m_updateRect;
-  bool m_dirty;
-  bool m_useTransparentBackground;
-  float m_backgroundColor[4];
-
-  typedef struct
-  {
-    CRendererClientDirectX* thisClass;
-    CefRefPtr<CefBrowser> browser;
-    CefBrowserHost::PaintElementType type;
-    CefRenderHandler::RectList dirtyRects;
-    const void* buffer;
-    int width;
-    int height;
-  } CPaintMessage;
-  std::queue <CPaintMessage*> m_paintQueue;
 };

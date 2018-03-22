@@ -7,7 +7,9 @@
   <requires>@ADDON_DEPENDS@</requires>
   <extension
     point="kodi.web"
-    library_@PLATFORM@="@LIBRARY_FILENAME@"/>
+    library_linux="@LIBRARY_FILENAME@">
+    <provides>webbrowser</provides>
+  </extension>
   <extension point="xbmc.addon.metadata">
     <summary lang="en">Internet browser based upon Google Chromium project</summary>
     <description lang="en">KODIChromiumBrowser web browser line based on the modern, cross-platform architecture provided by the Chromium project.

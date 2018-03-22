@@ -452,7 +452,7 @@ void CWebBrowser::OnScheduleMessagePumpWork(int64 delay_ms)
 
 //------------------------------------------------------------------------------
 
-class CMyAddon : public kodi::addon::CAddonBase
+class ATTRIBUTE_HIDDEN CMyAddon : public kodi::addon::CAddonBase
 {
 public:
   CMyAddon() { }

@@ -17,67 +17,28 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <queue>
-
 #include "include/cef_render_handler.h"
+
+#include "IRenderer.h"
+#include "shaders/GUIShader.h"
 
 class CWebBrowserClient;
 
-class CRendererClientOpenGL :
-  public CefRenderHandler
+class ATTRIBUTE_HIDDEN CRendererClientOpenGL : public IRenderer
 {
 public:
-  CRendererClientOpenGL(CWebBrowserClient* client);
+  CRendererClientOpenGL(CWebBrowserClient const* client);
   virtual ~CRendererClientOpenGL();
 
-  bool Initialize();
-  void Render();
-  bool Dirty();
-  void Cleanup();
-  void ScreenSizeChange(float x, float y, float width, float height);
-
-  /// CefRenderHandler functions
-  //@{
-  virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
-  virtual bool GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY) override;
-  virtual void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width, int height) override;
-  virtual void OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, CursorType type, const CefCursorInfo& custom_cursor_info) override;
-  virtual void OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser, double x, double y) override;
-  virtual void OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) override;
-  virtual void OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect) override;
-  virtual bool StartDragging(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> drag_data, DragOperationsMask allowed_ops, int x, int y) override;
-  virtual void UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperation operation) override;
-  virtual void OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& selected_range, const RectList& character_bounds) override;
-  //@}
+  virtual bool Initialize() override;
+  virtual void Render() override;
+  virtual void ScreenSizeChange(float x, float y, float width, float height) override;
 
 private:
-  IMPLEMENT_REFCOUNTING(CRendererClientOpenGL);
-
-  int m_root_node_id;
-  int m_focused_node_id;
-
-  CWebBrowserClient* m_client;
-  bool m_initialized; /*!< Render initialization done flag, becomes called on first OnPaint call */
   unsigned int m_textureId;
   int m_viewWidth;
   int m_viewHeight;
-  float m_fSpinX;
-  float m_fSpinY;
   CefRect m_popupRect;
   CefRect m_updateRect;
-  bool m_dirty;
-  bool m_useTransparentBackground;
-  float m_backgroundColor[4];
-
-  typedef struct
-  {
-    CRendererClientOpenGL* thisClass;
-    CefRefPtr<CefBrowser> browser;
-    CefBrowserHost::PaintElementType type;
-    CefRenderHandler::RectList dirtyRects;
-    const void* buffer;
-    int width;
-    int height;
-  } CPaintMessage;
-  std::queue <CPaintMessage*> m_paintQueue;
+  CGUIShader *m_shader = nullptr;
 };

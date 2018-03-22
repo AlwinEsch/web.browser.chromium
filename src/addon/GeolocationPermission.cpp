@@ -139,7 +139,7 @@ bool CWebBrowserGeolocationPermission::LoadGeolocationPermission(bool initial)
     TiXmlNode *pAllowedNode = nullptr;
     while ((pAllowedNode = pAllowedElement->IterateChildren(pAllowedNode)) != nullptr)
     {
-      CStdString url;
+      std::string url;
       if (!XMLUtils::GetString(pAllowedNode, "url", url))
       {
         kodi::Log(ADDON_LOG_ERROR, "Allowed geolocation defined without url");
@@ -155,7 +155,7 @@ bool CWebBrowserGeolocationPermission::LoadGeolocationPermission(bool initial)
     TiXmlNode *pBlockedNode = nullptr;
     while ((pBlockedNode = pBlockedElement->IterateChildren(pBlockedNode)) != nullptr)
     {
-      CStdString url;
+      std::string url;
       if (!XMLUtils::GetString(pBlockedNode, "url", url))
       {
         kodi::Log(ADDON_LOG_ERROR, "Blocked geolocation defined without url");

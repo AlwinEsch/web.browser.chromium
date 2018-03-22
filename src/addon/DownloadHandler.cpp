@@ -361,21 +361,21 @@ bool CWebBrowserDownloadHandler::LoadDownloadHistory(bool initial)
     TiXmlNode *pChannelNode = nullptr;
     while ((pChannelNode = pElement->IterateChildren(pChannelNode)) != nullptr)
     {
-      CStdString name;
+      std::string name;
       if (!XMLUtils::GetString(pChannelNode, "name", name))
       {
         kodi::Log(ADDON_LOG_ERROR, "Download defined in history without name");
         continue;
       }
 
-      CStdString url;
+      std::string url;
       if (!XMLUtils::GetString(pChannelNode, "url", url))
       {
         kodi::Log(ADDON_LOG_ERROR, "Download defined in history without url (%s)", name.c_str());
         continue;
       }
 
-      CStdString path;
+      std::string path;
       if (!XMLUtils::GetString(pChannelNode, "path", path))
       {
         kodi::Log(ADDON_LOG_ERROR, "Download defined in history without path (%s)", name.c_str());

@@ -18,12 +18,12 @@
 *
 */
 
-#include "VisMatrixGLES.h"
+#include "Matrix.h"
 #include <cmath>
 
 #define MODE_WITHIN_RANGE(m)       ((m >= 0) && (m < (int)MM_MATRIXSIZE))
 
-CVisMatrixGLES::CVisMatrixGLES()
+CMatrix::CMatrix()
 {
   for (unsigned int i=0; i < MM_MATRIXSIZE; i++)
   {
@@ -35,11 +35,11 @@ CVisMatrixGLES::CVisMatrixGLES()
   m_pMatrix    = NULL;
 }
 
-CVisMatrixGLES::~CVisMatrixGLES()
+CMatrix::~CMatrix()
 {
 }
 
-GLfloat* CVisMatrixGLES::GetMatrix(EMATRIXMODE mode)
+GLfloat* CMatrix::GetMatrix(EMATRIXMODE mode)
 {
   if (MODE_WITHIN_RANGE(mode))
   {
@@ -51,7 +51,7 @@ GLfloat* CVisMatrixGLES::GetMatrix(EMATRIXMODE mode)
   return NULL;
 }
 
-void CVisMatrixGLES::MatrixMode(EMATRIXMODE mode)
+void CMatrix::MatrixMode(EMATRIXMODE mode)
 {
   if (MODE_WITHIN_RANGE(mode))
   {
@@ -65,7 +65,7 @@ void CVisMatrixGLES::MatrixMode(EMATRIXMODE mode)
   }
 }
 
-void CVisMatrixGLES::PushMatrix()
+void CMatrix::PushMatrix()
 {
   if (m_pMatrix && MODE_WITHIN_RANGE(m_matrixMode))
   {
@@ -74,7 +74,7 @@ void CVisMatrixGLES::PushMatrix()
   }
 }
 
-void CVisMatrixGLES::PopMatrix()
+void CMatrix::PopMatrix()
 {
   if (MODE_WITHIN_RANGE(m_matrixMode))
   {
@@ -86,7 +86,7 @@ void CVisMatrixGLES::PopMatrix()
   }
 }
 
-void CVisMatrixGLES::LoadIdentity()
+void CMatrix::LoadIdentity()
 {
   if (m_pMatrix)
   {
@@ -97,7 +97,7 @@ void CVisMatrixGLES::LoadIdentity()
   }
 }
 
-void CVisMatrixGLES::Ortho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
+void CMatrix::Ortho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
 {
   GLfloat u =  2.0f / (r - l);
   GLfloat v =  2.0f / (t - b);
@@ -112,7 +112,7 @@ void CVisMatrixGLES::Ortho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n
   MultMatrixf(matrix);
 }
 
-void CVisMatrixGLES::Ortho2D(GLfloat l, GLfloat r, GLfloat b, GLfloat t)
+void CMatrix::Ortho2D(GLfloat l, GLfloat r, GLfloat b, GLfloat t)
 {
   GLfloat u =  2.0f / (r - l);
   GLfloat v =  2.0f / (t - b);
@@ -125,7 +125,7 @@ void CVisMatrixGLES::Ortho2D(GLfloat l, GLfloat r, GLfloat b, GLfloat t)
   MultMatrixf(matrix);
 }
 
-void CVisMatrixGLES::Frustum(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
+void CMatrix::Frustum(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
 {
   GLfloat u = (2.0f * n) / (r - l);
   GLfloat v = (2.0f * n) / (t - b);
@@ -140,7 +140,7 @@ void CVisMatrixGLES::Frustum(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat
   MultMatrixf(matrix);
 }
 
-void CVisMatrixGLES::Translatef(GLfloat x, GLfloat y, GLfloat z)
+void CMatrix::Translatef(GLfloat x, GLfloat y, GLfloat z)
 {
   GLfloat matrix[16] = {1.0f, 0.0f, 0.0f, 0.0f,
                         0.0f, 1.0f, 0.0f, 0.0f,
@@ -149,7 +149,7 @@ void CVisMatrixGLES::Translatef(GLfloat x, GLfloat y, GLfloat z)
   MultMatrixf(matrix);
 }
 
-void CVisMatrixGLES::Scalef(GLfloat x, GLfloat y, GLfloat z)
+void CMatrix::Scalef(GLfloat x, GLfloat y, GLfloat z)
 {
   GLfloat matrix[16] = {   x, 0.0f, 0.0f, 0.0f,
                         0.0f,    y, 0.0f, 0.0f,
@@ -158,7 +158,7 @@ void CVisMatrixGLES::Scalef(GLfloat x, GLfloat y, GLfloat z)
   MultMatrixf(matrix);
 }
 
-void CVisMatrixGLES::Rotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
+void CMatrix::Rotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
   GLfloat modulous = sqrt((x*x)+(y*y)+(z*z));
   if (modulous != 0.0)
@@ -186,7 +186,7 @@ void CVisMatrixGLES::Rotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
   MultMatrixf(matrix);
 }
 
-#if defined(__ARM_NEON__)
+#if defined(__ARM_NEON__) && !defined(__arm64__)
   
 inline void Matrix4Mul(const float* src_mat_1, const float* src_mat_2, float* dst_mat)
 {
@@ -226,7 +226,7 @@ inline void Matrix4Mul(const float* src_mat_1, const float* src_mat_2, float* ds
     : "memory", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11" //clobber
     );
 }
-void CVisMatrixGLES::MultMatrixf(const GLfloat *matrix)
+void CMatrix::MultMatrixf(const GLfloat *matrix)
 {
   if (m_pMatrix)
   {
@@ -236,7 +236,7 @@ void CVisMatrixGLES::MultMatrixf(const GLfloat *matrix)
 }
 
 #else
-void CVisMatrixGLES::MultMatrixf(const GLfloat *matrix)
+void CMatrix::MultMatrixf(const GLfloat *matrix)
 {
   if (m_pMatrix)
   {
@@ -265,7 +265,7 @@ void CVisMatrixGLES::MultMatrixf(const GLfloat *matrix)
 #endif
 
 // gluLookAt implementation taken from Mesa3D
-void CVisMatrixGLES::LookAt(GLfloat eyex, GLfloat eyey, GLfloat eyez, GLfloat centerx, GLfloat centery, GLfloat centerz, GLfloat upx, GLfloat upy, GLfloat upz)
+void CMatrix::LookAt(GLfloat eyex, GLfloat eyey, GLfloat eyez, GLfloat centerx, GLfloat centery, GLfloat centerz, GLfloat upx, GLfloat upy, GLfloat upz)
 {
   GLfloat forward[3], side[3], up[3];
   GLfloat m[4][4];
@@ -337,7 +337,7 @@ static void __gluMultMatrixVecf(const GLfloat matrix[16], const GLfloat in[4], G
 }
 
 // gluProject implementation taken from Mesa3D
-bool CVisMatrixGLES::Project(GLfloat objx, GLfloat objy, GLfloat objz, const GLfloat modelMatrix[16], const GLfloat projMatrix[16], const GLint viewport[4], GLfloat* winx, GLfloat* winy, GLfloat* winz)
+bool CMatrix::Project(GLfloat objx, GLfloat objy, GLfloat objz, const GLfloat modelMatrix[16], const GLfloat projMatrix[16], const GLint viewport[4], GLfloat* winx, GLfloat* winy, GLfloat* winz)
 {
   GLfloat in[4];
   GLfloat out[4];

@@ -19,14 +19,25 @@
 *
 */
 
+#if defined(HAS_GL)
 #if defined(__APPLE__)
-  #include <OpenGLES/ES2/gl.h>
-  #include <OpenGLES/ES2/glext.h>
+#include <OpenGL/gl3.h>
 #else
-  #include <GLES2/gl2.h>
-  #include <GLES2/gl2ext.h>
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GL/glext.h>
 #endif//__APPLE__
+#else
+#if defined(__APPLE__)                                                                                                                                                                                           
+#include <OpenGLES/ES2/gl.h>
+#include <OpenGLES/ES2/glext.h>
+#else                                                                                                                                                                                                            
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+#endif//__APPLE__
+#endif
 
+#include "kodi/AddonBase.h"
 #include <string.h>
 #include <vector>
 
@@ -38,12 +49,12 @@ enum EMATRIXMODE
   MM_MATRIXSIZE  // Must be last! used for size of matrices
 };
 
-class CVisMatrixGLES
+class ATTRIBUTE_HIDDEN CMatrix
 {
 public:
-  CVisMatrixGLES();
-  ~CVisMatrixGLES();
-
+  CMatrix();
+  virtual ~CMatrix();
+  
   GLfloat* GetMatrix(EMATRIXMODE mode);
 
   void MatrixMode(EMATRIXMODE mode);
@@ -62,12 +73,12 @@ public:
 
 protected:
 
-  struct MatrixWrapper
+  struct MatrixWrapper 
   {
     MatrixWrapper(){};
     MatrixWrapper( const float values[16]) { memcpy(m_values,values,sizeof(m_values)); }
     MatrixWrapper( const MatrixWrapper &rhs ) { memcpy(m_values, rhs.m_values, sizeof(m_values)); }
-    MatrixWrapper &operator=( const MatrixWrapper &rhs ) { memcpy(m_values, rhs.m_values, sizeof(m_values)); return *this; }
+    MatrixWrapper &operator=( const MatrixWrapper &rhs ) { memcpy(m_values, rhs.m_values, sizeof(m_values)); return *this;}
     operator float*() { return m_values; }
     operator const float*() const { return m_values; }
 
