@@ -143,6 +143,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/MessageIds.cpp
                                  src/addon/Messenger.cpp
                                  src/addon/RequestContextHandler.cpp
+                                 src/addon/SandboxControl.cpp
                                  src/addon/URICheckHandler.cpp
                                  src/addon/WebBrowserClient.cpp
                                  src/addon/JSInterface/Handler.cpp
@@ -166,6 +167,7 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/MessageIds.h
                                  src/addon/Messenger.h
                                  src/addon/RequestContextHandler.h
+                                 src/addon/SandboxControl.h
                                  src/addon/URICheckHandler.h
                                  src/addon/WebBrowserClient.h
                                  src/addon/JSInterface/Handler.h

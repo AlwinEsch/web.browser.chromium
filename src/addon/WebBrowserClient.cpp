@@ -402,12 +402,12 @@ void CWebBrowserClient::OpenOwnContextMenu()
     {
       case 0:
       {
-        m_mainBrowserHandler->OpenDownloadDialog();
+        m_mainBrowserHandler->GetGUIManager().GetDownloadDialog()->Open();
         break;
       }
       case 1:
       {
-        m_mainBrowserHandler->OpenCookieHandler();
+        m_mainBrowserHandler->GetGUIManager().GetCookieDialog().Open();
         break;
       }
       case 2:

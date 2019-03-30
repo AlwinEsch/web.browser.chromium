@@ -18,12 +18,14 @@
 
 #pragma once
 
+#include <kodi/General.h>
+
 #include "include/cef_app.h"
 #include "include/cef_client.h"
 
 class CWebBrowser;
 
-class CClientAppBrowser
+class ATTRIBUTE_HIDDEN CClientAppBrowser
   : public CefApp,
     public CefResourceBundleHandler,
     public CefBrowserProcessHandler

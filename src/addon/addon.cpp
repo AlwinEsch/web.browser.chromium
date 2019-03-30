@@ -22,6 +22,7 @@
 #include "DOMVisitor.h"
 #include "MessageIds.h"
 #include "RequestContextHandler.h"
+#include "SandboxControl.h"
 #include "WebBrowserClient.h"
 #include "utils/Utils.h"
 #include "utils/StringUtils.h"
@@ -31,17 +32,17 @@
 #include "include/wrapper/cef_library_loader.h"
 
 #include <kodi/gui/dialogs/OK.h>
-#include <kodi/gui/dialogs/YesNo.h>
-#include <kodi/gui/dialogs/Keyboard.h>
 #include <kodi/gui/dialogs/FileBrowser.h>
-
 
 int CWebBrowser::m_iUniqueClientId = 0;
 
-CWebBrowser::CWebBrowser(KODI_HANDLE instance)
-  : CInstanceWeb(instance),
-    m_guiManager(this),
+CWebBrowser::CWebBrowser()
+  : m_guiManager(this),
     m_isActive(false)
+{
+}
+
+WEB_ADDON_ERROR CWebBrowser::StartInstance()
 {
   kodi::Log(ADDON_LOG_DEBUG, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
 
@@ -49,33 +50,81 @@ CWebBrowser::CWebBrowser(KODI_HANDLE instance)
   if (!cef_load_library(cefLib.c_str()))
   {
     LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
-    return;
+    return WEB_ADDON_ERROR_FAILED;
   }
 
-//
-//   CefMessageRouterConfig config;
-//   m_messageRouter = CefMessageRouterRendererSide::Create(config);
+  std::string path;
+
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Setup add-on CEF directories:");
+
+  path = UserPath();
+  m_strHTMLCachePath = path + "pchHTMLCache";
+  m_strCookiePath = path + "pchCookies";
+
+  path = kodi::GetAddonPath();
+  m_strLibPath = path + "kodichromium";
+
+  path = AddonSharePath();
+  fprintf(stderr, "AddonSharePath %s\n", path.c_str());
+  m_strLocalesPath = path + "resources/cef/locales";
+  m_strResourcesPath = path + "resources/cef/";
+
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strHTMLCacheDir  %s", m_strHTMLCachePath.c_str());
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strCookiePath    %s", m_strCookiePath.c_str());
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strLocalesPath   %s", m_strLocalesPath.c_str());
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strResourcesPath %s", m_strResourcesPath.c_str());
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strLibPath       %s", m_strLibPath.c_str());
+
+  if (!SandboxControl::SetSandbox())
+    return WEB_ADDON_ERROR_FAILED;
+
+  std::string language = kodi::GetLanguage(LANG_FMT_ISO_639_1, true);
+
+  m_cefSettings.no_sandbox                          = 0;
+  CefString(&m_cefSettings.browser_subprocess_path) = m_strLibPath;
+  CefString(&m_cefSettings.framework_dir_path)      = "";
+  m_cefSettings.multi_threaded_message_loop         = 0;
+  m_cefSettings.external_message_pump               = 1;
+  m_cefSettings.windowless_rendering_enabled        = 1;
+  m_cefSettings.command_line_args_disabled          = 0;
+  CefString(&m_cefSettings.cache_path)              = m_strHTMLCachePath;
+  CefString(&m_cefSettings.user_data_path)          = "";
+  m_cefSettings.persist_session_cookies             = 0;
+  m_cefSettings.persist_user_preferences            = 0;
+  CefString(&m_cefSettings.user_agent)              = StringUtils::Format("Chrome/%d.%d.%d.%d",
+                                                                          CHROME_VERSION_MAJOR, CHROME_VERSION_MINOR,
+                                                                          CHROME_VERSION_BUILD, CHROME_VERSION_PATCH);
+  CefString(&m_cefSettings.product_version)         = "KODI";
+  CefString(&m_cefSettings.locale)                  = language;
+  CefString(&m_cefSettings.log_file)                = "";
+  m_cefSettings.log_severity                        = static_cast<cef_log_severity_t>(kodi::GetSettingInt("system.loglevelcef"));
+  CefString(&m_cefSettings.javascript_flags)        = "";
+  CefString(&m_cefSettings.resources_dir_path)      = m_strResourcesPath;
+  CefString(&m_cefSettings.locales_dir_path)        = m_strLocalesPath;
+  m_cefSettings.pack_loading_disabled               = 0;
+  m_cefSettings.remote_debugging_port               = 8457;
+  m_cefSettings.uncaught_exception_stack_size       = 0;
+  m_cefSettings.ignore_certificate_errors           = 0;
+  m_cefSettings.enable_net_security_expiration      = 0;
+  m_cefSettings.background_color                    = 0;
+  CefString(&m_cefSettings.accept_language_list)    = language;
+  CefString(&m_cefSettings.kodi_addon_dir_path)     = path;
+
+//   CreateThread();
+
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_INFO, "%s - Started web browser add-on process", __FUNCTION__);
+
+  return WEB_ADDON_ERROR_NO_ERROR;
 }
 
-CWebBrowser::~CWebBrowser()
+void CWebBrowser::StopInstance()
 {
-  StopInstance();
-
-//   m_messageRouter = nullptr;
+//   StopThread();
   if (!cef_unload_library())
   {
     LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Failed to unload CEF library", __FUNCTION__);
     return;
   }
-}
-
-WEB_ADDON_ERROR CWebBrowser::GetCapabilities(WEB_ADDON_CAPABILITIES& capabilities)
-{
-  capabilities.bSupportsWeb       = true;
-  capabilities.bSupportsMail      = false;
-  capabilities.bSupportsMessenger = false;
-  capabilities.bSupportsVarious   = false;
-  return WEB_ADDON_ERROR_NO_ERROR;
 }
 
 bool CWebBrowser::MainInitialize()
@@ -111,8 +160,7 @@ bool CWebBrowser::MainInitialize()
 
 void CWebBrowser::MainShutdown()
 {
-
-  P8PLATFORM::CLockObject lock(m_mutex);
+  std::lock_guard<std::mutex> lock(m_mutex);
 
   /* delete all clients outside of CefDoMessageLoopWork */
   for (const auto& entry : m_browserClientsToDelete)
@@ -137,79 +185,6 @@ void CWebBrowser::MainLoop()
   MainShutdown();
 }
 
-WEB_ADDON_ERROR CWebBrowser::StartInstance()
-{
-  std::string path;
-
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Setup add-on CEF directories:");
-
-  path = UserPath();
-  m_strHTMLCachePath = path + "pchHTMLCache";
-  m_strCookiePath = path + "pchCookies";
-
-  path = kodi::GetAddonPath();
-  m_strLibPath = path + "kodichromium";
-  m_strSandboxBinary = path + "chrome-sandbox";
-
-  path = AddonSharePath();
-  fprintf(stderr, "AddonSharePath %s\n", path.c_str());
-  m_strLocalesPath = path + "resources/cef/locales";
-  m_strResourcesPath = path + "resources/cef/";
-
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strHTMLCacheDir  %s", m_strHTMLCachePath.c_str());
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strCookiePath    %s", m_strCookiePath.c_str());
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strLocalesPath   %s", m_strLocalesPath.c_str());
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strResourcesPath %s", m_strResourcesPath.c_str());
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strLibPath       %s", m_strLibPath.c_str());
-
-  if (!SetSandbox())
-    return WEB_ADDON_ERROR_FAILED;
-
-  std::string language = kodi::GetLanguage(LANG_FMT_ISO_639_1, true);
-
-  m_cefSettings.no_sandbox                          = 0;
-  CefString(&m_cefSettings.browser_subprocess_path) = m_strLibPath;
-  CefString(&m_cefSettings.framework_dir_path)      = "";
-  m_cefSettings.multi_threaded_message_loop         = 0;
-  m_cefSettings.external_message_pump               = 1;
-  m_cefSettings.windowless_rendering_enabled        = 1;
-  m_cefSettings.command_line_args_disabled          = 0;
-  CefString(&m_cefSettings.cache_path)              = m_strHTMLCachePath;
-  CefString(&m_cefSettings.user_data_path)          = "";
-  m_cefSettings.persist_session_cookies             = 0;
-  m_cefSettings.persist_user_preferences            = 0;
-  CefString(&m_cefSettings.user_agent)              = StringUtils::Format("Chrome/%d.%d.%d.%d",
-                                                                          CHROME_VERSION_MAJOR, CHROME_VERSION_MINOR,
-                                                                          CHROME_VERSION_BUILD, CHROME_VERSION_PATCH);
-  CefString(&m_cefSettings.product_version)         = "KODI";
-  CefString(&m_cefSettings.locale)                  = language;
-  CefString(&m_cefSettings.log_file)                = "";
-  m_cefSettings.log_severity                        = static_cast<cef_log_severity_t>(kodi::GetSettingInt("system.loglevelcef"));
-  CefString(&m_cefSettings.javascript_flags)        = "";
-  CefString(&m_cefSettings.resources_dir_path)      = m_strResourcesPath;
-  CefString(&m_cefSettings.locales_dir_path)        = m_strLocalesPath;
-  m_cefSettings.pack_loading_disabled               = 0;
-  m_cefSettings.remote_debugging_port               = 8457;
-  m_cefSettings.uncaught_exception_stack_size       = 0;
-  m_cefSettings.ignore_certificate_errors           = 0;
-  m_cefSettings.enable_net_security_expiration      = 0;
-  m_cefSettings.background_color                    = 0;
-  CefString(&m_cefSettings.accept_language_list)    = language;
-  CefString(&m_cefSettings.kodi_addon_dir_path)     = path;
-
-//   m_renderProcess = new CRenderProcess(m_cefSettings);
-//   CreateThread();
-
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_INFO, "%s - Started web browser add-on process", __FUNCTION__);
-
-  return WEB_ADDON_ERROR_NO_ERROR;
-}
-
-void CWebBrowser::StopInstance()
-{
-//   StopThread();
-}
-
 bool CWebBrowser::SetLanguage(const char *language)
 {
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser language set to '%s'", __FUNCTION__, language);
@@ -224,7 +199,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
 
   CWebBrowserClient *pBrowserClient;
 
-  P8PLATFORM::CLockObject lock(m_mutex);
+  std::lock_guard<std::mutex> lock(m_mutex);
 
   std::unordered_map<std::string, CWebBrowserClient*>::iterator itr = m_browserClientsInactive.find(sourceName);
   if (itr != m_browserClientsInactive.end())
@@ -311,7 +286,7 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
     return false;
   }
 
-  P8PLATFORM::CLockObject lock(m_mutex);
+  std::lock_guard<std::mutex> lock(m_mutex);
 
   const auto& itr = m_browserClients.find(browserClient->GetDataIdentifier());
   if (itr != m_browserClients.end())
@@ -388,7 +363,7 @@ void* CWebBrowser::Process(void)
 //     CefDoMessageLoopWork();
 //
 //     {
-//       P8PLATFORM::CLockObject lock(m_mutex);
+//       std::lock_guard<std::mutex> lock(m_mutex);
 //
 //       /* delete all clients outside of CefDoMessageLoopWork */
 //       for (const auto& entry : m_browserClientsToDelete)
@@ -409,86 +384,4 @@ void* CWebBrowser::Process(void)
   return nullptr;
 }
 
-/*!
- * @note and @todo
- *
- * Function is initial version and support currently only 'sudo' which present on ubuntu.
- * The super user way must be added with a better solution. Primary Idea is to add
- * related support to Kodi itself to allow also for other add-ons used with Linux and to
- * support it on all distribution types.
- *
- * Also need this easy sudo way to be tested on Mac OS X where it is also present.
- */
-bool CWebBrowser::SetSandbox()
-{
-  struct stat st;
-  if (m_strSandboxBinary.empty() || stat(m_strSandboxBinary.c_str(), &st) != 0)
-  {
-    kodi::gui::dialogs::OK::ShowAndGetInput(kodi::GetLocalizedString(30000), kodi::GetLocalizedString(30001));
-    LOG_MESSAGE(ADDON_LOG_ERROR, "Web browser sandbox binary missing, add-on not usable!");
-    return false;
-  }
-
-  bool bCanceled;
-  if (access(m_strSandboxBinary.c_str(), X_OK) != 0 || (st.st_uid != 0) ||
-      ((st.st_mode & S_ISUID) == 0) || ((st.st_mode & S_IXOTH)) == 0)
-  {
-    if (!kodi::gui::dialogs::YesNo::ShowAndGetInput(kodi::GetLocalizedString(30000), kodi::GetLocalizedString(30002), bCanceled))
-    {
-      return false;
-    }
-
-    std::string command;
-    std::string strPassword;
-    for (int i = 0; i < 3; i++)
-    {
-      if (kodi::gui::dialogs::Keyboard::ShowAndGetNewPassword(strPassword, kodi::GetLocalizedString(30003), true))
-      {
-        if (stat("/usr/bin/sudo", &st) == 0)
-        {
-          command = StringUtils::Format("echo %s | sudo -S bash -c \"chown root:root %s; sudo -- chmod 4755 %s\"",
-                                            strPassword.c_str(),
-                                            m_strSandboxBinary.c_str(),
-                                            m_strSandboxBinary.c_str());
-        }
-        else
-        {
-          LOG_MESSAGE(ADDON_LOG_ERROR, "No super user application found to change chrome-sandbox rights!");
-          break;
-        }
-        if (system(command.c_str()) == 0)
-          return true;
-      }
-      else
-        break;
-    }
-    return false;
-  }
-  return true;
-}
-
-
-void CWebBrowser::OpenDownloadDialog()
-{
-  GetGUIManager().GetDownloadDialog()->Open();
-}
-
-void CWebBrowser::OpenCookieHandler()
-{
-  GetGUIManager().GetCookieDialog().Open();
-}
-
-//------------------------------------------------------------------------------
-
-class ATTRIBUTE_HIDDEN CMyAddon : public kodi::addon::CAddonBase
-{
-public:
-  CMyAddon() { }
-  virtual ADDON_STATUS CreateInstance(int instanceType, std::string instanceID, KODI_HANDLE instance, KODI_HANDLE& addonInstance) override
-  {
-    addonInstance = new CWebBrowser(instance);
-    return ADDON_STATUS_OK;
-  }
-};
-
-ADDONCREATOR(CMyAddon)
+ADDONCREATOR(CWebBrowser)
