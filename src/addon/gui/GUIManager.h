@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "DialogFile.h"
 #include "DialogKeyboard.h"
 
 #include <p8-platform/threads/threads.h>
@@ -32,14 +33,17 @@ public:
   bool Create();
   void Destroy();
 
+  CefRefPtr<CBrowserDialogFile> GetFileDialog() { return m_file; }
   CBrowserDialogKeyboard& GetKeyboard() { return m_keyboard; }
 
+// virtual CefRefPtr<CWebBrowserUploadHandler> GetUploadHandler() { return m_uploadHandler; }
 protected:
   void* Process() override;
 
 private:
   CWebBrowser* m_instance;
 
+  CefRefPtr<CBrowserDialogFile> m_file;
   CBrowserDialogKeyboard m_keyboard;
 };
 

@@ -20,7 +20,6 @@
 #define NDEBUG 1
 
 #include "DownloadHandler.h"
-#include "UploadHandler.h"
 #include "Messenger.h"
 #include "audio/AudioHandler.h"
 #include "Renderer/Renderer.h"
@@ -76,16 +75,17 @@ public:
   virtual ~CWebBrowserClient();
 
   CefRefPtr<CefDialogHandler> GetDialogHandler() override;
+  CefRefPtr<CefRenderHandler> GetRenderHandler() override;
+  CefRefPtr<CefAudioHandler> GetAudioHandler() override;
+
   CefRefPtr<CefDownloadHandler> GetDownloadHandler() override;
   CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
-  CefRefPtr<CefRenderHandler> GetRenderHandler() override;
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
   CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
   CefRefPtr<CefFindHandler> GetFindHandler() override { return this; }
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
-  CefRefPtr<CefAudioHandler> GetAudioHandler() override { return m_audioHandler; }
 
   bool OnAction(int actionId, uint32_t buttoncode, wchar_t unicode, int &nextItem) override;
   bool OnMouseEvent(int id, double x, double y, double offsetX, double offsetY, int state) override;

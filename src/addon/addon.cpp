@@ -41,7 +41,6 @@ int CWebBrowser::m_iUniqueClientId = 0;
 CWebBrowser::CWebBrowser(KODI_HANDLE instance)
   : CInstanceWeb(instance),
     m_guiManager(this),
-//     m_uploadHandler(new CWebBrowserUploadHandler),
     m_isActive(false)
 {
   kodi::Log(ADDON_LOG_DEBUG, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);

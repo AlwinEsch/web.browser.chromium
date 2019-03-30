@@ -19,7 +19,6 @@
  */
 
 #include "DownloadHandler.h"
-#include "UploadHandler.h"
 #include "WebBrowserClient.h"
 #include "Cookies/CookieHandler.h"
 #include "gui/GUIManager.h"
@@ -116,7 +115,6 @@ private:
   static int m_iUniqueClientId;
 //
 //   CWebBrowserDownloadHandler m_downloadHandler;
-//   CefRefPtr<CWebBrowserUploadHandler> m_uploadHandler;
 
   bool SetSandbox();
 

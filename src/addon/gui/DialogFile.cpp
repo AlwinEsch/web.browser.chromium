@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2015 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -16,31 +16,58 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "UploadHandler.h"
+
+#include "DialogFile.h"
 #include "Utils.h"
 
 #include <kodi/gui/dialogs/FileBrowser.h>
+#include <thread>
 
-bool CWebBrowserUploadHandler::OnFileDialog(CefRefPtr<CefBrowser> browser,
-                                            FileDialogMode mode,
-                                            const CefString& title,
-                                            const CefString& default_file_path,
-                                            const std::vector<CefString>& accept_filters,
-                                            int selected_accept_filter,
-                                            CefRefPtr<CefFileDialogCallback> callback)
+bool CBrowserDialogFile::OnFileDialog(CefRefPtr<CefBrowser> browser,
+                                      FileDialogMode mode,
+                                      const CefString& title,
+                                      const CefString& default_file_path,
+                                      const std::vector<CefString>& accept_filters,
+                                      int selected_accept_filter,
+                                      CefRefPtr<CefFileDialogCallback> callback)
 {
   std::string mask;
   for (const auto& filter : accept_filters)
     mask += filter.ToString() + "|";
 
+  std::thread(Process, mode, title.ToString(), default_file_path.ToString(), mask, selected_accept_filter, callback).detach();
+  return true;
+}
+
+void CBrowserDialogFile::Process(FileDialogMode mode,
+                                 std::string heading,
+                                 std::string default_file_path,
+                                 std::string mask,
+                                 int selected_accept_filter,
+                                 CefRefPtr<CefFileDialogCallback> callback)
+{
   bool ret = false;
-  std::string heading = title.ToString();
   std::string shares = "files|local|removable|music|video|pictures";
   std::vector<CefString> file_paths;
 
   int selectedMode = mode & FILE_DIALOG_TYPE_MASK;
   switch (selectedMode)
   {
+    case FILE_DIALOG_OPEN_MULTIPLE:
+    {
+      if (heading.empty())
+        heading = kodi::GetLocalizedString(30020);
+
+      std::vector<std::string> fileList;
+      ret = kodi::gui::dialogs::FileBrowser::ShowAndGetFileList(shares, mask, heading, fileList);
+      if (ret)
+      {
+        for (const auto& file : fileList)
+          file_paths.push_back(file);
+      }
+    }
+    break;
+
     case FILE_DIALOG_OPEN_FOLDER:
     {
       if (heading.empty())
@@ -65,21 +92,6 @@ bool CWebBrowserUploadHandler::OnFileDialog(CefRefPtr<CefBrowser> browser,
     }
     break;
 
-    case FILE_DIALOG_OPEN_MULTIPLE:
-    {
-      if (heading.empty())
-        heading = kodi::GetLocalizedString(30020);
-
-      std::vector<std::string> fileList;
-      ret = kodi::gui::dialogs::FileBrowser::ShowAndGetFileList(shares, mask, heading, fileList);
-      if (ret)
-      {
-        for (const auto& file : fileList)
-          file_paths.push_back(file);
-      }
-    }
-    break;
-
     default:
     {
       if (heading.empty())
@@ -95,6 +107,4 @@ bool CWebBrowserUploadHandler::OnFileDialog(CefRefPtr<CefBrowser> browser,
 
   if (ret)
     callback->Continue(selected_accept_filter, file_paths);
-
-  return true;
 }

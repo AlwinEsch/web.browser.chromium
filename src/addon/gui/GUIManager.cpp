@@ -20,7 +20,7 @@
 
 CBrowserGUIManager::CBrowserGUIManager(CWebBrowser* instance) : m_instance(instance)
 {
-
+  m_file = new CBrowserDialogFile;
 }
 
 bool CBrowserGUIManager::Create()

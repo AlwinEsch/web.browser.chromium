@@ -126,7 +126,7 @@ target_link_libraries(kodichromium ${DEPLIBS} cef dl)
 
 set(KODICHROMIUM_CUSTOM_DATA "${CMAKE_CURRENT_BINARY_DIR}/share/cef")
 set(KODICHROMIUM_ADDITIONAL_BINARY "${CMAKE_CURRENT_BINARY_DIR}/kodichromium"
-#                                    "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/chrome-sandbox"
+                                   "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/chrome-sandbox"
                                    "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/libcef.so")
 set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/icudtl.dat"
                                          "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/natives_blob.bin"
@@ -145,7 +145,6 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/Messenger.cpp
                                  src/addon/RequestContextHandler.cpp
                                  src/addon/SystemTranslator.cpp
-                                 src/addon/UploadHandler.cpp
                                  src/addon/URICheckHandler.cpp
                                  src/addon/WebBrowserClient.cpp
                                  src/addon/Cookies/CookieHandler.cpp
@@ -155,6 +154,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/Renderer/IRenderer.cpp
                                  src/addon/Renderer/Renderer.cpp
                                  src/addon/audio/AudioHandler.cpp
+                                 src/addon/gui/DialogFile.cpp
                                  src/addon/gui/DialogKeyboard.cpp
                                  src/addon/gui/GUIManager.cpp
                                  src/addon/utils/Utils.cpp
@@ -168,7 +168,6 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/Messenger.h
                                  src/addon/RequestContextHandler.h
                                  src/addon/SystemTranslator.h
-                                 src/addon/UploadHandler.h
                                  src/addon/URICheckHandler.h
                                  src/addon/WebBrowserClient.h
                                  src/addon/Cookies/CookieHandler.h
@@ -178,6 +177,7 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/Renderer/IRenderer.h
                                  src/addon/Renderer/Renderer.h
                                  src/addon/audio/AudioHandler.h
+                                 src/addon/gui/DialogFile.h
                                  src/addon/gui/DialogKeyboard.h
                                  src/addon/gui/GUIManager.h
                                  src/addon/utils/Utils.h

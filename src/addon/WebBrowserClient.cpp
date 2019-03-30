@@ -497,9 +497,19 @@ float CWebBrowserClient::GetHeight() const
 
 CefRefPtr<CefDialogHandler> CWebBrowserClient::GetDialogHandler()
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
-  return nullptr;//m_mainBrowserHandler->GetUploadHandler();
+  return GetMain().GetGUIManager().GetFileDialog();
 }
+
+CefRefPtr<CefRenderHandler> CWebBrowserClient::GetRenderHandler()
+{
+  return m_renderer;
+}
+
+CefRefPtr<CefAudioHandler> CWebBrowserClient::GetAudioHandler()
+{
+  return m_audioHandler;
+}
+
 
 CefRefPtr<CefDownloadHandler> CWebBrowserClient::GetDownloadHandler()
 {
@@ -513,11 +523,6 @@ CefRefPtr<CefJSDialogHandler> CWebBrowserClient::GetJSDialogHandler()
   return m_jsDialogHandler;
 }
 
-CefRefPtr<CefRenderHandler> CWebBrowserClient::GetRenderHandler()
-{
-//   fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
-  return m_renderer;
-}
 
 /// CefClient methods
 //@{
