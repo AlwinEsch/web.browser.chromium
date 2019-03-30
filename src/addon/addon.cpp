@@ -23,8 +23,8 @@
 #include "MessageIds.h"
 #include "RequestContextHandler.h"
 #include "WebBrowserClient.h"
-#include "Utils.h"
-#include "webApp/RenderProcess.h"
+#include "utils/Utils.h"
+#include "utils/StringUtils.h"
 
 #include "include/cef_app.h"
 #include "include/cef_version.h"
@@ -34,7 +34,7 @@
 #include <kodi/gui/dialogs/YesNo.h>
 #include <kodi/gui/dialogs/Keyboard.h>
 #include <kodi/gui/dialogs/FileBrowser.h>
-#include <p8-platform/util/StringUtils.h>
+
 
 int CWebBrowser::m_iUniqueClientId = 0;
 

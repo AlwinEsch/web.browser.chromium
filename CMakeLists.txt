@@ -158,8 +158,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/renderer/Renderer.cpp
                                  src/addon/utils/StringUtils.cpp
                                  src/addon/utils/SystemTranslator.cpp
-                                 src/addon/utils/Utils.cpp
-                                 src/addon/webApp/RenderProcess.cpp)
+                                 src/addon/utils/Utils.cpp)
 
 list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/AppBrowser.h
@@ -182,8 +181,7 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/renderer/Renderer.h
                                  src/addon/utils/StringUtils.h
                                  src/addon/utils/SystemTranslator.h
-                                 src/addon/utils/Utils.h
-                                 src/addon/webApp/RenderProcess.h)
+                                 src/addon/utils/Utils.h)
 
 build_addon(web.browser.chromium KODICHROMIUM DEPLIBS)
 add_dependencies(web.browser.chromium cef-lib-creator cef-binary kodichromium)
