@@ -22,6 +22,7 @@
 #include "DownloadHandler.h"
 #include "UploadHandler.h"
 #include "Messenger.h"
+#include "audio/AudioHandler.h"
 #include "Renderer/Renderer.h"
 
 #include "include/cef_audio_handler.h"
@@ -68,8 +69,7 @@ class CWebBrowserClient
     public CefFindHandler,
     public CefRequestHandler,
     public CefContextMenuHandler,
-    public CefLoadHandler,
-    public CefAudioHandler
+    public CefLoadHandler
 {
 public:
   CWebBrowserClient(KODI_HANDLE handle, int iUniqueClientId, const std::string& startURL, CWebBrowser* instance);
@@ -85,7 +85,7 @@ public:
   CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
   CefRefPtr<CefFindHandler> GetFindHandler() override { return this; }
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
-  CefRefPtr<CefAudioHandler> GetAudioHandler() override { return this; }
+  CefRefPtr<CefAudioHandler> GetAudioHandler() override { return m_audioHandler; }
 
   bool OnAction(int actionId, uint32_t buttoncode, wchar_t unicode, int &nextItem) override;
   bool OnMouseEvent(int id, double x, double y, double offsetX, double offsetY, int state) override;
@@ -195,14 +195,6 @@ public:
                    const CefString& errorText, const CefString& failedUrl) override;
   //@}
 
-  /// CefAudioHandler methods
-  //@{
-  void OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int audio_stream_id, int channels, ChannelLayout channel_layout,
-                            int sample_rate, int frames_per_buffer) override;
-  void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser, int audio_stream_id, const float** data, int frames, int64_t pts) override;
-  void OnAudioStreamStopped(CefRefPtr<CefBrowser> browser, int audio_stream_id) override;
-  //@}
-
   bool IsLoading() { return m_isLoading; }
   CefRefPtr<CefBrowser> GetBrowser() { return m_browser; }
 
@@ -278,8 +270,6 @@ private:
   std::string m_currentIcon;
   std::vector<std::pair<std::string, bool>> m_historyWebsiteNames;
   std::string m_currentSearchText;
-  std::map<int, kodi::audioengine::CAddonAEStream*> m_audioStreams;
-  unsigned int m_frames;
 
   MessageHandlerSet m_messageHandlers; // Set of Handlers registered with the message router.
 
@@ -348,4 +338,7 @@ private:
   std::queue <ThreadMessage*> m_processThreadQueue;
   P8PLATFORM::CMutex m_processThreadMutex;
   P8PLATFORM::CEvent m_processThreadEvent;
+
+
+  CefRefPtr<CAudioHandler> m_audioHandler;
 };

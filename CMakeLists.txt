@@ -154,6 +154,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/JSInterface/V8Handler.cpp
                                  src/addon/Renderer/IRenderer.cpp
                                  src/addon/Renderer/Renderer.cpp
+                                 src/addon/audio/AudioHandler.cpp
                                  src/addon/gui/DialogKeyboard.cpp
                                  src/addon/gui/GUIManager.cpp
                                  src/addon/utils/Utils.cpp
@@ -176,6 +177,7 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/JSInterface/V8Handler.h
                                  src/addon/Renderer/IRenderer.h
                                  src/addon/Renderer/Renderer.h
+                                 src/addon/audio/AudioHandler.h
                                  src/addon/gui/DialogKeyboard.h
                                  src/addon/gui/GUIManager.h
                                  src/addon/utils/Utils.h

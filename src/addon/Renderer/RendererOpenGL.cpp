@@ -60,9 +60,9 @@
 
 // #define SHOW_UPDATE_RECT 1
 
-CRendererClientOpenGL::CRendererClientOpenGL(CWebBrowserClient const* client) :
-  IRenderer(client),
-  m_textureId(0)
+CRendererClientOpenGL::CRendererClientOpenGL(CWebBrowserClient const* client)
+  : IRenderer(client),
+    m_textureId(0)
 {
   m_vertexPos[0] = glm::vec3(-1.0f,  1.0f, 0.0f);
   m_vertexPos[1] = glm::vec3( 1.0f,  1.0f, 0.0f);

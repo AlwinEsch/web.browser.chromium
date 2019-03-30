@@ -63,15 +63,6 @@ set(TARGET_BUILD_STEPS
 #             cef_package
 #             cef_final
 )
-# Warnung: Sie lassen 2 Commits zurück. Folgende Commits sind in
-# keinem Ihrer Branches enthalten:
-#
-#   03fd7474 dsfs
-#   de60d472 gd
-#
-# Wenn Sie diese durch einen neuen Branch behalten möchten, dann könnte jetzt
-# ein guter Zeitpunkt sein, dies zu tun mit:
-
 
 set(ENV{PATH} "${PROJECT_BINARY_DIR}/depot_tools:$ENV{PATH}")
 set(GN_DEFINES "use_jumbo_build=true use_mkdev=${MAJOR_IN_MKDEV} use_cups=false treat_warnings_as_errors=false")
