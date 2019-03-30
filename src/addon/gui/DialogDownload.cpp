@@ -154,6 +154,11 @@ CWebBrowserDownloadHandler::CWebBrowserDownloadHandler()
   LoadDownloadHistory(true);
 }
 
+void CWebBrowserDownloadHandler::Open()
+{
+  CWindow::Show();
+}
+
 void CWebBrowserDownloadHandler::OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
                                                   const CefString& suggested_name, CefRefPtr<CefBeforeDownloadCallback> callback)
 {

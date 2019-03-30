@@ -407,7 +407,7 @@ void CWebBrowserClient::OpenOwnContextMenu()
       }
       case 1:
       {
-//         m_mainBrowserHandler->OpenCookieHandler();
+        m_mainBrowserHandler->OpenCookieHandler();
         break;
       }
       case 2:

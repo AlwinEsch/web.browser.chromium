@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -16,29 +16,28 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "CookieHandler.h"
+#include "DialogCookie.h"
+#include "utils/StringUtils.h"
 #include "include/cef_waitable_event.h"
+
 #include <kodi/General.h>
 #include <kodi/gui/dialogs/Keyboard.h>
 #include <kodi/gui/dialogs/OK.h>
 #include <kodi/gui/dialogs/ExtendedProgress.h>
 
 #include <iomanip>
-#include <p8-platform/util/StringUtils.h>
-
-using namespace P8PLATFORM;
 
 class CDeleteCookiesCallback : public CefDeleteCookiesCallback
 {
 public:
-  CDeleteCookiesCallback(CCookieHandler* cookieHandler)
+  CDeleteCookiesCallback(CBrowserDialogCookie* cookieHandler)
     : m_handler(cookieHandler),
       m_progress(kodi::GetLocalizedString(30320))
   {
     m_progress.SetText(kodi::GetLocalizedString(30321));
   }
 
-  virtual void OnComplete(int num_deleted) override
+  void OnComplete(int num_deleted) override
   {
     m_handler->OnInit();
     m_progress.MarkFinished();
@@ -47,15 +46,17 @@ public:
   }
 
 private:
-  CCookieHandler* m_handler;
+  CBrowserDialogCookie* m_handler;
   kodi::gui::dialogs::CExtendedProgress m_progress;
   IMPLEMENT_REFCOUNTING(CDeleteCookiesCallback);
 };
 
+//------------------------------------------------------------------------------
+
 class CCookieVisitor : public CefCookieVisitor
 {
 public:
-  CCookieVisitor(CCookieHandler* cookieHandler, CefCookie* deleteThis = nullptr)
+  CCookieVisitor(CBrowserDialogCookie* cookieHandler, CefCookie* deleteThis = nullptr)
     : m_handler(cookieHandler),
       m_delete(deleteThis != nullptr)
   {
@@ -67,7 +68,7 @@ public:
     }
   }
 
-  CCookieVisitor(CCookieHandler* cookieHandler, const std::string& domain)
+  CCookieVisitor(CBrowserDialogCookie* cookieHandler, const std::string& domain)
     : m_handler(cookieHandler),
       m_delete(true),
       m_deleteDomain(domain)
@@ -94,7 +95,7 @@ public:
   }
 
 private:
-  CCookieHandler* m_handler;
+  CBrowserDialogCookie* m_handler;
   bool m_delete;
   std::string m_deleteName;
   std::string m_deleteDomain;
@@ -102,23 +103,25 @@ private:
   IMPLEMENT_REFCOUNTING(CCookieVisitor);
 };
 
-CCookieHandler::CCookieHandler()
+//------------------------------------------------------------------------------
+
+CBrowserDialogCookie::CBrowserDialogCookie()
   : CWindow("DialogCookies.xml", "skin.estuary", true),
     m_inited(false),
     m_findPosition(-1)
 {
 }
 
-void CCookieHandler::AddCookie(const CefCookie& cookie)
+void CBrowserDialogCookie::AddCookie(const CefCookie& cookie)
 {
-  m_cookieMutex.Lock();
+  m_mutex.lock();
   m_items.push_back(cookie);
   AddGUIEntry(cookie);
-  m_cookieMutex.Unlock();
+  m_mutex.unlock();
   MarkDirtyRegion();
 }
 
-void CCookieHandler::AddGUIEntry(const CefCookie& cookie)
+void CBrowserDialogCookie::AddGUIEntry(const CefCookie& cookie)
 {
   if (!m_inited)
     return;
@@ -157,9 +160,9 @@ void CCookieHandler::AddGUIEntry(const CefCookie& cookie)
   AddListItem(item);
 }
 
-bool CCookieHandler::OnInit()
+bool CBrowserDialogCookie::OnInit()
 {
-  m_cookieMutex.Lock();
+  std::lock_guard<std::mutex> lock(m_mutex);
 
   m_inited = true;
   ClearList();
@@ -168,11 +171,10 @@ bool CCookieHandler::OnInit()
     AddGUIEntry(cookie);
   }
 
-  m_cookieMutex.Unlock();
   return false;
 }
 
-void CCookieHandler::Open()
+void CBrowserDialogCookie::Open()
 {
   CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(nullptr);
   bool ret = manager->VisitAllCookies(new CCookieVisitor(this));
@@ -184,7 +186,7 @@ void CCookieHandler::Open()
   Show();
 }
 
-bool CCookieHandler::OnClick(int controlId)
+bool CBrowserDialogCookie::OnClick(int controlId)
 {
 
   return false;
@@ -197,7 +199,7 @@ bool CCookieHandler::OnClick(int controlId)
 #define COOKIE_CONTEXT_MENU__SEARCH_CONTNUE  4
 #define COOKIE_CONTEXT_MENU__OPEN_SETTINGS   5
 
-void CCookieHandler::GetContextButtons(int itemNumber, std::vector<std::pair<unsigned int, std::string>> &buttons)
+void CBrowserDialogCookie::GetContextButtons(int itemNumber, std::vector<std::pair<unsigned int, std::string>> &buttons)
 {
   if (itemNumber >= 0)
   {
@@ -211,7 +213,7 @@ void CCookieHandler::GetContextButtons(int itemNumber, std::vector<std::pair<uns
   }
 }
 
-bool CCookieHandler::OnContextButton(int itemNumber, unsigned int button)
+bool CBrowserDialogCookie::OnContextButton(int itemNumber, unsigned int button)
 {
   CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(nullptr);
 

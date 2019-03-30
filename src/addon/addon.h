@@ -19,7 +19,6 @@
  */
 
 #include "WebBrowserClient.h"
-#include "Cookies/CookieHandler.h"
 #include "gui/GUIManager.h"
 
 #include "include/cef_app.h"
@@ -130,7 +129,6 @@ private:
   std::unordered_map<int, CWebBrowserClient*> m_browserClients;
   std::unordered_map<std::string, CWebBrowserClient*> m_browserClientsInactive;
   std::vector<CWebBrowserClient*> m_browserClientsToDelete;
-//   CCookieHandler m_cookieHandler;
 //   CefRefPtr<CRenderProcess> m_renderProcess;
 //   CefRefPtr<CefMessageRouterRendererSide> m_messageRouter;
   bool m_started = false;

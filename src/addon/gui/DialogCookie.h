@@ -1,6 +1,5 @@
-#pragma once
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -17,22 +16,24 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "include/cef_cookie.h"
 
 #include <kodi/gui/Window.h>
-#include <p8-platform/threads/threads.h>
+#include <mutex>
 
-class CCookieHandler : public kodi::gui::CWindow
+class CBrowserDialogCookie : public kodi::gui::CWindow
 {
 public:
-  CCookieHandler();
+  CBrowserDialogCookie();
 
   void Open();
 
-  virtual bool OnInit() override;
-  virtual bool OnClick(int controlId) override;
-  virtual void GetContextButtons(int itemNumber, std::vector<std::pair<unsigned int, std::string>> &buttons) override;
-  virtual bool OnContextButton(int itemNumber, unsigned int button) override;
+  bool OnInit() override;
+  bool OnClick(int controlId) override;
+  void GetContextButtons(int itemNumber, std::vector<std::pair<unsigned int, std::string>> &buttons) override;
+  bool OnContextButton(int itemNumber, unsigned int button) override;
 
   void AddCookie(const CefCookie& cookie);
 
@@ -40,7 +41,7 @@ private:
   void AddGUIEntry(const CefCookie& cookie);
 
   bool m_inited;
-  P8PLATFORM::CMutex m_cookieMutex;
+  std::mutex m_mutex;
   std::vector<CefCookie> m_items;
   int m_findPosition;
   std::string m_lastSearchText;

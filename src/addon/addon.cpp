@@ -470,13 +470,13 @@ bool CWebBrowser::SetSandbox()
 
 void CWebBrowser::OpenDownloadDialog()
 {
-  GetGUIManager().GetDownloadDialog()->Show();
+  GetGUIManager().GetDownloadDialog()->Open();
 }
-//
-// void CWebBrowser::OpenCookieHandler()
-// {
-//   m_cookieHandler.Open();
-// }
+
+void CWebBrowser::OpenCookieHandler()
+{
+  GetGUIManager().GetCookieDialog().Open();
+}
 
 //------------------------------------------------------------------------------
 

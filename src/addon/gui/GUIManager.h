@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "DialogCookie.h"
 #include "DialogDownload.h"
 #include "DialogFile.h"
 #include "DialogKeyboard.h"
@@ -34,17 +35,18 @@ public:
   bool Create();
   void Destroy();
 
+  CBrowserDialogCookie& GetCookieDialog() { return m_cookie; }
   CefRefPtr<CWebBrowserDownloadHandler> GetDownloadDialog() { return &m_download; }
   CefRefPtr<CBrowserDialogFile> GetFileDialog() { return m_file; }
   CBrowserDialogKeyboard& GetKeyboard() { return m_keyboard; }
 
-// virtual CefRefPtr<CWebBrowserUploadHandler> GetUploadHandler() { return m_uploadHandler; }
 protected:
   void* Process() override;
 
 private:
   CWebBrowser* m_instance;
 
+  CBrowserDialogCookie m_cookie;
   CWebBrowserDownloadHandler m_download;
   CefRefPtr<CBrowserDialogFile> m_file;
   CBrowserDialogKeyboard m_keyboard;
