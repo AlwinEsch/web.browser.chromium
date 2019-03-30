@@ -18,7 +18,7 @@
 
 #include <kodi/General.h>
 
-#include "RendererDirectX.h"
+#include "RendererDX.h"
 
 #include "addon.h"
 #include "Utils.h"

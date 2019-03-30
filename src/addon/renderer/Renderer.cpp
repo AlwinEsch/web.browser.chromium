@@ -22,9 +22,9 @@
 #include "WebBrowserClient.h"
 
 #if defined(HAS_GL) | defined(HAS_GLES2)
-#include "RendererOpenGL.h"
+#include "RendererGL.h"
 #elif defined(HAS_DX)
-#include "CRendererClientDirectX.h"
+#include "RendererDX.h"
 #error Render system is currently not implemented.
 #else
 #error Render system is not supported.

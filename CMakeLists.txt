@@ -134,8 +134,8 @@ set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/ic
                                          "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/v8_context_snapshot.bin")
 set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/swiftshader")
 
-set(KODICHROMIUM_SOURCES src/addon/Renderer/RendererOpenGL.cpp)
-set(KODICHROMIUM_HEADERS src/addon/Renderer/RendererOpenGL.h)
+set(KODICHROMIUM_SOURCES src/addon/renderer/RendererGL.cpp)
+set(KODICHROMIUM_HEADERS src/addon/renderer/RendererGL.h)
 
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/AppBrowser.cpp
@@ -149,13 +149,13 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/JSInterface/Handler.cpp
                                  src/addon/JSInterface/JSDialogHandler.cpp
                                  src/addon/JSInterface/V8Handler.cpp
-                                 src/addon/Renderer/IRenderer.cpp
-                                 src/addon/Renderer/Renderer.cpp
                                  src/addon/audio/AudioHandler.cpp
                                  src/addon/gui/DialogDownload.cpp
                                  src/addon/gui/DialogFile.cpp
                                  src/addon/gui/DialogKeyboard.cpp
                                  src/addon/gui/GUIManager.cpp
+                                 src/addon/renderer/IRenderer.cpp
+                                 src/addon/renderer/Renderer.cpp
                                  src/addon/utils/SystemTranslator.cpp
                                  src/addon/utils/Utils.cpp
                                  src/addon/webApp/RenderProcess.cpp)
@@ -172,13 +172,13 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/JSInterface/Handler.h
                                  src/addon/JSInterface/JSDialogHandler.h
                                  src/addon/JSInterface/V8Handler.h
-                                 src/addon/Renderer/IRenderer.h
-                                 src/addon/Renderer/Renderer.h
                                  src/addon/audio/AudioHandler.h
                                  src/addon/gui/DialogDownload.h
                                  src/addon/gui/DialogFile.h
                                  src/addon/gui/DialogKeyboard.h
                                  src/addon/gui/GUIManager.h
+                                 src/addon/renderer/IRenderer.h
+                                 src/addon/renderer/Renderer.h
                                  src/addon/utils/SystemTranslator.h
                                  src/addon/utils/Utils.h
                                  src/addon/webApp/RenderProcess.h)

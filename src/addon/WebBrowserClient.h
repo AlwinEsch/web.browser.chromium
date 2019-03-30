@@ -21,7 +21,7 @@
 
 #include "Messenger.h"
 #include "audio/AudioHandler.h"
-#include "Renderer/Renderer.h"
+#include "renderer/Renderer.h"
 
 #include "include/cef_audio_handler.h"
 #include "include/cef_app.h"

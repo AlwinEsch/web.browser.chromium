@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "RendererOpenGL.h"
+#include "RendererGL.h"
 
 #include "addon.h"
 #include "Utils.h"
