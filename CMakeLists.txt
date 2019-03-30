@@ -143,7 +143,6 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/MessageIds.cpp
                                  src/addon/Messenger.cpp
                                  src/addon/RequestContextHandler.cpp
-                                 src/addon/SystemTranslator.cpp
                                  src/addon/URICheckHandler.cpp
                                  src/addon/WebBrowserClient.cpp
                                  src/addon/Cookies/CookieHandler.cpp
@@ -157,6 +156,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/gui/DialogFile.cpp
                                  src/addon/gui/DialogKeyboard.cpp
                                  src/addon/gui/GUIManager.cpp
+                                 src/addon/utils/SystemTranslator.cpp
                                  src/addon/utils/Utils.cpp
                                  src/addon/webApp/RenderProcess.cpp)
 
@@ -166,7 +166,6 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/MessageIds.h
                                  src/addon/Messenger.h
                                  src/addon/RequestContextHandler.h
-                                 src/addon/SystemTranslator.h
                                  src/addon/URICheckHandler.h
                                  src/addon/WebBrowserClient.h
                                  src/addon/Cookies/CookieHandler.h
@@ -180,6 +179,7 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/gui/DialogFile.h
                                  src/addon/gui/DialogKeyboard.h
                                  src/addon/gui/GUIManager.h
+                                 src/addon/utils/SystemTranslator.h
                                  src/addon/utils/Utils.h
                                  src/addon/webApp/RenderProcess.h)
 

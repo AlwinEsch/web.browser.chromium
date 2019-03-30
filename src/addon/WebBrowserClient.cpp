@@ -22,7 +22,7 @@
 #include "Utils.h"
 #include "DOMVisitor.h"
 #include "MessageIds.h"
-#include "SystemTranslator.h"
+#include "utils/SystemTranslator.h"
 #include "JSInterface/Handler.h"
 #include "JSInterface/JSDialogHandler.h"
 

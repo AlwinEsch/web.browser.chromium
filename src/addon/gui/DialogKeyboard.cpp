@@ -17,7 +17,7 @@
  */
 
 #include "DialogKeyboard.h"
-#include "SystemTranslator.h"
+#include "utils/SystemTranslator.h"
 #include "WebBrowserClient.h"
 
 #include <kodi/General.h>
