@@ -1,6 +1,5 @@
-#pragma once
 /*
- *      Copyright (C) 2015 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -17,15 +16,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include <kodi/gui/dialogs/ExtendedProgress.h>
 #include <kodi/gui/Window.h>
-#include <p8-platform/threads/threads.h>
 
 #include "include/cef_download_handler.h"
 
 #include <ctime>
 #include <map>
 #include <memory>
+#include <mutex>
 
 class CDownloadItem
 {
@@ -61,39 +62,40 @@ private:
   std::string m_name;
   std::string m_path;
   std::string m_processText;
-  std::time_t m_time;
+  std::time_t m_time = 0;
 
-  bool m_active;
-  bool m_paused;
-  bool m_inProgress;
-  bool m_canceled;
-  bool m_complete;
-  CefRefPtr<CefDownloadItemCallback> m_callback;
-  kodi::gui::dialogs::CExtendedProgress* m_progressDialog;
+  bool m_active = false;
+  bool m_paused = false;
+  bool m_inProgress = false;
+  bool m_canceled = false;
+  bool m_complete = false;
+  CefRefPtr<CefDownloadItemCallback> m_callback = nullptr;
+  kodi::gui::dialogs::CExtendedProgress* m_progressDialog = nullptr;
 };
 
 class CWebBrowserDownloadHandler : public CefDownloadHandler, public kodi::gui::CWindow
 {
 public:
   CWebBrowserDownloadHandler();
-  virtual ~CWebBrowserDownloadHandler() = default;
+  ~CWebBrowserDownloadHandler() = default;
 
   void Open();
 
   void UpdateEntry(std::shared_ptr<CDownloadItem> downloadItem, bool complete);
 
-  virtual bool OnInit() override;
-  virtual bool OnClick(int controlId) override;
-  virtual bool OnAction(int actionId, uint32_t buttoncode, wchar_t unicode) override;
-  virtual void GetContextButtons(int itemNumber, std::vector< std::pair<unsigned int, std::string> > &buttons) override;
-  virtual bool OnContextButton(int itemNumber, unsigned int button) override;
+  // Kodi's GUI related childs
+  bool OnInit() override;
+  bool OnClick(int controlId) override;
+  bool OnAction(int actionId, uint32_t buttoncode, wchar_t unicode) override;
+  void GetContextButtons(int itemNumber, std::vector< std::pair<unsigned int, std::string> > &buttons) override;
+  bool OnContextButton(int itemNumber, unsigned int button) override;
 
+  // CEF's related download handle childs
+  void OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
+                        const CefString& suggested_name, CefRefPtr<CefBeforeDownloadCallback> callback) override;
 
-  virtual void OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
-                                const CefString& suggested_name, CefRefPtr<CefBeforeDownloadCallback> callback) override;
-
-  virtual void OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
-                                 CefRefPtr<CefDownloadItemCallback> callback) override;
+  void OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
+                         CefRefPtr<CefDownloadItemCallback> callback) override;
 
   bool HasDownloads() { return !m_activeDownloads.empty() || !m_finishedDownloads.empty() ? true : false; }
   bool HasActiveDownloads() { return !m_activeDownloads.empty() ? true : false; }
@@ -104,6 +106,7 @@ public:
   const std::map<std::string, std::shared_ptr<CDownloadItem>>& GetActiveDownloads() { return m_activeDownloads; }
   const std::map<std::string, std::shared_ptr<CDownloadItem>>& GetFinishedDownloads() { return m_finishedDownloads; }
 
+  // override CEF's CefRefPtr handling
   void AddRef() const override { }
   bool Release() const override { return false; }
   bool HasOneRef() const override { return false; }
@@ -111,15 +114,17 @@ public:
 
 private:
   DISALLOW_COPY_AND_ASSIGN(CWebBrowserDownloadHandler);
-//   IMPLEMENT_REFCOUNTING(CWebBrowserDownloadHandler);
+
+  static void OnBeforeDownloadProcess(CWebBrowserDownloadHandler* thisClass,
+                                      std::string url, int64 totalBytes, std::string suggested_name,
+                                      CefRefPtr<CefBeforeDownloadCallback> callback);
+
+  static std::mutex m_mutex;
 
   bool LoadDownloadHistory(bool initial);
   bool SaveDownloadHistory();
 
-
   std::vector<std::shared_ptr<CDownloadItem>> m_items;
-
-  P8PLATFORM::CMutex m_mutex;
   std::map<std::string, std::shared_ptr<CDownloadItem>> m_activeDownloads;
   std::map<std::string, std::shared_ptr<CDownloadItem>> m_finishedDownloads;
 };

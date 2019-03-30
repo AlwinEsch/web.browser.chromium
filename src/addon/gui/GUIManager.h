@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "DialogDownload.h"
 #include "DialogFile.h"
 #include "DialogKeyboard.h"
 
@@ -33,6 +34,7 @@ public:
   bool Create();
   void Destroy();
 
+  CefRefPtr<CWebBrowserDownloadHandler> GetDownloadDialog() { return &m_download; }
   CefRefPtr<CBrowserDialogFile> GetFileDialog() { return m_file; }
   CBrowserDialogKeyboard& GetKeyboard() { return m_keyboard; }
 
@@ -43,6 +45,7 @@ protected:
 private:
   CWebBrowser* m_instance;
 
+  CWebBrowserDownloadHandler m_download;
   CefRefPtr<CBrowserDialogFile> m_file;
   CBrowserDialogKeyboard m_keyboard;
 };

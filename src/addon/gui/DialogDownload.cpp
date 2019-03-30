@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2015 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "DownloadHandler.h"
+#include "DialogDownload.h"
 #include "Utils.h"
 
 #include <kodi/General.h>
@@ -27,17 +27,13 @@
 #include <kodi/util/XMLUtils.h>
 #include <p8-platform/util/StringUtils.h>
 #include <iomanip>
+#include <thread>
+
+std::mutex CWebBrowserDownloadHandler::m_mutex;
 
 CDownloadItem::CDownloadItem(const std::string& url, CefRefPtr<CefDownloadItemCallback> callback)
   : m_url(url),
-    m_time(0),
-    m_active(false),
-    m_paused(false),
-    m_inProgress(false),
-    m_canceled(false),
-    m_complete(false),
-    m_callback(callback),
-    m_progressDialog(nullptr)
+    m_callback(callback)
 {
 }
 
@@ -46,15 +42,8 @@ CDownloadItem::CDownloadItem(const std::string& name, const std::string& url, co
     m_name(name),
     m_path(path),
     m_time(time),
-    m_active(false),
-    m_paused(false),
-    m_inProgress(false),
-    m_canceled(false),
-    m_complete(true),
-    m_callback(nullptr),
-    m_progressDialog(nullptr)
+    m_complete(true)
 {
-
 }
 
 CDownloadItem::~CDownloadItem()
@@ -157,6 +146,8 @@ void CDownloadItem::SetProgressText(long totalMBytes, long receivedMBytes, float
   }
 }
 
+//------------------------------------------------------------------------------
+
 CWebBrowserDownloadHandler::CWebBrowserDownloadHandler()
   : CWindow("DialogDownloads.xml", "skin.estuary", true)
 {
@@ -166,16 +157,24 @@ CWebBrowserDownloadHandler::CWebBrowserDownloadHandler()
 void CWebBrowserDownloadHandler::OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
                                                   const CefString& suggested_name, CefRefPtr<CefBeforeDownloadCallback> callback)
 {
+  std::string suggestedName = suggested_name.ToString();
   std::string url = download_item->GetOriginalUrl().ToString();
-  std::shared_ptr<CDownloadItem> downloadItem;
+  int64 totalBytes = download_item->GetTotalBytes();
+  std::thread(OnBeforeDownloadProcess, this, url, totalBytes, suggestedName, callback).detach();
+}
 
+void CWebBrowserDownloadHandler::OnBeforeDownloadProcess(CWebBrowserDownloadHandler* thisClass,
+                                                         std::string url, int64 totalBytes, std::string suggested_name,
+                                                         CefRefPtr<CefBeforeDownloadCallback> callback)
+{
+  std::shared_ptr<CDownloadItem> downloadItem;
   {
-    m_mutex.Lock();
-    auto it = m_activeDownloads.find(url);
-    if (it != m_activeDownloads.end())
+    m_mutex.lock();
+    auto it = thisClass->m_activeDownloads.find(url);
+    if (it != thisClass->m_activeDownloads.end())
     {
       downloadItem = it->second;
-      m_mutex.Unlock();
+      m_mutex.unlock();
 
       if (downloadItem == nullptr)
       {
@@ -185,19 +184,19 @@ void CWebBrowserDownloadHandler::OnBeforeDownload(CefRefPtr<CefBrowser> browser,
 
       if (downloadItem->IsActive())
       {
-        kodi::QueueFormattedNotification(QUEUE_INFO, kodi::GetLocalizedString(30084).c_str(), suggested_name.ToString().c_str());
+        kodi::QueueFormattedNotification(QUEUE_INFO, kodi::GetLocalizedString(30084).c_str(), suggested_name.c_str());
         return;
       }
     }
     else
     {
       kodi::Log(ADDON_LOG_ERROR, "Download '%s' not found on active list", url.c_str());
-      m_mutex.Unlock();
+      m_mutex.unlock();
     }
   }
 
   std::string path = kodi::GetSettingString("downloads.path");
-  std::string header = StringUtils::Format(kodi::GetLocalizedString(30082).c_str(), suggested_name.ToString().c_str());
+  std::string header = StringUtils::Format(kodi::GetLocalizedString(30082).c_str(), suggested_name.c_str());
   if (kodi::GetSettingBoolean("downloads.askfolder"))
   {
     bool ret = kodi::gui::dialogs::FileBrowser::ShowAndGetDirectory("local", header, path, true);
@@ -209,7 +208,7 @@ void CWebBrowserDownloadHandler::OnBeforeDownload(CefRefPtr<CefBrowser> browser,
     kodi::QueueFormattedNotification(QUEUE_INFO, header.c_str());
   }
 
-  path += suggested_name.ToString();
+  path += suggested_name;
 
   if (kodi::vfs::FileExists(path))
   {
@@ -232,11 +231,10 @@ void CWebBrowserDownloadHandler::OnBeforeDownload(CefRefPtr<CefBrowser> browser,
     }
   }
 
-  kodi::Log(ADDON_LOG_INFO, "Download of '%s' with %li MBytes started", url.c_str(),
-                                                      download_item->GetTotalBytes() / 1024 / 1024);
+  kodi::Log(ADDON_LOG_INFO, "Download of '%s' with %li MBytes started", url.c_str(), totalBytes / 1024 / 1024);
 
   callback->Continue(path, false);
-  downloadItem->SetActive(suggested_name.ToString(), path);
+  downloadItem->SetActive(suggested_name, path);
 }
 
 void CWebBrowserDownloadHandler::OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
@@ -246,7 +244,7 @@ void CWebBrowserDownloadHandler::OnDownloadUpdated(CefRefPtr<CefBrowser> browser
   std::shared_ptr<CDownloadItem> downloadItem;
 
   {
-    P8PLATFORM::CLockObject lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
 
     auto it = m_activeDownloads.find(url);
     if (it == m_activeDownloads.end())
@@ -292,7 +290,7 @@ void CWebBrowserDownloadHandler::OnDownloadUpdated(CefRefPtr<CefBrowser> browser
   {
     downloadItem->SetComplete();
 
-    P8PLATFORM::CLockObject lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_finishedDownloads[url] = downloadItem;
     m_activeDownloads.erase(url);
     SaveDownloadHistory();
@@ -318,7 +316,7 @@ void CWebBrowserDownloadHandler::OnDownloadUpdated(CefRefPtr<CefBrowser> browser
 
 void CWebBrowserDownloadHandler::RemovedFinishedDownload(std::shared_ptr<CDownloadItem> download)
 {
-  P8PLATFORM::CLockObject lock(m_mutex);
+  std::lock_guard<std::mutex> lock(m_mutex);
 
   auto it = m_finishedDownloads.find(download->GetURL());
   m_finishedDownloads.erase(it);
@@ -436,7 +434,7 @@ bool CWebBrowserDownloadHandler::SaveDownloadHistory()
 void CWebBrowserDownloadHandler::ResetHistory()
 {
   {
-    P8PLATFORM::CLockObject lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_finishedDownloads.clear();
   }
 
@@ -459,7 +457,7 @@ void CWebBrowserDownloadHandler::ResetHistory()
 
 void CWebBrowserDownloadHandler::UpdateEntry(std::shared_ptr<CDownloadItem> downloadItem, bool complete)
 {
-  P8PLATFORM::CLockObject lock(m_mutex);
+  std::lock_guard<std::mutex> lock(m_mutex);
 
   for (unsigned int i = 0; i < m_items.size(); ++i)
   {
@@ -544,7 +542,7 @@ bool CWebBrowserDownloadHandler::OnAction(int actionId, uint32_t buttoncode, wch
 {
   if (actionId == ACTION_PREVIOUS_MENU || actionId ==ACTION_NAV_BACK)
   {
-    P8PLATFORM::CLockObject lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     ClearList();
     m_items.clear();
   }
@@ -553,7 +551,7 @@ bool CWebBrowserDownloadHandler::OnAction(int actionId, uint32_t buttoncode, wch
 
 void CWebBrowserDownloadHandler::GetContextButtons(int itemNumber, std::vector< std::pair<unsigned int, std::string> > &buttons)
 {
-  P8PLATFORM::CLockObject lock(m_mutex);
+  std::lock_guard<std::mutex> lock(m_mutex);
   if (m_items[itemNumber]->IsComplete())
     buttons.push_back(std::pair<unsigned int, std::string>(30091, kodi::GetLocalizedString(30091)));
   else

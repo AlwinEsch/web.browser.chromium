@@ -19,7 +19,6 @@
 
 #define NDEBUG 1
 
-#include "DownloadHandler.h"
 #include "Messenger.h"
 #include "audio/AudioHandler.h"
 #include "Renderer/Renderer.h"
@@ -74,11 +73,11 @@ public:
   CWebBrowserClient(KODI_HANDLE handle, int iUniqueClientId, const std::string& startURL, CWebBrowser* instance);
   virtual ~CWebBrowserClient();
 
-  CefRefPtr<CefDialogHandler> GetDialogHandler() override;
-  CefRefPtr<CefRenderHandler> GetRenderHandler() override;
   CefRefPtr<CefAudioHandler> GetAudioHandler() override;
-
+  CefRefPtr<CefDialogHandler> GetDialogHandler() override;
   CefRefPtr<CefDownloadHandler> GetDownloadHandler() override;
+  CefRefPtr<CefRenderHandler> GetRenderHandler() override;
+
   CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }

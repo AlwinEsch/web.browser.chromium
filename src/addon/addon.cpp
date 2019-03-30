@@ -467,11 +467,11 @@ bool CWebBrowser::SetSandbox()
   return true;
 }
 
-//
-// void CWebBrowser::OpenDownloadDialog()
-// {
-//   m_downloadHandler.Show();
-// }
+
+void CWebBrowser::OpenDownloadDialog()
+{
+  GetGUIManager().GetDownloadDialog()->Show();
+}
 //
 // void CWebBrowser::OpenCookieHandler()
 // {

@@ -402,7 +402,7 @@ void CWebBrowserClient::OpenOwnContextMenu()
     {
       case 0:
       {
-//         m_mainBrowserHandler->OpenDownloadDialog();
+        m_mainBrowserHandler->OpenDownloadDialog();
         break;
       }
       case 1:
@@ -495,9 +495,19 @@ float CWebBrowserClient::GetHeight() const
 
 // -----------------------------------------------------------------------------
 
+CefRefPtr<CefAudioHandler> CWebBrowserClient::GetAudioHandler()
+{
+  return m_audioHandler;
+}
+
 CefRefPtr<CefDialogHandler> CWebBrowserClient::GetDialogHandler()
 {
   return GetMain().GetGUIManager().GetFileDialog();
+}
+
+CefRefPtr<CefDownloadHandler> CWebBrowserClient::GetDownloadHandler()
+{
+  return GetMain().GetGUIManager().GetDownloadDialog();
 }
 
 CefRefPtr<CefRenderHandler> CWebBrowserClient::GetRenderHandler()
@@ -505,17 +515,7 @@ CefRefPtr<CefRenderHandler> CWebBrowserClient::GetRenderHandler()
   return m_renderer;
 }
 
-CefRefPtr<CefAudioHandler> CWebBrowserClient::GetAudioHandler()
-{
-  return m_audioHandler;
-}
 
-
-CefRefPtr<CefDownloadHandler> CWebBrowserClient::GetDownloadHandler()
-{
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
-  return nullptr;//m_mainBrowserHandler->GetDownloadHandler();
-}
 
 CefRefPtr<CefJSDialogHandler> CWebBrowserClient::GetJSDialogHandler()
 {

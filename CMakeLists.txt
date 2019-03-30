@@ -139,7 +139,6 @@ set(KODICHROMIUM_HEADERS src/addon/Renderer/RendererOpenGL.h)
 
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/AppBrowser.cpp
-                                 src/addon/DownloadHandler.cpp
                                  src/addon/DOMVisitor.cpp
                                  src/addon/MessageIds.cpp
                                  src/addon/Messenger.cpp
@@ -154,6 +153,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/Renderer/IRenderer.cpp
                                  src/addon/Renderer/Renderer.cpp
                                  src/addon/audio/AudioHandler.cpp
+                                 src/addon/gui/DialogDownload.cpp
                                  src/addon/gui/DialogFile.cpp
                                  src/addon/gui/DialogKeyboard.cpp
                                  src/addon/gui/GUIManager.cpp
@@ -162,7 +162,6 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
 
 list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/AppBrowser.h
-                                 src/addon/DownloadHandler.h
                                  src/addon/DOMVisitor.h
                                  src/addon/MessageIds.h
                                  src/addon/Messenger.h
@@ -177,6 +176,7 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/Renderer/IRenderer.h
                                  src/addon/Renderer/Renderer.h
                                  src/addon/audio/AudioHandler.h
+                                 src/addon/gui/DialogDownload.h
                                  src/addon/gui/DialogFile.h
                                  src/addon/gui/DialogKeyboard.h
                                  src/addon/gui/GUIManager.h

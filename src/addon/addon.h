@@ -18,7 +18,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "DownloadHandler.h"
 #include "WebBrowserClient.h"
 #include "Cookies/CookieHandler.h"
 #include "gui/GUIManager.h"
@@ -71,7 +70,7 @@ public:
 /*
   virtual CefRefPtr<CefResourceBundleHandler> GetResourceBundleHandler() override { return this; }
   virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override { return this; }
-  virtual CefRefPtr<CWebBrowserDownloadHandler> GetDownloadHandler() { return &m_downloadHandler; }
+
   virtual CefRefPtr<CWebBrowserUploadHandler> GetUploadHandler() { return m_uploadHandler; }
 
   const std::string& GetHTMLCachePath() { return m_strHTMLCachePath; }
@@ -114,7 +113,6 @@ private:
 //
   static int m_iUniqueClientId;
 //
-//   CWebBrowserDownloadHandler m_downloadHandler;
 
   bool SetSandbox();
 
