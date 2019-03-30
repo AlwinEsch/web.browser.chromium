@@ -456,6 +456,10 @@ msgctxt "#30324"
 msgid "Use current as start site"
 msgstr ""
 
+msgctxt "#30325"
+msgid "Swap board position"
+msgstr ""
+
 msgctxt "#31000"
 msgid "This is not a secure connection"
 msgstr ""

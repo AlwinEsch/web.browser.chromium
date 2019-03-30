@@ -18,21 +18,28 @@
 
 #pragma once
 
-#include <string>
-#include <kodi/General.h>
+#include "DialogKeyboard.h"
 
-#define TEST_BUILD 1
-#ifdef TEST_BUILD
-#define LOG_MESSAGE(loglevel, a...) \
-do { \
-  fprintf(stderr, "KODIChromium - " a); \
-  fprintf(stderr, "\n"); \
-} while(0)
-#else
-#define LOG_MESSAGE(loglevel, a...) \
-do { \
-  kodi::Log(loglevel, "KODIChromium - " a); \
-} while(0)
-#endif
+#include <p8-platform/threads/threads.h>
 
-void LOG_INTERNAL_MESSAGE(const AddonLog loglevel, const char *format, ...);
+class CWebBrowser;
+
+class CBrowserGUIManager : public P8PLATFORM::CThread
+{
+public:
+  CBrowserGUIManager(CWebBrowser* instance);
+
+  bool Create();
+  void Destroy();
+
+  CBrowserDialogKeyboard& GetKeyboard() { return m_keyboard; }
+
+protected:
+  void* Process() override;
+
+private:
+  CWebBrowser* m_instance;
+
+  CBrowserDialogKeyboard m_keyboard;
+};
+

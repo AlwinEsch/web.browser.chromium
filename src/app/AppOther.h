@@ -18,21 +18,15 @@
 
 #pragma once
 
-#include <string>
-#include <kodi/General.h>
+#include "include/cef_app.h"
 
-#define TEST_BUILD 1
-#ifdef TEST_BUILD
-#define LOG_MESSAGE(loglevel, a...) \
-do { \
-  fprintf(stderr, "KODIChromium - " a); \
-  fprintf(stderr, "\n"); \
-} while(0)
-#else
-#define LOG_MESSAGE(loglevel, a...) \
-do { \
-  kodi::Log(loglevel, "KODIChromium - " a); \
-} while(0)
-#endif
+// Client app implementation for other process types.
+class CWebAppOther : public CefApp
+{
+ public:
+  CWebAppOther();
 
-void LOG_INTERNAL_MESSAGE(const AddonLog loglevel, const char *format, ...);
+ private:
+  IMPLEMENT_REFCOUNTING(CWebAppOther);
+  DISALLOW_COPY_AND_ASSIGN(CWebAppOther);
+};

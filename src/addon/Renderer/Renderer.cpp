@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2015-2018 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -17,6 +17,8 @@
  */
 
 #include "Renderer.h"
+
+#include "addon.h"
 #include "WebBrowserClient.h"
 
 #if defined(HAS_GL) | defined(HAS_GLES2)
@@ -32,23 +34,9 @@
 #include "include/internal/cef_types_wrappers.h"
 #include "include/wrapper/cef_helpers.h"
 
-CRendererClient::CRendererClient(CWebBrowserClient const* client)
-  : m_client(client),
-    m_renderer(nullptr),
-    m_initialized(false)
-{
-}
+#include <kodi/gui/dialogs/Keyboard.h>
 
-CRendererClient::~CRendererClient()
-{
-  if (m_renderer)
-  {
-    delete m_renderer;
-    m_renderer = nullptr;
-  }
-}
-
-bool CRendererClient::Initialize()
+CRendererClient::CRendererClient(CWebBrowserClient* client) : m_client(client)
 {
 #if defined(HAS_GL) || defined(HAS_GLES2)
   m_renderer = new CRendererClientOpenGL(m_client);
@@ -57,41 +45,34 @@ bool CRendererClient::Initialize()
 #else
   m_renderer = new IRenderer(m_client);
 #endif
-  
-  if (!m_renderer->Initialize())
-  {
-    delete m_renderer;
-    m_renderer = nullptr;
-  }
+  m_renderer->Initialize();
+}
+
+CRendererClient::~CRendererClient()
+{
+  delete m_renderer;
 }
 
 void CRendererClient::Render()
 {
-  if (m_renderer)
-    m_renderer->Render();
+  CEF_REQUIRE_UI_THREAD();
+  m_renderer->Render();
 }
 
 bool CRendererClient::Dirty()
 {
-  if (!m_initialized)
-  {
-    Initialize();
-    m_initialized = true;
-  }
+  CEF_REQUIRE_UI_THREAD();
 
-  if (m_renderer)
-    return m_renderer->Dirty();
-  return false;
+  CefDoMessageLoopWork();
+  return m_renderer->Dirty();
 }
 
 void CRendererClient::ScreenSizeChange(float x, float y, float width, float height)
 {
-  if (m_renderer)
-    m_renderer->ScreenSizeChange(x, y, width, height);
+  m_renderer->ScreenSizeChange(x, y, width, height);
 }
   
-
-bool CRendererClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
+void CRendererClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
   CEF_REQUIRE_UI_THREAD();
 
@@ -101,7 +82,6 @@ bool CRendererClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
   rect.y = 0.0f;
   rect.width = m_client->GetWidth();
   rect.height = m_client->GetHeight();
-  return true;
 }
 
 bool CRendererClient::GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY)
@@ -117,28 +97,24 @@ void CRendererClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType ty
                               const RectList& dirtyRects, const void* buffer,
                               int width, int height)
 {
-  if (m_renderer)
-    m_renderer->OnPaint(type, dirtyRects, buffer, width, height);
+  CEF_REQUIRE_UI_THREAD();
+
+  m_renderer->OnPaint(type, dirtyRects, buffer, width, height);
+}
+
+void CRendererClient::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show)
+{
+  m_renderer->OnPopupShow(browser, show);
+}
+
+void CRendererClient::OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect)
+{
+  m_renderer->OnPopupSize(browser, rect);
 }
 
 void CRendererClient::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, CursorType type, const CefCursorInfo& custom_cursor_info)
 {
   ///TODO Use to improve human readable view of mouse area over far distance?
-}
-
-void CRendererClient::OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser, double x, double y)
-{
-  ///TODO Use to replace chromium scroll bars with Kodi's one?
-}
-
-void CRendererClient::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show)
-{
-  ///TODO Is this usable for Kodi?
-}
-
-void CRendererClient::OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect)
-{
-  ///TODO Is this usable for Kodi?
 }
 
 bool CRendererClient::StartDragging(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> drag_data, DragOperationsMask allowed_ops, int x, int y)
@@ -152,7 +128,25 @@ void CRendererClient::UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperat
   ///TODO Is this usable for Kodi?
 }
 
+void CRendererClient::OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser, double x, double y)
+{
+  ///TODO Is this usable for Kodi?
+}
+
 void CRendererClient::OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& selected_range, const RectList& character_bounds)
 {
   ///TODO Is this usable for Kodi?
+}
+
+void CRendererClient::OnTextSelectionChanged(CefRefPtr<CefBrowser> browser, const CefString& selected_text, const CefRange& selected_range)
+{
+  ///TODO Is this usable for Kodi?
+}
+
+void CRendererClient::OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser, TextInputMode input_mode)
+{
+  if (input_mode != CEF_TEXT_INPUT_MODE_NONE)
+    m_client->GetMain().GetGUIManager().GetKeyboard().Show(m_client, input_mode);
+  else
+    m_client->GetMain().GetGUIManager().GetKeyboard().Close();
 }

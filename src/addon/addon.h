@@ -1,3 +1,4 @@
+
 #pragma once
 /*
  *      Copyright (C) 2015 Team KODI
@@ -18,10 +19,10 @@
  */
 
 #include "DownloadHandler.h"
-#include "GeolocationPermission.h"
 #include "UploadHandler.h"
 #include "WebBrowserClient.h"
 #include "Cookies/CookieHandler.h"
+#include "gui/GUIManager.h"
 
 #include "include/cef_app.h"
 #include "include/cef_client.h"
@@ -38,10 +39,7 @@ class CRenderProcess;
 
 class CWebBrowser
   : public kodi::addon::CInstanceWeb,
-    public P8PLATFORM::CThread,
-    public CefApp,
-    public CefResourceBundleHandler,
-    public CefBrowserProcessHandler
+    public P8PLATFORM::CThread
 {
 public:
   CWebBrowser(KODI_HANDLE instance);
@@ -57,21 +55,25 @@ public:
   // ---------------------------------------------------------------------------
   // Kodi interface parts
 
-  virtual WEB_ADDON_ERROR GetCapabilities(WEB_ADDON_CAPABILITIES& capabilities) override;
-  virtual WEB_ADDON_ERROR StartInstance() override;
-  virtual void StopInstance() override;
-  virtual bool SetLanguage(const char *language) override;
-  virtual kodi::addon::CWebControl* CreateControl(const std::string& sourceName, const std::string& startURL, KODI_HANDLE handle) override;
-  virtual bool DestroyControl(kodi::addon::CWebControl* control, bool complete) override;
+  WEB_ADDON_ERROR GetCapabilities(WEB_ADDON_CAPABILITIES& capabilities) override;
+
+  bool MainInitialize();
+  void MainShutdown();
+  void MainLoop() override;
+
+  WEB_ADDON_ERROR StartInstance() override;
+  void StopInstance() override;
+  bool SetLanguage(const char *language) override;
+  kodi::addon::CWebControl* CreateControl(const std::string& sourceName, const std::string& startURL, KODI_HANDLE handle) override;
+  bool DestroyControl(kodi::addon::CWebControl* control, bool complete) override;
 
   // ---------------------------------------------------------------------------
   // CEF interface parts
-
+/*
   virtual CefRefPtr<CefResourceBundleHandler> GetResourceBundleHandler() override { return this; }
   virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override { return this; }
   virtual CefRefPtr<CWebBrowserDownloadHandler> GetDownloadHandler() { return &m_downloadHandler; }
   virtual CefRefPtr<CWebBrowserUploadHandler> GetUploadHandler() { return m_uploadHandler; }
-  virtual CefRefPtr<CWebBrowserGeolocationPermission> GetGeolocationPermission() { return m_geolocationPermission; }
 
   const std::string& GetHTMLCachePath() { return m_strHTMLCachePath; }
   const std::string& GetCookiePath() { return m_strCookiePath; }
@@ -80,6 +82,7 @@ public:
   void AddRef() const override { }
   bool Release() const override { return false; }
   bool HasOneRef() const override { return false; }
+  bool HasAtLeastOneRef() const override { return false; }
 
   virtual void OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line) override;
 
@@ -97,19 +100,23 @@ public:
   virtual void OnRenderProcessThreadCreated(CefRefPtr<CefListValue> extra_info) override;
   virtual CefRefPtr<CefPrintHandler> GetPrintHandler() override;
   virtual void OnScheduleMessagePumpWork(int64 delay_ms) override;
-  //@}
+  //@}*/
+
+  CBrowserGUIManager& GetGUIManager() { return m_guiManager; }
 
 protected:
-  virtual void* Process(void) override;
+  virtual void* Process() override;
 
 private:
-  DISALLOW_COPY_AND_ASSIGN(CWebBrowser);
-
+  CBrowserGUIManager m_guiManager;
+  void* m_sandboxInfo = nullptr;
+  CefRefPtr<CefApp> m_app;
+//   DISALLOW_COPY_AND_ASSIGN(CWebBrowser);
+//
   static int m_iUniqueClientId;
-
-  CWebBrowserDownloadHandler m_downloadHandler;
-  CefRefPtr<CWebBrowserUploadHandler> m_uploadHandler;
-  CefRefPtr<CWebBrowserGeolocationPermission> m_geolocationPermission;
+//
+//   CWebBrowserDownloadHandler m_downloadHandler;
+//   CefRefPtr<CWebBrowserUploadHandler> m_uploadHandler;
 
   bool SetSandbox();
 
@@ -122,13 +129,14 @@ private:
   std::string m_strLibPath;
   std::string m_strSandboxBinary;
 
-  base::ThreadChecker m_threadChecker;   // Used to verify that methods are called on the correct thread.
   P8PLATFORM::CMutex m_mutex;
 
   std::unordered_map<int, CWebBrowserClient*> m_browserClients;
   std::unordered_map<std::string, CWebBrowserClient*> m_browserClientsInactive;
   std::vector<CWebBrowserClient*> m_browserClientsToDelete;
-  CCookieHandler m_cookieHandler;
-  CefRefPtr<CRenderProcess> m_renderProcess;
-  CefRefPtr<CefMessageRouterRendererSide> m_messageRouter;
+//   CCookieHandler m_cookieHandler;
+//   CefRefPtr<CRenderProcess> m_renderProcess;
+//   CefRefPtr<CefMessageRouterRendererSide> m_messageRouter;
+  bool m_started = false;
 };
+

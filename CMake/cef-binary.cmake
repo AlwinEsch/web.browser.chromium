@@ -68,9 +68,10 @@ if(NOT CEF_BINARY)
   message(FATAL_ERROR "${BoldWhite}Missing 'CEF_BINARY' value !!!${ColourReset}")
 endif()
 
-file(READ ${CMAKE_CURRENT_BINARY_DIR}/cef-binary-packages/x86_64-linux-gnu/binary-package.txt BINARY_PACKAGE_ZIP)
+#message(FATAL_ERROR ${CMAKE_CURRENT_BINARY_DIR}/cef-binary-packages/x86_64-linux-gnu/binary-package.txt)
+file(READ ${CMAKE_CURRENT_BINARY_DIR}/cef-binary-packages/x86_64-linux-gnu/release-binary-package.txt BINARY_PACKAGE_ZIP)
 STRING(REGEX REPLACE "\n" "" BINARY_PACKAGE_ZIP "${BINARY_PACKAGE_ZIP}")
-file(READ ${CMAKE_CURRENT_BINARY_DIR}/cef-binary-packages/x86_64-linux-gnu/md5sum.txt BINARY_PACKAGE_MD5_SUM)
+file(READ ${CMAKE_CURRENT_BINARY_DIR}/cef-binary-packages/x86_64-linux-gnu/release-md5sum.txt BINARY_PACKAGE_MD5_SUM)
 STRING(REGEX REPLACE "\n" "" BINARY_PACKAGE_MD5_SUM "${BINARY_PACKAGE_MD5_SUM}")
 add_revision(cef-binary
   URL ${BINARY_PACKAGE_ZIP}

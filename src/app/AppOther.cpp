@@ -16,23 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "AppOther.h"
 
-#include <string>
-#include <kodi/General.h>
-
-#define TEST_BUILD 1
-#ifdef TEST_BUILD
-#define LOG_MESSAGE(loglevel, a...) \
-do { \
-  fprintf(stderr, "KODIChromium - " a); \
-  fprintf(stderr, "\n"); \
-} while(0)
-#else
-#define LOG_MESSAGE(loglevel, a...) \
-do { \
-  kodi::Log(loglevel, "KODIChromium - " a); \
-} while(0)
-#endif
-
-void LOG_INTERNAL_MESSAGE(const AddonLog loglevel, const char *format, ...);
+CWebAppOther::CWebAppOther() {}

@@ -10,6 +10,7 @@
 *.kdev4
 
 web.*/addon.xml
+lib/cef/
 
 *.o
 *.a

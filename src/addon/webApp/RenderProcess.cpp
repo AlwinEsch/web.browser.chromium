@@ -76,7 +76,7 @@ void CRenderProcess::OnWebKitInitialized()
 {
   CefMessageRouterConfig config;
   m_messageRouter = CefMessageRouterRendererSide::Create(config);
-  CV8Handler::OnWebKitInitialized();
+//  CV8Handler::OnWebKitInitialized();
 }
 
 void CRenderProcess::OnBrowserCreated(CefRefPtr<CefBrowser> browser)
@@ -91,15 +91,6 @@ void CRenderProcess::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser)
 #ifdef DEBUG_LOGS
   LOG_MESSAGE(ADDON_LOG_DEBUG, "---- %s", __PRETTY_FUNCTION__);
 #endif
-}
-
-bool CRenderProcess::OnBeforeNavigation(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request,
-                                        NavigationType navigation_type, bool is_redirect)
-{
-#ifdef DEBUG_LOGS
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "---- %s", __PRETTY_FUNCTION__);
-#endif
-  return false;
 }
 
 void CRenderProcess::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context)

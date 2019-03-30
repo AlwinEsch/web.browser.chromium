@@ -84,7 +84,7 @@ public:
 
   virtual bool OnInit() override;
   virtual bool OnClick(int controlId) override;
-  virtual bool OnAction(int actionId) override;
+  virtual bool OnAction(int actionId, uint32_t buttoncode, wchar_t unicode) override;
   virtual void GetContextButtons(int itemNumber, std::vector< std::pair<unsigned int, std::string> > &buttons) override;
   virtual bool OnContextButton(int itemNumber, unsigned int button) override;
 
@@ -107,9 +107,11 @@ public:
   void AddRef() const override { }
   bool Release() const override { return false; }
   bool HasOneRef() const override { return false; }
+  bool HasAtLeastOneRef() const override { return false; }
 
 private:
   DISALLOW_COPY_AND_ASSIGN(CWebBrowserDownloadHandler);
+//   IMPLEMENT_REFCOUNTING(CWebBrowserDownloadHandler);
 
   bool LoadDownloadHistory(bool initial);
   bool SaveDownloadHistory();

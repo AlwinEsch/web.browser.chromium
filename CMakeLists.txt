@@ -1,6 +1,6 @@
 ###############################################################################
 #                                                                             #
-#     Copyright (C) 2015 Team KODI                                            #
+#     Copyright (C) 2019 Team KODI                                            #
 #     http://kodi.tv                                                          #
 #                                                                             #
 #  This program is free software: you can redistribute it and/or modify       #
@@ -18,253 +18,74 @@
 #                                                                             #
 ###############################################################################
 
+cmake_minimum_required(VERSION 3.5)
 project(web.browser.chromium)
 
-cmake_minimum_required(VERSION 2.8.12.2)
-
-set(CMAKE_MODULE_PATH
-  ${CMAKE_CURRENT_SOURCE_DIR}/CMake
-  ${CMAKE_MODULE_PATH}
-  ${PROJECT_SOURCE_DIR}
-)
-
-# When building, don't use the install RPATH already
-# (but later on when installing)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
-
-# Add the automatically determined parts of the RPATH
-# which point to directories outside the build tree to the install RPATH
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-enable_language(CXX)
-
-# ----------------------------------------------------------------------------
-# Break in case of popular CMake configuration mistakes
-# ----------------------------------------------------------------------------
-if(NOT CMAKE_SIZEOF_VOID_P GREATER 0)
-  message(FATAL_ERROR "CMake fails to deterimine the bitness of target platform.
-  Please check your CMake and compiler installation. If you are crosscompiling then ensure that your CMake toolchain file correctly sets the compiler details.")
-endif()
-
-# 64-bit system?
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(BITSIZE "64")
-else()
-  set(BITSIZE "32")
-endif()
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake
+                      ${CMAKE_MODULE_PATH}
+                      ${PROJECT_SOURCE_DIR})
 
 find_package(Kodi REQUIRED)
 find_package(kodiplatform REQUIRED)
 find_package(p8-platform REQUIRED)
+find_package(glm REQUIRED)
 
-include(color-defaults)
+include(ExternalProject)
 include(KitModules)
-include(web-addon-helpers)
 
-add_definitions(-DUSE_DEMUX)
+include(lib/cef-base/CMakeLists.txt)
 
-if(NOT CORE_SYSTEM_NAME)
-  string(TOLOWER ${CMAKE_SYSTEM_NAME} CORE_SYSTEM_NAME)
+if(APP_RENDER_SYSTEM STREQUAL "gl" OR NOT APP_RENDER_SYSTEM)
+  find_package(OpenGl REQUIRED)
+  set(DEPLIBS ${OPENGL_LIBRARIES})
+  set(includes ${OPENGL_INCLUDE_DIR})
+  add_definitions(${OPENGL_DEFINITIONS})
+elseif(APP_RENDER_SYSTEM STREQUAL "gles")
+  find_package(OpenGLES REQUIRED)
+  set(DEPLIBS ${OPENGLES_LIBRARIES})
+  set(u ${OPENGLES_INCLUDE_DIR})
+  add_definitions(${OPENGLES_DEFINITIONS})
 endif()
 
-if(DEBUG)
-  add_definitions(-DDEBUG)
-endif()
-if(DEBUG)
-  set(CMAKE_BUILD_TYPE Debug)
-elseif(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif()
+#-------------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# Determine the target processor
-# -----------------------------------------------------------------------------
-# if CMAKE_SYSTEM_NAME is here already set, either it comes from a toolchain file
-# or it was set via -DCMAKE_SYSTEM_NAME=...
-# if that's the case, assume we are crosscompiling
-if(CMAKE_SYSTEM_PROCESSOR)
-  if(NOT DEFINED CMAKE_CROSSCOMPILING)
-    set(CMAKE_CROSSCOMPILING TRUE)
-  endif(NOT DEFINED CMAKE_CROSSCOMPILING)
-else(CMAKE_SYSTEM_PROCESSOR)
-  set(CMAKE_SYSTEM_NAME      "${CMAKE_HOST_SYSTEM_NAME}")
-  set(CMAKE_SYSTEM_VERSION   "${CMAKE_HOST_SYSTEM_VERSION}")
-  set(CMAKE_SYSTEM_PROCESSOR "${CMAKE_HOST_SYSTEM_PROCESSOR}")
-  set(CMAKE_CROSSCOMPILING FALSE)
-endif(CMAKE_SYSTEM_PROCESSOR)
-string(TOLOWER ${CMAKE_SYSTEM_PROCESSOR} LOWERCASE_CMAKE_SYSTEM_PROCESSOR)
-if(LOWERCASE_CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
-  set(ARCH "arm")
-elseif(LOWERCASE_CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64|amd64)")
-  set(ARCH "x86_64")
-elseif(LOWERCASE_CMAKE_SYSTEM_PROCESSOR MATCHES "(i[3-6]86|x86)")
-  set(ARCH "x86")
-elseif(LOWERCASE_CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-  set(ARCH "aarch64")
-else()
-  message(FATAL_ERROR "Unknown CPU '${CMAKE_SYSTEM_PROCESSOR}'")
-endif()
+# Don't allow binary install for CEF (does not support empty INSTALL_COMMAND in system)
+set(cef-binary_NO_INSTALL 1)
 
-message(STATUS "${ColourBold}======================================================================${ColourReset}")
-message(STATUS "${ColourBold}**                                                                  **${ColourReset}")
-message(STATUS "${ColourBold}**            KODI's Chromium Embedded Framework browser            **${ColourReset}")
-message(STATUS "${ColourBold}**                         creation started                         **${ColourReset}")
-message(STATUS "${ColourBold}**                                                                  **${ColourReset}")
-message(STATUS "${ColourBold}======================================================================${ColourReset}")
-message(STATUS "${ColourBold}|                 |                               |                  |${ColourReset}")
-message(STATUS "${ColourBold}|                 |  CMake build command options  |                  |${ColourReset}")
-message(STATUS "${ColourBold}|                 *_______________________________*                  |${ColourReset}")
-message(STATUS "${ColourBold}|                                                                    |${ColourReset}")
-# Detect OS and define macros appropriately
-if(${CORE_SYSTEM_NAME} STREQUAL windows)
-  add_definitions(-DTARGET_WINDOWS)
-  set(OS_WINDOWS 1)
-  if(WIN32)
-    add_definitions(-DWINDOWS)
-    if(MSVC)
-      message(STATUS "${ColourBold}| Compiling on Windows with MSVC                                     ${ColourBold}|${ColourReset}")
-    else()
-      message(STATUS "${ColourBold}| Compiling on Windows                                               ${ColourBold}|${ColourReset}")
-    endif()
-  elseif(CYGWIN)
-    message(STATUS "${ColourBold}| Compiling on Cygwin                                                ${ColourBold}|${ColourReset}")
-    add_definitions(-DCYGWIN)
-    set(CMAKE_INSTALL_RPATH "\$ORIGIN/lib")
-  endif()
-elseif(${CORE_SYSTEM_NAME} STREQUAL linux)
-  add_definitions(-DTARGET_POSIX)
-  add_definitions(-DTARGET_LINUX)
-  add_definitions(-D_LINUX)
-  message(STATUS "${ColourBold}| Compiling on Linux                                                 ${ColourBold}|${ColourReset}")
-  set(OS_LINUX 1)
-  set(OS_POSIX 1)
-  set(CMAKE_INSTALL_RPATH "\$ORIGIN")
-elseif(${CORE_SYSTEM_NAME} STREQUAL darwin)
-  add_definitions(-DTARGET_POSIX)
-  add_definitions(-DTARGET_DARWIN)
-  add_definitions(-DTARGET_DARWIN_OSX)
-  add_definitions(-D_LINUX)
-  message(STATUS "${ColourBold}| Compiling on Mac OS X                                              ${ColourBold}|${ColourReset}")
-  set(OS_POSIX 1)
-  set(OS_DARWIN 1)
-  set(OS_DARWIN_OSX 1)
-  set(CMAKE_INSTALL_RPATH "@rpath/lib")
-elseif(${CORE_SYSTEM_NAME} STREQUAL freebsd)
-  add_definitions(-DTARGET_POSIX)
-  add_definitions(-DTARGET_FREEBSD)
-  add_definitions(-D_LINUX)
-  message(STATUS "${ColourBold}| Compiling on FreeBSD                                               ${ColourBold}|${ColourReset}")
-  set(OS_POSIX 1)
-  set(OS_LINUX 1)
-  set(OS_FREEBSD 1)
-  set(CMAKE_INSTALL_RPATH "\$ORIGIN")
-elseif(${CORE_SYSTEM_NAME} STREQUAL ios)
-  add_definitions(-DTARGET_POSIX)
-  add_definitions(-DTARGET_DARWIN)
-  add_definitions(-DTARGET_DARWIN_IOS)
-  add_definitions(-D_LINUX)
-  message(STATUS "${ColourBold}| Compiling on iOS                                                   ${ColourBold}|${ColourReset}")
-  set(OS_POSIX 1)
-  set(OS_DARWIN 1)
-  set(OS_DARWIN_IOS 1)
-  set(CMAKE_INSTALL_RPATH "@rpath/lib")
-elseif(${CORE_SYSTEM_NAME} STREQUAL rbpi)
-  add_definitions(-DTARGET_POSIX)
-  add_definitions(-DTARGET_LINUX)
-  add_definitions(-DTARGET_RASPBERRY_PI)
-  add_definitions(-D_LINUX)
-  add_definitions(-D_ARMEL)
-  message(STATUS "${ColourBold}| Compiling on Raspberry PI                                          ${ColourBold}|${ColourReset}")
-  set(OS_POSIX 1)
-  set(OS_LINUX 1)
-  set(OS_ARMEL 1)
-  set(OS_RASPBERRY_PI 1)
-  set(CMAKE_INSTALL_RPATH "\$ORIGIN")
-elseif(${CORE_SYSTEM_NAME} STREQUAL android)
-  add_definitions(-DTARGET_POSIX)
-  add_definitions(-DTARGET_LINUX)
-  add_definitions(-DTARGET_ANDROID)
-  add_definitions(-D_LINUX)
-  message(STATUS "${ColourBold}| Compiling on Android                                               ${ColourBold}|${ColourReset}")
-  set(OS_POSIX 1)
-  set(OS_LINUX 1)
-  set(OS_ANDROID 1)
-endif()
-message(STATUS "${ColourBold}|                                                                    ${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset} ${Green} -DCMAKE_INSTALL_PREFIX:PATH=<path>  \t\t\t\t${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset}\t\t\t< path to define install directory              ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset} ${Green} -DPACKAGE_ZIP=1${ColourReset}\t< if set install create a zip package \t\t${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset}\t\t\t  instead of normal install                     ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset} ${Green} -DPACKAGE_TGZ=1${ColourReset}\t< if set install create a tgz package \t\t${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset}\t\t\t  instead of normal install                     ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset}\t\t   ${Yellow}NOTE:  It can only use ZIP or TGZ, not both,\t\t${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset}\t\t   ${Yellow}       use 'make addon-package' to create.  \t\t${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset} ${Green} -DDEBUG=1${ColourReset}\t\t< if set debug function parts becomes \t\t${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset}\t\t\t  enabled                                       ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset} ${Green} -DOVERRIDE_PATHS=1${ColourReset}\t\t\t\t\t\t${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset}\t\t\t< Set this if you want to disable path check    ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|${ColourReset}\t\t\t  with kodi                                     ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|                                                                    ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}| cmake <path_to_source_dir> <options...>                            ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|                                                                    ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}| Note: Best way to build is to create a './build' folder inside     ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}| codedir, this can be easily deleted after performed work without a ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}| problem on it.                                                     ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}|                                                                    ${ColourReset}${ColourBold}|${ColourReset}")
-message(STATUS "${ColourBold}======================================================================${ColourReset}")
+add_external_project(cef-binary SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/cef)
+ExternalProject_Get_Property(cef-binary SOURCE_DIR)
+ExternalProject_Get_Property(cef-binary BINARY_DIR)
 
-if(NOT WIN32)
-  find_package(OpenGL)
-  if(OPENGL_FOUND)
-    add_definitions(-DHAS_GL)
-    set(KODICHROMIUM_SOURCES src/addon/Renderer/RendererOpenGL.cpp
-                             src/addon/Renderer/shaders/GUIShader.cpp
-                             src/addon/Renderer/shaders/Matrix.cpp
-                             src/addon/Renderer/shaders/Shader.cpp)
-    set(KODICHROMIUM_HEADERS src/addon/Renderer/RendererOpenGL.h
-                             src/addon/Renderer/shaders/GUIShader.h
-                             src/addon/Renderer/shaders/Matrix.h
-                             src/addon/Renderer/shaders/Shader.h)
-    set(INCLUDES ${OPENGL_INCLUDE_DIR})
-    set(DEPLIBS ${OPENGL_LIBRARIES})
-    message(STATUS "Web Browser support enabled via ${BoldGreen}OpenGL${ColourReset}")
-  else()
-    find_package(OpenGLES2)
-    if(OPENGLES2_FOUND)
-      add_definitions(-DHAS_GLES2)
-      set(KODICHROMIUM_SOURCES src/addon/Renderer/RendererOpenGL.cpp
-                               src/addon/Renderer/shaders/GUIShader.cpp
-                               src/addon/Renderer/shaders/MatrixGLES.cpp
-                               src/addon/Renderer/shaders/Shader.cpp)
-      set(KODICHROMIUM_HEADERS src/addon/Renderer/RendererOpenGL.h
-                               src/addon/Renderer/shaders/GUIShader.h
-                               src/addon/Renderer/shaders/MatrixGLES.h
-                               src/addon/Renderer/shaders/Shader.h)
-      set(INCLUDES ${OPENGLES2_INCLUDE_DIRS})
-      set(DEPLIBS ${OPENGLES2_LIBRARIES})
-      message(STATUS "Web Browser support enabled via ${BoldGreen}OpenGLES${ColourReset}")
-    else()
-      message(FATAL_ERROR " ${BoldRed}Web Browser support not possible because OpenGL(ES) wasn't found${ColourReset}")
-    endif()
-  endif()
-else()
-  find_package(D3DX9)
-  if(D3DX9_FOUND)
-    add_definitions(-DHAS_DX)
-    set(KODICHROMIUM_SOURCES src/addon/Renderer/RendererDirectX.cpp)
-    set(KODICHROMIUM_HEADERS src/addon/Renderer/RendererDirectX.h)
-    set(INCLUDES ${D3DX9_INCLUDE_DIR})
-    set(DEPLIBS ${D3DX9_LIBRARIES})
-    message(STATUS "Web Browser support enabled via ${BoldGreen}DirectX${ColourReset}")
-  else()
-    message(FATAL_ERROR " ${BoldRed}Web Browser support not possible because DirectX wasn't found${ColourReset}")
-  endif()
-endif()
+set_include_dir(cef-binary ${SOURCE_DIR})
+set_libraries(cef-binary cef)
 
-add_project(cef-binary REQUIRED)
-get_include_dir(cef-binary TEMP)
-list(APPEND INCLUDES ${TEMP})
+add_custom_command(TARGET cef-binary
+  # Static libs which becomes added
+  COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/libcef_dll_wrapper/${CMAKE_STATIC_LIBRARY_PREFIX}cef_dll_wrapper${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}
+
+  # Shared libs and parts which need present on add-on
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/cef/locales
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/Resources/locales                  ${CMAKE_CURRENT_BINARY_DIR}/share/cef/locales
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef.pak                            ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_100_percent.pak                ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_200_percent.pak                ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_extensions.pak                 ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/devtools_resources.pak             ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}cef${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/chrome-sandbox           ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/natives_blob.bin         ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/snapshot_blob.bin        ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/v8_context_snapshot.bin  ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/icudtl.dat                         ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}                ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+)
+
+#-------------------------------------------------------------------------------
+
+list(APPEND DEPENDS cef-lib-creator cef-binary)
 
 link_directories(${CMAKE_CURRENT_BINARY_DIR}
                  ${CMAKE_CURRENT_BINARY_DIR}/lib/cef)
@@ -272,16 +93,54 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR}
 include_directories(${INCLUDES}
                     ${kodiplatform_INCLUDE_DIRS}
                     ${p8-platform_INCLUDE_DIRS}
-                    ${KODI_INCLUDE_DIR}
+                    ${GLM_INCLUDE_DIR}
+                    ${KODI_INCLUDE_DIR}/..
+                    ${PROJECT_SOURCE_DIR}/lib/cef
                     ${PROJECT_SOURCE_DIR}/src/addon/
                     ${PROJECT_SOURCE_DIR}/src/addon/Dialogs/
                     ${PROJECT_SOURCE_DIR}/src/addon/settings/
                     ${PROJECT_SOURCE_DIR}/src/addon/utils/)
 
+list(APPEND DEPLIBS ${p8-platform_LIBRARIES}
+                    ${kodiplatform_LIBRARIES}
+                    cef_dll_wrapper)
+
+if(WIN32)
+  list(APPEND DEPLIBS ws2_32)
+endif()
+
+#-------------------------------------------------------------------------------
+
+list(APPEND KODICHROMIUM_BIN_SOURCES src/app/Main.cpp
+                                     src/app/AppOther.cpp
+                                     src/app/AppRenderer.cpp)
+
+add_executable(kodichromium ${KODICHROMIUM_BIN_SOURCES})
+add_dependencies(kodichromium cef-binary)
+target_link_libraries(kodichromium ${DEPLIBS} cef dl)
+
+
+#-------------------------------------------------------------------------------
+  add_definitions(-DDEBUG)
+  set(CMAKE_BUILD_TYPE Debug)
+
+set(KODICHROMIUM_CUSTOM_DATA "${CMAKE_CURRENT_BINARY_DIR}/share/cef")
+set(KODICHROMIUM_ADDITIONAL_BINARY "${CMAKE_CURRENT_BINARY_DIR}/kodichromium"
+#                                    "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/chrome-sandbox"
+                                   "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/libcef.so")
+set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/icudtl.dat"
+                                         "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/natives_blob.bin"
+                                         "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/snapshot_blob.bin"
+                                         "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/v8_context_snapshot.bin")
+set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/swiftshader")
+
+set(KODICHROMIUM_SOURCES src/addon/Renderer/RendererOpenGL.cpp)
+set(KODICHROMIUM_HEADERS src/addon/Renderer/RendererOpenGL.h)
+
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
+                                 src/addon/AppBrowser.cpp
                                  src/addon/DownloadHandler.cpp
                                  src/addon/DOMVisitor.cpp
-                                 src/addon/GeolocationPermission.cpp
                                  src/addon/MessageIds.cpp
                                  src/addon/Messenger.cpp
                                  src/addon/RequestContextHandler.cpp
@@ -295,13 +154,15 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/JSInterface/V8Handler.cpp
                                  src/addon/Renderer/IRenderer.cpp
                                  src/addon/Renderer/Renderer.cpp
+                                 src/addon/gui/DialogKeyboard.cpp
+                                 src/addon/gui/GUIManager.cpp
                                  src/addon/utils/Utils.cpp
                                  src/addon/webApp/RenderProcess.cpp)
 
 list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
+                                 src/addon/AppBrowser.h
                                  src/addon/DownloadHandler.h
                                  src/addon/DOMVisitor.h
-                                 src/addon/GeolocationPermission.h
                                  src/addon/MessageIds.h
                                  src/addon/Messenger.h
                                  src/addon/RequestContextHandler.h
@@ -315,57 +176,16 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/JSInterface/V8Handler.h
                                  src/addon/Renderer/IRenderer.h
                                  src/addon/Renderer/Renderer.h
+                                 src/addon/gui/DialogKeyboard.h
+                                 src/addon/gui/GUIManager.h
                                  src/addon/utils/Utils.h
                                  src/addon/webApp/RenderProcess.h)
 
-# list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main.cpp
-#                                      src/app/client_app.cpp
-#                                      src/app/client_app_other.cpp
-#                                      src/app/client_app_renderer.cpp
-#                                      src/app/client_switches.cpp)
+build_addon(web.browser.chromium KODICHROMIUM DEPLIBS)
+add_dependencies(web.browser.chromium cef-lib-creator cef-binary kodichromium)
+add_definitions(-DKODICHROMIUM_VERSION="${KODICHROMIUM_VERSION}"
+                -DLIBRARY_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}"
+                -DLIBRARY_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
-list(APPEND KODICHROMIUM_BIN_SOURCES src/app/WebMain.cpp
-                                     src/app/WebApp.cpp
-                                     src/app/WebAppBrowser.cpp
-                                     src/app/WebAppOther.cpp
-                                     src/app/WebAppRenderer.cpp)
-
-list(APPEND DEPLIBS ${p8-platform_LIBRARIES}
-                    ${kodiplatform_LIBRARIES}
-                    cef_dll_wrapper
-                    cef)
-
-if(WIN32)
-  list(APPEND DEPLIBS ws2_32)
-endif()
-
-add_executable(kodichromium ${KODICHROMIUM_BIN_SOURCES})
-add_dependencies(kodichromium cef-binary)
-target_link_libraries(kodichromium ${DEPLIBS})
-
-set(KODICHROMIUM_CUSTOM_DATA "${CMAKE_CURRENT_BINARY_DIR}/share/cef")
-set(KODICHROMIUM_ADDITIONAL_BINARY "${CMAKE_CURRENT_BINARY_DIR}/kodichromium"
-                                   "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/chrome-sandbox"
-                                   "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/libcef.so")
-set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/icudtl.dat"
-                                         "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/natives_blob.bin"
-                                         "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/snapshot_blob.bin")
-
-build_addon(web.browser.chromium
-                KODICHROMIUM
-                DEPLIBS)
-
-if(PACKAGE_ZIP EQUAL 1)
-  # needed for project installing
-  list(APPEND CMAKE_ARGS -DPACKAGE_ZIP=1)
-  message(STATUS "package zip specified")
-elseif(PACKAGE_TGZ EQUAL 1)
-  # needed for project installing
-  list(APPEND CMAKE_ARGS -DPACKAGE_TGZ=1)
-  message(STATUS "package tgz specified")
-endif()
-
-add_dependencies(web.browser.chromium cef-binary)
-add_definitions(-DKODICHROMIUM_VERSION="${KODICHROMIUM_VERSION}")
 
 include(CPack)

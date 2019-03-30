@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -18,6 +18,7 @@
 
 #include "addon.h"
 
+#include "AppBrowser.h"
 #include "DOMVisitor.h"
 #include "MessageIds.h"
 #include "RequestContextHandler.h"
@@ -27,6 +28,7 @@
 
 #include "include/cef_app.h"
 #include "include/cef_version.h"
+#include "include/wrapper/cef_library_loader.h"
 
 #include <kodi/gui/dialogs/OK.h>
 #include <kodi/gui/dialogs/YesNo.h>
@@ -38,21 +40,34 @@ int CWebBrowser::m_iUniqueClientId = 0;
 
 CWebBrowser::CWebBrowser(KODI_HANDLE instance)
   : CInstanceWeb(instance),
-    m_uploadHandler(new CWebBrowserUploadHandler),
-    m_geolocationPermission(new CWebBrowserGeolocationPermission),
+    m_guiManager(this),
+//     m_uploadHandler(new CWebBrowserUploadHandler),
     m_isActive(false)
 {
   kodi::Log(ADDON_LOG_DEBUG, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
 
-  DCHECK(m_threadChecker.CalledOnValidThread());
+  std::string cefLib = kodi::GetAddonPath(LIBRARY_PREFIX "cef" LIBRARY_SUFFIX);
+  if (!cef_load_library(cefLib.c_str()))
+  {
+    LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
+    return;
+  }
 
-  CefMessageRouterConfig config;
-  m_messageRouter = CefMessageRouterRendererSide::Create(config);
+//
+//   CefMessageRouterConfig config;
+//   m_messageRouter = CefMessageRouterRendererSide::Create(config);
 }
 
 CWebBrowser::~CWebBrowser()
 {
   StopInstance();
+
+//   m_messageRouter = nullptr;
+  if (!cef_unload_library())
+  {
+    LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Failed to unload CEF library", __FUNCTION__);
+    return;
+  }
 }
 
 WEB_ADDON_ERROR CWebBrowser::GetCapabilities(WEB_ADDON_CAPABILITIES& capabilities)
@@ -62,6 +77,65 @@ WEB_ADDON_ERROR CWebBrowser::GetCapabilities(WEB_ADDON_CAPABILITIES& capabilitie
   capabilities.bSupportsMessenger = false;
   capabilities.bSupportsVarious   = false;
   return WEB_ADDON_ERROR_NO_ERROR;
+}
+
+bool CWebBrowser::MainInitialize()
+{
+  if (kodi::GetSettingString("downloads.path").empty())
+  {
+    kodi::gui::dialogs::OK::ShowAndGetInput(kodi::GetLocalizedString(30080), kodi::GetLocalizedString(30081));
+
+    std::string path;
+    while (path.empty() && !IsStopped())
+      kodi::gui::dialogs::FileBrowser::ShowAndGetDirectory("local", kodi::GetLocalizedString(30081), path, true);
+
+    if (IsStopped())
+      return false;
+
+    kodi::SetSettingString("downloads.path", path);
+  }
+
+  const char* cmdLine[3];
+  cmdLine[0] = std::string("--kodi-addon-path=" + kodi::GetAddonPath()).c_str();
+  cmdLine[1] = "--disable-gpu";
+  cmdLine[2] = "--disable-software-rasterizer";
+  CefMainArgs args(3, (char**)cmdLine);
+  m_app = new CClientAppBrowser(this);
+  if (!CefInitialize(args, m_cefSettings, m_app, nullptr))
+  {
+    LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
+    return false;
+  }
+
+  return true;
+}
+
+void CWebBrowser::MainShutdown()
+{
+
+  P8PLATFORM::CLockObject lock(m_mutex);
+
+  /* delete all clients outside of CefDoMessageLoopWork */
+  for (const auto& entry : m_browserClientsToDelete)
+  {
+    if (entry->CloseComplete())
+      CefDoMessageLoopWork();
+  }
+  m_browserClientsToDelete.clear();
+}
+
+void CWebBrowser::MainLoop()
+{
+
+  if (!m_isActive)
+  {
+    MainInitialize();
+    m_isActive = true;
+  }
+
+  CefDoMessageLoopWork();
+
+  MainShutdown();
 }
 
 WEB_ADDON_ERROR CWebBrowser::StartInstance()
@@ -74,11 +148,12 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   m_strHTMLCachePath = path + "pchHTMLCache";
   m_strCookiePath = path + "pchCookies";
 
-  path = AddonLibPath();
+  path = kodi::GetAddonPath();
   m_strLibPath = path + "kodichromium";
   m_strSandboxBinary = path + "chrome-sandbox";
 
   path = AddonSharePath();
+  fprintf(stderr, "AddonSharePath %s\n", path.c_str());
   m_strLocalesPath = path + "resources/cef/locales";
   m_strResourcesPath = path + "resources/cef/";
 
@@ -93,12 +168,11 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
 
   std::string language = kodi::GetLanguage(LANG_FMT_ISO_639_1, true);
 
-  m_cefSettings.single_process                      = 1; /// TODO remove this singe process usage! Need then a new addon system interface!
   m_cefSettings.no_sandbox                          = 0;
   CefString(&m_cefSettings.browser_subprocess_path) = m_strLibPath;
   CefString(&m_cefSettings.framework_dir_path)      = "";
   m_cefSettings.multi_threaded_message_loop         = 0;
-  m_cefSettings.external_message_pump               = 0;
+  m_cefSettings.external_message_pump               = 1;
   m_cefSettings.windowless_rendering_enabled        = 1;
   m_cefSettings.command_line_args_disabled          = 0;
   CefString(&m_cefSettings.cache_path)              = m_strHTMLCachePath;
@@ -122,10 +196,10 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   m_cefSettings.enable_net_security_expiration      = 0;
   m_cefSettings.background_color                    = 0;
   CefString(&m_cefSettings.accept_language_list)    = language;
-  CefString(&m_cefSettings.kodi_addon_dir_path)     = m_strLibPath;
+  CefString(&m_cefSettings.kodi_addon_dir_path)     = path;
 
-  m_renderProcess = new CRenderProcess(m_cefSettings);
-  CreateThread();
+//   m_renderProcess = new CRenderProcess(m_cefSettings);
+//   CreateThread();
 
   LOG_INTERNAL_MESSAGE(ADDON_LOG_INFO, "%s - Started web browser add-on process", __FUNCTION__);
 
@@ -134,7 +208,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
 
 void CWebBrowser::StopInstance()
 {
-  StopThread();
+//   StopThread();
 }
 
 bool CWebBrowser::SetLanguage(const char *language)
@@ -145,7 +219,7 @@ bool CWebBrowser::SetLanguage(const char *language)
 
 kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceName, const std::string& startURL, KODI_HANDLE handle)
 {
-  CEF_REQUIRE_UI_THREAD();
+//   CEF_REQUIRE_UI_THREAD();
 
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
 
@@ -272,57 +346,66 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
 
 void* CWebBrowser::Process(void)
 {
-  DCHECK(m_threadChecker.CalledOnValidThread());
-
-  if (kodi::GetSettingString("downloads.path").empty())
-  {
-    kodi::gui::dialogs::OK::ShowAndGetInput(kodi::GetLocalizedString(30080), kodi::GetLocalizedString(30081));
-
-    std::string path;
-    while (path.empty() && !IsStopped())
-      kodi::gui::dialogs::FileBrowser::ShowAndGetDirectory("local", kodi::GetLocalizedString(30081), path, true);
-
-    if (IsStopped())
-      return nullptr;
-
-    kodi::SetSettingString("downloads.path", path);
-  }
-
-  CefMainArgs args;
-  if (!CefInitialize(args, m_cefSettings, this, nullptr))
-  {
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
-    return nullptr;
-  }
-
-  m_isActive = true;
-
-  while (!IsStopped())
-  {
-    /*!
-     * Do Chromium related works, also CefRunMessageLoop() can be used and the
-     * thread is complete moved then there.
-     */
-    CefDoMessageLoopWork();
-
-    {
-      P8PLATFORM::CLockObject lock(m_mutex);
-
-      /* delete all clients outside of CefDoMessageLoopWork */
-      for (const auto& entry : m_browserClientsToDelete)
-      {
-        if (entry->CloseComplete())
-          CefDoMessageLoopWork();
-      }
-      m_browserClientsToDelete.clear();
-    }
-    usleep(100);
-  }
-
-  m_isActive = false;
-
-  CefDoMessageLoopWork();
-  CefShutdown();
+//   DCHECK(m_threadChecker.CalledOnValidThread());
+//   if (kodi::GetSettingString("downloads.path").empty())
+//   {
+//     kodi::gui::dialogs::OK::ShowAndGetInput(kodi::GetLocalizedString(30080), kodi::GetLocalizedString(30081));
+//
+//     std::string path;
+//     while (path.empty() && !IsStopped())
+//       kodi::gui::dialogs::FileBrowser::ShowAndGetDirectory("local", kodi::GetLocalizedString(30081), path, true);
+//
+//     if (IsStopped())
+//       return nullptr;
+//
+//     kodi::SetSettingString("downloads.path", path);
+//   }
+//
+//
+//   m_app = new CClientAppBrowser(this);
+//
+//   std::string commandLine1 = "--kodi-addon-path=" + kodi::GetAddonPath();
+//   std::string commandLine2 = "--disable-gpu";
+//   std::string commandLine3 = "--disable-software-rasterizer";
+//   const char* cmdLine[3];
+//   cmdLine[0] = std::string("--kodi-addon-path=" + kodi::GetAddonPath()).c_str();
+//   cmdLine[1] = "--disable-gpu";
+//   cmdLine[2] = "--disable-software-rasterizer";
+//   CefMainArgs args(3, (char**)cmdLine);
+//   if (!CefInitialize(args, m_cefSettings, m_app, nullptr))
+//   {
+//     LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
+//     return nullptr;
+//   }
+//
+//   m_isActive = true;
+//
+//   while (!IsStopped())
+//   {
+//     /*!
+//      * Do Chromium related works, also CefRunMessageLoop() can be used and the
+//      * thread is complete moved then there.
+//      */
+//     CefDoMessageLoopWork();
+//
+//     {
+//       P8PLATFORM::CLockObject lock(m_mutex);
+//
+//       /* delete all clients outside of CefDoMessageLoopWork */
+//       for (const auto& entry : m_browserClientsToDelete)
+//       {
+//         if (entry->CloseComplete())
+//           CefDoMessageLoopWork();
+//       }
+//       m_browserClientsToDelete.clear();
+//     }
+//     usleep(100);
+//   }
+//
+//   m_isActive = false;
+//
+//   CefDoMessageLoopWork();
+//   CefShutdown();
 
   return nullptr;
 }
@@ -385,70 +468,16 @@ bool CWebBrowser::SetSandbox()
   return true;
 }
 
-void CWebBrowser::OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line)
-{
-  //TODO use after after improvement of chromium process apps
-}
-
-/// CefResourceBundleHandler
-//@{
-bool CWebBrowser::GetLocalizedString(int string_id, CefString& string)
-{
-  //TODO maybe change chromium strings to them from Kodi?
-  return false;
-}
-
-bool CWebBrowser::GetDataResource(int resource_id, void*& data, size_t& data_size)
-{
-  //TODO is useful?
-  return false;
-}
-
-bool CWebBrowser::GetDataResourceForScale(int resource_id, ScaleFactor scale_factor, void*& data, size_t& data_size)
-{
-  //TODO is useful?
-  return false;
-}
-//@}
-
-void CWebBrowser::OpenDownloadDialog()
-{
-  m_downloadHandler.Show();
-}
-
-void CWebBrowser::OpenCookieHandler()
-{
-  m_cookieHandler.Open();
-}
-
-/// CefBrowserProcessHandler
-//@{
-void CWebBrowser::OnContextInitialized()
-{
-  //TODO is useful and if become CefBrowserProcessHandler in separate app place?
-}
-
-void CWebBrowser::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line)
-{
-  //TODO is useful and if become CefBrowserProcessHandler in separate app place?
-}
-
-void CWebBrowser::OnRenderProcessThreadCreated(CefRefPtr<CefListValue> extra_info)
-{
-  //TODO is useful and if become CefBrowserProcessHandler in separate app place?
-}
-
-CefRefPtr<CefPrintHandler> CWebBrowser::GetPrintHandler()
-{
-  //TODO is useful and if become CefBrowserProcessHandler in separate app place?
-  return nullptr;
-}
-
-void CWebBrowser::OnScheduleMessagePumpWork(int64 delay_ms)
-{
-  //TODO is useful and if become CefBrowserProcessHandler in separate app place?
-}
-//@}
+//
+// void CWebBrowser::OpenDownloadDialog()
+// {
+//   m_downloadHandler.Show();
+// }
+//
+// void CWebBrowser::OpenCookieHandler()
+// {
+//   m_cookieHandler.Open();
+// }
 
 //------------------------------------------------------------------------------
 

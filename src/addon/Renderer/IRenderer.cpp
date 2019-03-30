@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2015-2018 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,9 @@
 #include <kodi/General.h>
 
 IRenderer::IRenderer(CWebBrowserClient const* client)
-  : m_client(client)
+  : m_client(client),
+    m_viewWidth(0),
+    m_viewHeight(0)
 {
   uint32_t color = m_client->GetBackgroundColorARGB();
   m_backgroundColor[3] = float(CefColorGetA(color)) / 255.0f;
@@ -35,55 +37,56 @@ IRenderer::IRenderer(CWebBrowserClient const* client)
 
 IRenderer::~IRenderer()
 {
-  while (!m_paintQueue.empty())
+}
+
+void IRenderer::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show)
+{
+  if (!show)
   {
-    delete m_paintQueue.front();
-    m_paintQueue.pop();
+    // Clear the popup rectangle.
+    ClearPopupRects();
   }
 }
 
-void IRenderer::OnPaint(CefBrowserHost::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height)
+void IRenderer::OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect)
 {
-  if (width <= 2 && height <= 2)
-  {
-    // Ignore really small buffer sizes while the widget is starting up.
+  if (rect.width <= 0 || rect.height <= 0)
     return;
-  }
-  
-  P8PLATFORM::CLockObject lock(m_mutex);
+  m_originalPopupRect = rect;
+  m_popupRect = GetPopupRectInWebView(m_originalPopupRect);
+}
 
-  if (m_paintQueue.size() > MAX_MESSAGE_QUEUE_FILL_SIZE)
-  {
-    kodi::Log(ADDON_LOG_ERROR, "Renderer paint message flow reached max size, further calls becomes ignored!");
-    return;
-  }
+CefRect IRenderer::GetPopupRectInWebView(const CefRect& original_rect)
+{
+  CefRect rc(original_rect);
+  // if x or y are negative, move them to 0.
+  if (rc.x < 0)
+    rc.x = 0;
+  if (rc.y < 0)
+    rc.y = 0;
+  // if popup goes outside the view, try to reposition origin
+  if (rc.x + rc.width > m_viewWidth)
+    rc.x = m_viewWidth - rc.width;
+  if (rc.y + rc.height > m_viewHeight)
+    rc.y = m_viewHeight - rc.height;
+  // if x or y became negative, move them to 0 again.
+  if (rc.x < 0)
+    rc.x = 0;
+  if (rc.y < 0)
+    rc.y = 0;
+  return rc;
+}
 
-  CPaintMessage* message = new CPaintMessage;
-  message->thisClass = this;
-  message->type = type;
-  message->dirtyRects = dirtyRects;
-  message->buffer = buffer;
-  message->width = width;
-  message->height = height;
-  m_paintQueue.push(message);
+void IRenderer::ClearPopupRects()
+{
+  m_popupRect.Set(0, 0, 0, 0);
+  m_originalPopupRect.Set(0, 0, 0, 0);
 }
 
 bool IRenderer::Dirty()
 {
-  P8PLATFORM::CLockObject lock(m_mutex);
-  return !m_paintQueue.empty();
+  bool ret = m_dirty;
+  m_dirty = false;
+  return ret;
 }
 
-CPaintMessage* IRenderer::GetPaintMessage()
-{
-  CPaintMessage* msg = nullptr;
-
-  P8PLATFORM::CLockObject lock(m_mutex);
-
-  if (!m_paintQueue.empty())
-  {
-    msg = m_paintQueue.front();
-    m_paintQueue.pop();
-  }
-  return msg;
-}

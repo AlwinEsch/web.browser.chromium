@@ -1,6 +1,5 @@
-#pragma once
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -17,47 +16,31 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "include/cef_app.h"
-#include <p8-platform/threads/threads.h>
 
-/// TODO move this to external app process after addon interface is reworked
-class CRenderProcess
-  : public P8PLATFORM::CThread,
-    public CefApp,
-    public CefRenderProcessHandler
+// Client app implementation for other process types.
+class CWebAppRenderer : public CefApp, public CefRenderProcessHandler
 {
-public:
-  CRenderProcess(const CefSettings& cefSettings);
-  ~CRenderProcess() override;
+ public:
+  CWebAppRenderer();
 
-  void AddRef() const override { }
-  bool Release() const override { return false; }
-  bool HasOneRef() const override { return false; }
-  bool HasAtLeastOneRef() const override { return false; }
-
-protected:
-  virtual void* Process(void) override;
-
-private:
-  // CefApp methods.
-  CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override { fprintf(stderr, "--1-----------------------<> %s\n", __PRETTY_FUNCTION__); return this; }
-
-  // CefRenderProcessHandler
-  //@{
   void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info) override;
   void OnWebKitInitialized() override;
   void OnBrowserCreated(CefRefPtr<CefBrowser> browser) override;
   void OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) override;
+  CefRefPtr<CefLoadHandler> GetLoadHandler() override;
   void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) override;
   void OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) override;
-  void OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context,
+  void OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,CefRefPtr<CefV8Context> context,
                                    CefRefPtr<CefV8Exception> exception, CefRefPtr<CefV8StackTrace> stackTrace) override;
   void OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefDOMNode> node) override;
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;
-  //@}
 
-  DISALLOW_COPY_AND_ASSIGN(CRenderProcess);
+ private:
+  CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override { return this; }
 
-  const CefSettings& m_cefSettings;
-  CefRefPtr<CefMessageRouterRendererSide> m_messageRouter;
+  IMPLEMENT_REFCOUNTING(CWebAppRenderer);
+  DISALLOW_COPY_AND_ASSIGN(CWebAppRenderer);
 };

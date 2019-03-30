@@ -1,6 +1,5 @@
-#pragma once
 /*
- *      Copyright (C) 2015-2018 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -17,6 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "include/cef_render_handler.h"
 #include "include/internal/cef_ptr.h"
 #include "include/cef_base.h"
@@ -24,37 +25,37 @@
 class CWebBrowserClient;
 class IRenderer;
 
-class CRendererClient
-  : public CefRenderHandler
+class CRendererClient : public CefRenderHandler
 {
 public:
-  CRendererClient(CWebBrowserClient const* client);
-  virtual ~CRendererClient();
+  CRendererClient(CWebBrowserClient* client);
+  ~CRendererClient() override;
   
+  bool SetActive();
+  void SetInactive();
   void Render();
   bool Dirty();
   void ScreenSizeChange(float x, float y, float width, float height);
   
   /// CefRenderHandler functions
   //@{
-  virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
-  virtual bool GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY) override;
-  virtual void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width, int height) override;
-  virtual void OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, CursorType type, const CefCursorInfo& custom_cursor_info) override;
-  virtual void OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser, double x, double y) override;
-  virtual void OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) override;
-  virtual void OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect) override;
-  virtual bool StartDragging(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> drag_data, DragOperationsMask allowed_ops, int x, int y) override;
-  virtual void UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperation operation) override;
-  virtual void OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& selected_range, const RectList& character_bounds) override;
+  void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
+  bool GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY) override;
+  void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width, int height) override;
+  void OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, CursorType type, const CefCursorInfo& custom_cursor_info) override;
+  void OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) override;
+  void OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect) override;
+  bool StartDragging(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> drag_data, DragOperationsMask allowed_ops, int x, int y) override;
+  void UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperation operation) override;
+  void OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser, double x, double y) override;
+  void OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& selected_range, const RectList& character_bounds) override;
+  void OnTextSelectionChanged(CefRefPtr<CefBrowser> browser, const CefString& selected_text, const CefRange& selected_range) override;
+  void OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser, TextInputMode input_mode) override;
   //@}
 
 private:
   IMPLEMENT_REFCOUNTING(CRendererClient);
   
-  bool Initialize();
-
-  CWebBrowserClient const* m_client;
+  CWebBrowserClient* m_client;
   IRenderer* m_renderer;
-  bool m_initialized;
 };

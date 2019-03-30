@@ -540,7 +540,7 @@ bool CWebBrowserDownloadHandler::OnInit()
   return true;
 }
 
-bool CWebBrowserDownloadHandler::OnAction(int actionId)
+bool CWebBrowserDownloadHandler::OnAction(int actionId, uint32_t buttoncode, wchar_t unicode)
 {
   if (actionId == ACTION_PREVIOUS_MENU || actionId ==ACTION_NAV_BACK)
   {
@@ -548,7 +548,7 @@ bool CWebBrowserDownloadHandler::OnAction(int actionId)
     ClearList();
     m_items.clear();
   }
-  return CWindow::OnAction(actionId);
+  return CWindow::OnAction(actionId, buttoncode, unicode);
 }
 
 void CWebBrowserDownloadHandler::GetContextButtons(int itemNumber, std::vector< std::pair<unsigned int, std::string> > &buttons)

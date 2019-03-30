@@ -77,7 +77,6 @@ public:
 
   CefRefPtr<CefDialogHandler> GetDialogHandler() override;
   CefRefPtr<CefDownloadHandler> GetDownloadHandler() override;
-  CefRefPtr<CefGeolocationHandler> GetGeolocationHandler() override;
   CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
   CefRefPtr<CefRenderHandler> GetRenderHandler() override;
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
@@ -126,7 +125,7 @@ public:
   void OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bool fullscreen) override;
   bool OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text) override;
   void OnStatusMessage(CefRefPtr<CefBrowser> browser, const CefString& value) override;
-  bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString&  message, const CefString& source, int line) override;
+  bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString&  message, const CefString& source, int line) override;
   //@}
 
   /// CefLifeSpanHandler methods
@@ -155,7 +154,7 @@ public:
 
   /// CefRequestHandler methods
   //@{
-  bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool is_redirect) override;
+  bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect) override;
   bool OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url,
                         CefRequestHandler::WindowOpenDisposition target_disposition, bool user_gesture) override;
   CefRequestHandler::ReturnValue OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
@@ -199,13 +198,15 @@ public:
   /// CefAudioHandler methods
   //@{
   void OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int audio_stream_id, int channels, ChannelLayout channel_layout,
-                            int sample_rate, int original_bits_per_sample, int frames_per_buffer) override;
-  void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser, int audio_stream_id, const void* data, int data_length, int64_t pts) override;
+                            int sample_rate, int frames_per_buffer) override;
+  void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser, int audio_stream_id, const float** data, int frames, int64_t pts) override;
   void OnAudioStreamStopped(CefRefPtr<CefBrowser> browser, int audio_stream_id) override;
   //@}
 
   bool IsLoading() { return m_isLoading; }
   CefRefPtr<CefBrowser> GetBrowser() { return m_browser; }
+
+  CWebBrowser& GetMain() { return *m_mainBrowserHandler; }
 
 protected:
   void SendGUIMessage(Message& message, bool wait);

@@ -1,4 +1,3 @@
-#pragma once
 /*
  *      Copyright (C) 2015-2018 Team KODI
  *      http:/kodi.tv
@@ -17,52 +16,47 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "include/cef_render_handler.h"
+#pragma once
 
-#include <queue>
-#include <p8-platform/threads/mutex.h>
+#include "include/cef_render_handler.h"
 
 class CWebBrowserClient;
 
-#define MAX_MESSAGE_QUEUE_FILL_SIZE 100
-
-class IRenderer;
-
-typedef struct
-{
-  IRenderer* thisClass;
-  CefBrowserHost::PaintElementType type;
-  CefRenderHandler::RectList dirtyRects;
-  const void* buffer;
-  int width;
-  int height;
-} CPaintMessage;
-  
 class IRenderer
 {
 public:
   IRenderer(CWebBrowserClient const* client);
   virtual ~IRenderer();
 
-  void OnPaint(CefBrowserHost::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height);
-  CPaintMessage* GetPaintMessage();
+  virtual void OnPaint(CefBrowserHost::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height) = 0;
+  void SetDirty() { m_dirty = true; }
   bool Dirty();
   
   inline bool TransparentBackground() { return m_useTransparentBackground; }
   inline const float* BackgroundColor() { return m_backgroundColor; }
   
   virtual bool Initialize() { return false; }
+  virtual void Deinitialize() { }
   virtual void Render() { }
   virtual void ScreenSizeChange(float x, float y, float width, float height) { }
-  
-  CWebBrowserClient const* m_client;
-  
+  virtual void OnPopupShow(CefRefPtr<CefBrowser> browser, bool show);
+  virtual void OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect);
+
+  bool m_dirty = true;
+  int m_viewWidth;
+  int m_viewHeight;
+  CefRect m_updateRect;
+
 protected:
   bool m_useTransparentBackground;
   float m_backgroundColor[4];
+  CefRect m_popupRect;
+  CefRect m_originalPopupRect;
 
 private:
-  std::queue <CPaintMessage*> m_paintQueue;
-  P8PLATFORM::CMutex m_mutex;
+  CWebBrowserClient const* m_client;
+
+  CefRect GetPopupRectInWebView(const CefRect& original_rect);
+  void ClearPopupRects();
 };
 
