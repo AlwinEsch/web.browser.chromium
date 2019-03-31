@@ -130,7 +130,8 @@ void CRendererClient::UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperat
 
 void CRendererClient::OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser, double x, double y)
 {
-  ///TODO Is this usable for Kodi?
+  m_scrollOffsetX = x;
+  m_scrollOffsetY = y;
 }
 
 void CRendererClient::OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& selected_range, const RectList& character_bounds)

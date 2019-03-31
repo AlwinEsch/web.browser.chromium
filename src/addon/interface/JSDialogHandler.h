@@ -1,6 +1,5 @@
-#pragma once
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -17,6 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "include/cef_jsdialog_handler.h"
 
 class CWebBrowserClient;
@@ -26,20 +27,26 @@ class CJSDialogHandler : public CefJSDialogHandler
 public:
   CJSDialogHandler(CWebBrowserClient* client) : m_client(client) { }
 
-  virtual bool OnJSDialog(CefRefPtr<CefBrowser> browser,
-                          const CefString& origin_url,
-                          JSDialogType dialog_type,
-                          const CefString& message_text,
-                          const CefString& default_prompt_text,
-                          CefRefPtr<CefJSDialogCallback> callback,
-                          bool& suppress_message) override;
-  virtual bool OnBeforeUnloadDialog(CefRefPtr<CefBrowser> browser,
-                                    const CefString& message_text,
-                                    bool is_reload,
-                                    CefRefPtr<CefJSDialogCallback> callback) override;
+  bool OnJSDialog(CefRefPtr<CefBrowser> browser,
+                  const CefString& origin_url,
+                  JSDialogType dialog_type,
+                  const CefString& message_text,
+                  const CefString& default_prompt_text,
+                  CefRefPtr<CefJSDialogCallback> callback,
+                  bool& suppress_message) override;
+  bool OnBeforeUnloadDialog(CefRefPtr<CefBrowser> browser,
+                            const CefString& message_text,
+                            bool is_reload,
+                            CefRefPtr<CefJSDialogCallback> callback) override;
 
 private:
   IMPLEMENT_REFCOUNTING(CJSDialogHandler);
+
+  static void OnJSDialogProcess(std::string origin_url,
+                                JSDialogType dialog_type,
+                                std::string message_text,
+                                std::string default_prompt_text,
+                                CefRefPtr<CefJSDialogCallback> callback);
 
   CWebBrowserClient* m_client;
 };

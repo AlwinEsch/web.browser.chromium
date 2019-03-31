@@ -1,6 +1,5 @@
-#pragma once
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -16,6 +15,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#pragma once
 
 #define NDEBUG 1
 
@@ -42,20 +43,6 @@ class CJSHandler;
 class CJSDialogHandler;
 class CRequestContextHandler;
 
-#define TMSG_SET_CONTROL_READY        100
-#define TMSG_SET_OPENED_ADDRESS       101
-#define TMSG_SET_OPENED_TITLE         102
-#define TMSG_SET_ICON_URL             103
-#define TMSG_SET_LOADING_STATE        105
-#define TMSG_SET_TOOLTIP              106
-#define TMSG_SET_STATUS_MESSAGE       107
-#define TMSG_HANDLE_ON_PAINT          108
-#define TMSG_FULLSCREEN_MODE_CHANGE   109
-
-
-
-
-
 class CWebBrowser;
 
 class CWebBrowserClient
@@ -76,9 +63,9 @@ public:
   CefRefPtr<CefAudioHandler> GetAudioHandler() override;
   CefRefPtr<CefDialogHandler> GetDialogHandler() override;
   CefRefPtr<CefDownloadHandler> GetDownloadHandler() override;
+  CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
   CefRefPtr<CefRenderHandler> GetRenderHandler() override;
 
-  CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
@@ -200,12 +187,15 @@ public:
   CWebBrowser& GetMain() { return *m_mainBrowserHandler; }
 
 protected:
-  void SendGUIMessage(Message& message, bool wait);
-
   virtual void* Process(void) override;
 
 private:
+  void SendKey(int key);
+  bool HandleScrollEvent(int actionId);
+
   const int m_uniqueClientId;                // Unique identification id of this control client
+  double m_scrollOffsetX = -1.0;
+  double m_scrollOffsetY = -1.0;
 
   typedef std::set<CefMessageRouterBrowserSide::Handler*> MessageHandlerSet;
 
@@ -224,10 +214,6 @@ private:
   std::string GetDataURI(const std::string& data, const std::string& mime_type);
   std::string GetCertificateInformation(CefRefPtr<CefX509Certificate> cert, cef_cert_status_t certstatus);
   void CreateMessageHandlers(MessageHandlerSet& handlers);
-
-  void HandleGUIMessages();
-  std::queue <Message*> m_processGUIQueue;
-  P8PLATFORM::CMutex m_processGUIMutex;
 
   CWebBrowser* m_mainBrowserHandler;
   bool m_renderViewReady;

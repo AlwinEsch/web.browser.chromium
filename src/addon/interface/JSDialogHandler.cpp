@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,8 @@
 
 #include "JSDialogHandler.h"
 #include "WebBrowserClient.h"
-#include "Utils.h"
+#include "utils/Utils.h"
+#include "utils/StringUtils.h"
 
 #include "include/cef_parser.h"
 
@@ -26,7 +27,7 @@
 #include <kodi/gui/dialogs/OK.h>
 #include <kodi/gui/dialogs/YesNo.h>
 #include <kodi/gui/dialogs/Keyboard.h>
-#include <p8-platform/util/StringUtils.h>
+#include <thread>
 
 bool CJSDialogHandler::OnJSDialog(CefRefPtr<CefBrowser> browser,
                                   const CefString& origin_url,
@@ -40,6 +41,26 @@ bool CJSDialogHandler::OnJSDialog(CefRefPtr<CefBrowser> browser,
                        origin_url.ToString().c_str(), dialog_type, message_text.ToString().c_str(), default_prompt_text.ToString().c_str(),
                        suppress_message ? "yes" : "no");
 
+  switch (dialog_type)
+  {
+    case JSDIALOGTYPE_ALERT:
+    case JSDIALOGTYPE_CONFIRM:
+    case JSDIALOGTYPE_PROMPT:
+      std::thread(OnJSDialogProcess, origin_url.ToString(), dialog_type, message_text.ToString(), default_prompt_text.ToString(), callback).detach();
+      break;
+    default:
+      return false;
+  }
+
+  return true;
+}
+
+void CJSDialogHandler::OnJSDialogProcess(std::string origin_url,
+                                         JSDialogType dialog_type,
+                                         std::string message_text,
+                                         std::string default_prompt_text,
+                                         CefRefPtr<CefJSDialogCallback> callback)
+{
   switch (dialog_type)
   {
     case JSDIALOGTYPE_ALERT:
@@ -58,16 +79,14 @@ bool CJSDialogHandler::OnJSDialog(CefRefPtr<CefBrowser> browser,
     case JSDIALOGTYPE_PROMPT:
     {
       std::string text;
-      std::string header = StringUtils::Format(kodi::GetLocalizedString(30035).c_str(), message_text.ToString().c_str());
+      std::string header = StringUtils::Format(kodi::GetLocalizedString(30035).c_str(), message_text);
       bool ret = kodi::gui::dialogs::Keyboard::ShowAndGetInput(text, header, true, false);
       callback->Continue(ret, text);
       break;
     }
     default:
-      return false;
+      break;
   }
-
-  return true;
 }
 
 bool CJSDialogHandler::OnBeforeUnloadDialog(CefRefPtr<CefBrowser> browser,
@@ -75,7 +94,6 @@ bool CJSDialogHandler::OnBeforeUnloadDialog(CefRefPtr<CefBrowser> browser,
                                             bool is_reload,
                                             CefRefPtr<CefJSDialogCallback> callback)
 {
-
   bool canceled;
   bool ret = kodi::gui::dialogs::YesNo::ShowAndGetInput(CefFormatUrlForSecurityDisplay(browser->GetFocusedFrame()->GetURL()).ToString(),
                                                         kodi::GetLocalizedString(30036), canceled);

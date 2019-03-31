@@ -37,6 +37,9 @@ public:
   bool Dirty();
   void ScreenSizeChange(float x, float y, float width, float height);
   
+  double ScrollOffsetX() { return m_scrollOffsetX; }
+  double ScrollOffsetY() { return m_scrollOffsetY; }
+
   /// CefRenderHandler functions
   //@{
   void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
@@ -56,6 +59,8 @@ public:
 private:
   IMPLEMENT_REFCOUNTING(CRendererClient);
   
+  double m_scrollOffsetX = 0.0;
+  double m_scrollOffsetY = 0.0;
   CWebBrowserClient* m_client;
   IRenderer* m_renderer;
 };

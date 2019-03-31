@@ -146,15 +146,15 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/SandboxControl.cpp
                                  src/addon/URICheckHandler.cpp
                                  src/addon/WebBrowserClient.cpp
-                                 src/addon/JSInterface/Handler.cpp
-                                 src/addon/JSInterface/JSDialogHandler.cpp
-                                 src/addon/JSInterface/V8Handler.cpp
                                  src/addon/audio/AudioHandler.cpp
                                  src/addon/gui/DialogCookie.cpp
                                  src/addon/gui/DialogDownload.cpp
                                  src/addon/gui/DialogFile.cpp
                                  src/addon/gui/DialogKeyboard.cpp
                                  src/addon/gui/GUIManager.cpp
+                                 src/addon/interface/Handler.cpp
+                                 src/addon/interface/JSDialogHandler.cpp
+                                 src/addon/interface/V8Handler.cpp
                                  src/addon/renderer/IRenderer.cpp
                                  src/addon/renderer/Renderer.cpp
                                  src/addon/utils/StringUtils.cpp
@@ -170,15 +170,15 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/SandboxControl.h
                                  src/addon/URICheckHandler.h
                                  src/addon/WebBrowserClient.h
-                                 src/addon/JSInterface/Handler.h
-                                 src/addon/JSInterface/JSDialogHandler.h
-                                 src/addon/JSInterface/V8Handler.h
                                  src/addon/audio/AudioHandler.h
                                  src/addon/gui/DialogCookie.h
                                  src/addon/gui/DialogDownload.h
                                  src/addon/gui/DialogFile.h
                                  src/addon/gui/DialogKeyboard.h
                                  src/addon/gui/GUIManager.h
+                                 src/addon/interface/Handler.h
+                                 src/addon/interface/JSDialogHandler.h
+                                 src/addon/interface/V8Handler.h
                                  src/addon/renderer/IRenderer.h
                                  src/addon/renderer/Renderer.h
                                  src/addon/utils/StringUtils.h
