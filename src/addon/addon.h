@@ -27,7 +27,6 @@
 #include "include/wrapper/cef_message_router.h"
 
 #include <kodi/addon-instance/Web.h>
-#include <p8-platform/threads/threads.h>
 #include <queue>
 #include <unordered_map>
 #include <mutex>
@@ -36,8 +35,7 @@ class CWebBrowserClient;
 
 class ATTRIBUTE_HIDDEN CWebBrowser
   : public kodi::addon::CAddonBase,
-    public kodi::addon::CInstanceWeb,
-    public P8PLATFORM::CThread
+    public kodi::addon::CInstanceWeb
 {
 public:
   CWebBrowser();
@@ -49,14 +47,13 @@ public:
   WEB_ADDON_ERROR StartInstance() override;
   void StopInstance() override;
 
-  bool MainInitialize();
-  void MainShutdown();
+  bool MainInitialize() override;
+  void MainShutdown() override;
   void MainLoop() override;
 
   bool SetLanguage(const char *language) override;
   kodi::addon::CWebControl* CreateControl(const std::string& sourceName, const std::string& startURL, KODI_HANDLE handle) override;
   bool DestroyControl(kodi::addon::CWebControl* control, bool complete) override;
-
 
   // ---------------------------------------------------------------------------
   // Internal interface parts
@@ -65,10 +62,9 @@ public:
 
   CBrowserGUIManager& GetGUIManager() { return m_guiManager; }
 
-protected:
-  virtual void* Process() override;
-
 private:
+  void ClearClosedBrowsers();
+
   static int m_iUniqueClientId;
 
   CBrowserGUIManager m_guiManager;
@@ -77,7 +73,7 @@ private:
   std::mutex m_mutex;
 
   bool m_isActive;
-  CefSettings m_cefSettings;
+  CefSettings* m_cefSettings;
   std::string m_strHTMLCachePath;
   std::string m_strCookiePath;
   std::string m_strResourcesPath;

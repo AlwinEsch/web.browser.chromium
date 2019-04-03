@@ -16,16 +16,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "addon.h"
 #include "WebBrowserClient.h"
+
+#include "addon.h"
+#include "MessageIds.h"
 #include "URICheckHandler.h"
 #include "Utils.h"
-#include "MessageIds.h"
-#include "utils/SystemTranslator.h"
+#include "gui/DialogBrowserContextMenu.h"
 #include "interface/Handler.h"
 #include "interface/JSDialogHandler.h"
-
-#include "gui/DialogBrowserContextMenu.h"
+#include "utils/StringUtils.h"
+#include "utils/SystemTranslator.h"
 
 #include "include/cef_app.h"
 #include "include/cef_browser.h"
@@ -45,7 +46,6 @@
 #include <kodi/gui/dialogs/FileBrowser.h>
 #include <kodi/gui/dialogs/Keyboard.h>
 #include <kodi/gui/dialogs/YesNo.h>
-#include <p8-platform/util/StringUtils.h>
 #include <stdio.h>
 #include <algorithm>
 #include <iomanip>
@@ -55,9 +55,6 @@
 #define DEBUG_LOGS
 
 #define ZOOM_MULTIPLY 25.0
-
-using namespace std;
-using namespace P8PLATFORM;
 
 CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int uniqueClientId, const std::string& startURL, CWebBrowser* instance)
   : CWebControl(handle, uniqueClientId),
@@ -683,7 +680,6 @@ void CWebBrowserClient::OnStatusMessage(CefRefPtr<CefBrowser> browser, const Cef
 
 bool CWebBrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString& message, const CefString& source, int line)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Message: %s - Source: %s - Line: %i", __FUNCTION__,
                        message.ToString().c_str(), source.ToString().c_str(), line);
   return true;

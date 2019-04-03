@@ -46,6 +46,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
 {
   kodi::Log(ADDON_LOG_DEBUG, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
 
+  // Load CEF library by self
   std::string cefLib = kodi::GetAddonPath(LIBRARY_PREFIX "cef" LIBRARY_SUFFIX);
   if (!cef_load_library(cefLib.c_str()))
   {
@@ -53,12 +54,11 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
     return WEB_ADDON_ERROR_FAILED;
   }
 
+  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Setup add-on CEF directories:");
 
   std::string path;
 
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Setup add-on CEF directories:");
-
-  path = UserPath();
+  path = kodi::GetBaseUserPath();
   m_strHTMLCachePath = path + "pchHTMLCache";
   m_strCookiePath = path + "pchCookies";
 
@@ -81,37 +81,38 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
 
   std::string language = kodi::GetLanguage(LANG_FMT_ISO_639_1, true);
 
-  m_cefSettings.no_sandbox                          = 0;
-  CefString(&m_cefSettings.browser_subprocess_path) = m_strLibPath;
-  CefString(&m_cefSettings.framework_dir_path)      = "";
-  m_cefSettings.multi_threaded_message_loop         = 0;
-  m_cefSettings.external_message_pump               = 1;
-  m_cefSettings.windowless_rendering_enabled        = 1;
-  m_cefSettings.command_line_args_disabled          = 0;
-  CefString(&m_cefSettings.cache_path)              = m_strHTMLCachePath;
-  CefString(&m_cefSettings.user_data_path)          = "";
-  m_cefSettings.persist_session_cookies             = 0;
-  m_cefSettings.persist_user_preferences            = 0;
-  CefString(&m_cefSettings.user_agent)              = StringUtils::Format("Chrome/%d.%d.%d.%d",
+  // Create and delete CefSettings itself, otherwise comes seqfault during
+  // "CefSettingsTraits::clear" call, on
+  m_cefSettings = new CefSettings;
+  m_cefSettings->no_sandbox                          = 0;
+  CefString(&m_cefSettings->browser_subprocess_path) = m_strLibPath;
+  CefString(&m_cefSettings->framework_dir_path)      = "";
+  m_cefSettings->multi_threaded_message_loop         = 0;
+  m_cefSettings->external_message_pump               = 1;
+  m_cefSettings->windowless_rendering_enabled        = 1;
+  m_cefSettings->command_line_args_disabled          = 0;
+  CefString(&m_cefSettings->cache_path)              = m_strHTMLCachePath;
+  CefString(&m_cefSettings->user_data_path)          = "";
+  m_cefSettings->persist_session_cookies             = 0;
+  m_cefSettings->persist_user_preferences            = 0;
+  CefString(&m_cefSettings->user_agent)              = StringUtils::Format("Chrome/%d.%d.%d.%d",
                                                                           CHROME_VERSION_MAJOR, CHROME_VERSION_MINOR,
                                                                           CHROME_VERSION_BUILD, CHROME_VERSION_PATCH);
-  CefString(&m_cefSettings.product_version)         = "KODI";
-  CefString(&m_cefSettings.locale)                  = language;
-  CefString(&m_cefSettings.log_file)                = "";
-  m_cefSettings.log_severity                        = static_cast<cef_log_severity_t>(kodi::GetSettingInt("system.loglevelcef"));
-  CefString(&m_cefSettings.javascript_flags)        = "";
-  CefString(&m_cefSettings.resources_dir_path)      = m_strResourcesPath;
-  CefString(&m_cefSettings.locales_dir_path)        = m_strLocalesPath;
-  m_cefSettings.pack_loading_disabled               = 0;
-  m_cefSettings.remote_debugging_port               = 8457;
-  m_cefSettings.uncaught_exception_stack_size       = 0;
-  m_cefSettings.ignore_certificate_errors           = 0;
-  m_cefSettings.enable_net_security_expiration      = 0;
-  m_cefSettings.background_color                    = 0;
-  CefString(&m_cefSettings.accept_language_list)    = language;
-  CefString(&m_cefSettings.kodi_addon_dir_path)     = path;
-
-//   CreateThread();
+  CefString(&m_cefSettings->product_version)         = "KODI";
+  CefString(&m_cefSettings->locale)                  = language;
+  CefString(&m_cefSettings->log_file)                = "";
+  m_cefSettings->log_severity                        = static_cast<cef_log_severity_t>(kodi::GetSettingInt("system.loglevelcef"));
+  CefString(&m_cefSettings->javascript_flags)        = "";
+  CefString(&m_cefSettings->resources_dir_path)      = m_strResourcesPath;
+  CefString(&m_cefSettings->locales_dir_path)        = m_strLocalesPath;
+  m_cefSettings->pack_loading_disabled               = 0;
+  m_cefSettings->remote_debugging_port               = 8457;
+  m_cefSettings->uncaught_exception_stack_size       = 0;
+  m_cefSettings->ignore_certificate_errors           = 0;
+  m_cefSettings->enable_net_security_expiration      = 0;
+  m_cefSettings->background_color                    = 0;
+  CefString(&m_cefSettings->accept_language_list)    = language;
+  CefString(&m_cefSettings->kodi_addon_dir_path)     = path;
 
   LOG_INTERNAL_MESSAGE(ADDON_LOG_INFO, "%s - Started web browser add-on process", __FUNCTION__);
 
@@ -120,7 +121,12 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
 
 void CWebBrowser::StopInstance()
 {
-//   StopThread();
+  // deleted the created settings class
+  m_cefSettings->Reset();
+  delete m_cefSettings;
+  m_cefSettings = nullptr;
+
+  // unload cef library
   if (!cef_unload_library())
   {
     LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Failed to unload CEF library", __FUNCTION__);
@@ -135,22 +141,15 @@ bool CWebBrowser::MainInitialize()
     kodi::gui::dialogs::OK::ShowAndGetInput(kodi::GetLocalizedString(30080), kodi::GetLocalizedString(30081));
 
     std::string path;
-    while (path.empty() && !IsStopped())
+    while (path.empty())
       kodi::gui::dialogs::FileBrowser::ShowAndGetDirectory("local", kodi::GetLocalizedString(30081), path, true);
-
-    if (IsStopped())
-      return false;
 
     kodi::SetSettingString("downloads.path", path);
   }
 
-  const char* cmdLine[3];
-  cmdLine[0] = std::string("--kodi-addon-path=" + kodi::GetAddonPath()).c_str();
-  cmdLine[1] = "--disable-gpu";
-  cmdLine[2] = "--disable-software-rasterizer";
-  CefMainArgs args(3, (char**)cmdLine);
+  CefMainArgs args;
   m_app = new CClientAppBrowser(this);
-  if (!CefInitialize(args, m_cefSettings, m_app, nullptr))
+  if (!CefInitialize(args, *m_cefSettings, m_app, nullptr))
   {
     LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
     return false;
@@ -159,7 +158,26 @@ bool CWebBrowser::MainInitialize()
   return true;
 }
 
+void CWebBrowser::MainLoop()
+{
+  // Do CEF's message loop work
+  CefDoMessageLoopWork();
+
+  // Clear opened browser where not used anymore
+  if (!m_browserClientsToDelete.empty())
+    ClearClosedBrowsers();
+}
+
 void CWebBrowser::MainShutdown()
+{
+  ClearClosedBrowsers();
+
+  // Clear app browser and shutdown CEF
+  m_app = nullptr;
+  CefShutdown();
+}
+
+void CWebBrowser::ClearClosedBrowsers()
 {
   std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -172,20 +190,6 @@ void CWebBrowser::MainShutdown()
   m_browserClientsToDelete.clear();
 }
 
-void CWebBrowser::MainLoop()
-{
-
-  if (!m_isActive)
-  {
-    MainInitialize();
-    m_isActive = true;
-  }
-
-  CefDoMessageLoopWork();
-
-  MainShutdown();
-}
-
 bool CWebBrowser::SetLanguage(const char *language)
 {
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser language set to '%s'", __FUNCTION__, language);
@@ -194,7 +198,7 @@ bool CWebBrowser::SetLanguage(const char *language)
 
 kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceName, const std::string& startURL, KODI_HANDLE handle)
 {
-//   CEF_REQUIRE_UI_THREAD();
+  CEF_REQUIRE_UI_THREAD();
 
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
 
@@ -253,7 +257,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
     settings.local_storage                      = STATE_DEFAULT;
     settings.databases                          = STATE_DEFAULT;
     settings.application_cache                  = STATE_DEFAULT;
-    settings.webgl                              = STATE_DISABLED;//STATE_DISABLED;//STATE_ENABLED
+    settings.webgl                              = STATE_ENABLED;//STATE_DISABLED;//STATE_ENABLED
     settings.background_color                   = 0;
     CefString(&settings.accept_language_list)   = "";
 
@@ -317,72 +321,6 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
 
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control destroy done", __FUNCTION__);
   return true;
-}
-
-void* CWebBrowser::Process(void)
-{
-//   DCHECK(m_threadChecker.CalledOnValidThread());
-//   if (kodi::GetSettingString("downloads.path").empty())
-//   {
-//     kodi::gui::dialogs::OK::ShowAndGetInput(kodi::GetLocalizedString(30080), kodi::GetLocalizedString(30081));
-//
-//     std::string path;
-//     while (path.empty() && !IsStopped())
-//       kodi::gui::dialogs::FileBrowser::ShowAndGetDirectory("local", kodi::GetLocalizedString(30081), path, true);
-//
-//     if (IsStopped())
-//       return nullptr;
-//
-//     kodi::SetSettingString("downloads.path", path);
-//   }
-//
-//
-//   m_app = new CClientAppBrowser(this);
-//
-//   std::string commandLine1 = "--kodi-addon-path=" + kodi::GetAddonPath();
-//   std::string commandLine2 = "--disable-gpu";
-//   std::string commandLine3 = "--disable-software-rasterizer";
-//   const char* cmdLine[3];
-//   cmdLine[0] = std::string("--kodi-addon-path=" + kodi::GetAddonPath()).c_str();
-//   cmdLine[1] = "--disable-gpu";
-//   cmdLine[2] = "--disable-software-rasterizer";
-//   CefMainArgs args(3, (char**)cmdLine);
-//   if (!CefInitialize(args, m_cefSettings, m_app, nullptr))
-//   {
-//     LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
-//     return nullptr;
-//   }
-//
-//   m_isActive = true;
-//
-//   while (!IsStopped())
-//   {
-//     /*!
-//      * Do Chromium related works, also CefRunMessageLoop() can be used and the
-//      * thread is complete moved then there.
-//      */
-//     CefDoMessageLoopWork();
-//
-//     {
-//       std::lock_guard<std::mutex> lock(m_mutex);
-//
-//       /* delete all clients outside of CefDoMessageLoopWork */
-//       for (const auto& entry : m_browserClientsToDelete)
-//       {
-//         if (entry->CloseComplete())
-//           CefDoMessageLoopWork();
-//       }
-//       m_browserClientsToDelete.clear();
-//     }
-//     usleep(100);
-//   }
-//
-//   m_isActive = false;
-//
-//   CefDoMessageLoopWork();
-//   CefShutdown();
-
-  return nullptr;
 }
 
 ADDONCREATOR(CWebBrowser)

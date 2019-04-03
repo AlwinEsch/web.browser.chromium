@@ -48,9 +48,11 @@ bool CClientAppBrowser::GetDataResourceForScale(int resource_id, ScaleFactor sca
 //@{
 void CClientAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line)
 {
-  std::string commandLine = command_line->GetCommandLineString();
-  std::string processType = process_type;
-  fprintf(stderr, "--> %s '%s' '%s'\n", __PRETTY_FUNCTION__, processType.c_str(), commandLine.c_str());
+  command_line->AppendSwitch("kodi-addon-path=" + kodi::GetAddonPath());
+  command_line->AppendSwitch("disable-gpu");
+  command_line->AppendSwitch("disable-software-rasterizer");
+  command_line->AppendSwitch("enable-system-flash");
+  command_line->AppendSwitch("enable-media-stream");
 }
 
 void CClientAppBrowser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
@@ -82,6 +84,6 @@ CefRefPtr<CefPrintHandler> CClientAppBrowser::GetPrintHandler()
 
 void CClientAppBrowser::OnScheduleMessagePumpWork(int64 delay_ms)
 {
-//   fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
+//   fprintf(stderr, "--> %s delay_ms %li\n", __PRETTY_FUNCTION__, delay_ms);
 }
 //@}
