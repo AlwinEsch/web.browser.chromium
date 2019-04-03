@@ -17,7 +17,7 @@
  */
 
 #include "DialogDownload.h"
-#include "Utils.h"
+#include "utils/Utils.h"
 
 #include <kodi/General.h>
 #include <kodi/Filesystem.h>

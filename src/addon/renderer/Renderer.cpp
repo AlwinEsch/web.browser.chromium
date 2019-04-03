@@ -146,8 +146,11 @@ void CRendererClient::OnTextSelectionChanged(CefRefPtr<CefBrowser> browser, cons
 
 void CRendererClient::OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser, TextInputMode input_mode)
 {
-  if (input_mode != CEF_TEXT_INPUT_MODE_NONE)
-    m_client->GetMain().GetGUIManager().GetKeyboard().Show(m_client, input_mode);
-  else
-    m_client->GetMain().GetGUIManager().GetKeyboard().Close();
+  if (!m_client->ContextMenuOpen())
+  {
+    if (input_mode != CEF_TEXT_INPUT_MODE_NONE)
+      m_client->GetMain().GetGUIManager().GetKeyboard().Show(m_client, input_mode);
+    else
+      m_client->GetMain().GetGUIManager().GetKeyboard().Close();
+  }
 }

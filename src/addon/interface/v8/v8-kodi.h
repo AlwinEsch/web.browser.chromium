@@ -1,6 +1,5 @@
-#pragma once
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -17,26 +16,21 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string>
-#include <memory>
-#include <vector>
+#pragma once
 
-#include <p8-platform/threads/mutex.h>
+#include "include/wrapper/cef_message_router.h"
 
-struct MessageCallback
+class CWebBrowserClient;
+
+class CV8Kodi
 {
-  void (*callback)(void *userptr);
-  void *userptr;
+public:
+  CV8Kodi(CWebBrowserClient* client);
+
+  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process,
+                                CefRefPtr<CefProcessMessage> message);
+
+private:
+
+  CWebBrowserClient* m_client;
 };
-
-typedef struct
-{
-  unsigned int dwMessage;
-  int param1;
-  int param2;
-  int param3;
-  std::string strParam;
-  std::vector<std::string> params;
-  std::shared_ptr<P8PLATFORM::CEvent> waitEvent;
-  void* lpVoid;
-} Message;

@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -16,12 +16,16 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "DOMVisitor.h"
 #include "MessageIds.h"
 
-const std::string RendererMessage::FocusedNodeChanged = "ClientRenderer.FocusedNodeChanged";
-const std::string RendererMessage::ExecuteJavaScriptBrowserSide = "ClientRenderer.ExecuteJavaScriptBrowserSide";
-const std::string RendererMessage::SendString = "ClientRenderer.SendString";
-const std::string RendererMessage::ShowKeyboard = "ClientRenderer.ShowKeyboard";
-const std::string RendererMessage::ShowSelect = "ClientRenderer.ShowSelect";
+CDOMVisitor::CDOMVisitor(CefRefPtr<CefBrowser> browser)
+  : m_browser(browser)
+{
 
-const std::string AddonClientMessage::FocusedSelected = "ClientMessage.FocusedSelected";
+}
+
+void CDOMVisitor::Visit(CefRefPtr<CefDOMDocument> document)
+{
+
+}

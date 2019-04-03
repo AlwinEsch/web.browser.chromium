@@ -96,6 +96,7 @@ include_directories(${INCLUDES}
                     ${GLM_INCLUDE_DIR}
                     ${KODI_INCLUDE_DIR}/..
                     ${PROJECT_SOURCE_DIR}/lib/cef
+                    ${PROJECT_SOURCE_DIR}/src/
                     ${PROJECT_SOURCE_DIR}/src/addon/
                     ${PROJECT_SOURCE_DIR}/src/addon/Dialogs/
                     ${PROJECT_SOURCE_DIR}/src/addon/settings/
@@ -113,7 +114,10 @@ endif()
 
 list(APPEND KODICHROMIUM_BIN_SOURCES src/app/Main.cpp
                                      src/app/AppOther.cpp
-                                     src/app/AppRenderer.cpp)
+                                     src/app/renderer/AppRenderer.cpp
+                                     src/app/renderer/DOMVisitor.cpp
+                                     src/app/renderer/V8Handler.cpp
+                                     src/MessageIds.cpp)
 
 add_executable(kodichromium ${KODICHROMIUM_BIN_SOURCES})
 add_dependencies(kodichromium cef-binary)
@@ -139,14 +143,12 @@ set(KODICHROMIUM_HEADERS src/addon/renderer/RendererGL.h)
 
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/AppBrowser.cpp
-                                 src/addon/DOMVisitor.cpp
-                                 src/addon/MessageIds.cpp
-                                 src/addon/Messenger.cpp
                                  src/addon/RequestContextHandler.cpp
                                  src/addon/SandboxControl.cpp
                                  src/addon/URICheckHandler.cpp
                                  src/addon/WebBrowserClient.cpp
                                  src/addon/audio/AudioHandler.cpp
+                                 src/addon/gui/DialogBrowserContextMenu.cpp
                                  src/addon/gui/DialogCookie.cpp
                                  src/addon/gui/DialogDownload.cpp
                                  src/addon/gui/DialogFile.cpp
@@ -154,23 +156,22 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/gui/GUIManager.cpp
                                  src/addon/interface/Handler.cpp
                                  src/addon/interface/JSDialogHandler.cpp
-                                 src/addon/interface/V8Handler.cpp
+                                 src/addon/interface/v8/v8-kodi.cpp
                                  src/addon/renderer/IRenderer.cpp
                                  src/addon/renderer/Renderer.cpp
                                  src/addon/utils/StringUtils.cpp
                                  src/addon/utils/SystemTranslator.cpp
-                                 src/addon/utils/Utils.cpp)
+                                 src/addon/utils/Utils.cpp
+                                 src/MessageIds.cpp)
 
 list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/AppBrowser.h
-                                 src/addon/DOMVisitor.h
-                                 src/addon/MessageIds.h
-                                 src/addon/Messenger.h
                                  src/addon/RequestContextHandler.h
                                  src/addon/SandboxControl.h
                                  src/addon/URICheckHandler.h
                                  src/addon/WebBrowserClient.h
                                  src/addon/audio/AudioHandler.h
+                                 src/addon/gui/DialogBrowserContextMenu.h
                                  src/addon/gui/DialogCookie.h
                                  src/addon/gui/DialogDownload.h
                                  src/addon/gui/DialogFile.h
@@ -178,12 +179,13 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/gui/GUIManager.h
                                  src/addon/interface/Handler.h
                                  src/addon/interface/JSDialogHandler.h
-                                 src/addon/interface/V8Handler.h
+                                 src/addon/interface/v8/v8-kodi.h
                                  src/addon/renderer/IRenderer.h
                                  src/addon/renderer/Renderer.h
                                  src/addon/utils/StringUtils.h
                                  src/addon/utils/SystemTranslator.h
-                                 src/addon/utils/Utils.h)
+                                 src/addon/utils/Utils.h
+                                 src/MessageIds.h)
 
 build_addon(web.browser.chromium KODICHROMIUM DEPLIBS)
 add_dependencies(web.browser.chromium cef-lib-creator cef-binary kodichromium)

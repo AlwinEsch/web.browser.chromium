@@ -20,8 +20,8 @@
 
 #define NDEBUG 1
 
-#include "Messenger.h"
 #include "audio/AudioHandler.h"
+#include "interface/v8/v8-kodi.h"
 #include "renderer/Renderer.h"
 
 #include "include/cef_audio_handler.h"
@@ -35,25 +35,24 @@
 #include <kodi/AudioEngine.h>
 #include <kodi/addon-instance/Web.h>
 #include <kodi/gui/dialogs/Select.h>
-#include <p8-platform/threads/threads.h>
 #include <queue>
 #include <set>
 
+class CBrowerDialogContextMenu;
 class CJSHandler;
 class CJSDialogHandler;
 class CRequestContextHandler;
+class CV8Kodi;
 
 class CWebBrowser;
 
 class CWebBrowserClient
   : public kodi::addon::CWebControl,
-    public P8PLATFORM::CThread,
     public CefClient,
     public CefDisplayHandler,
     public CefLifeSpanHandler,
     public CefFindHandler,
     public CefRequestHandler,
-    public CefContextMenuHandler,
     public CefLoadHandler
 {
 public:
@@ -61,13 +60,13 @@ public:
   virtual ~CWebBrowserClient();
 
   CefRefPtr<CefAudioHandler> GetAudioHandler() override;
+  CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
   CefRefPtr<CefDialogHandler> GetDialogHandler() override;
   CefRefPtr<CefDownloadHandler> GetDownloadHandler() override;
   CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
   CefRefPtr<CefRenderHandler> GetRenderHandler() override;
 
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
-  CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
   CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
   CefRefPtr<CefFindHandler> GetFindHandler() override { return this; }
@@ -92,6 +91,11 @@ public:
   float GetHeight() const override;
 
   int GetUniqueId() { return m_uniqueClientId; }
+  bool IsFullscreen() { return m_isFullScreen; }
+
+  void SetContextMenuOpen(bool openClosed) { m_contextMenuOpenClosed = openClosed; }
+  bool ContextMenuOpen() const { return m_contextMenuOpenClosed; }
+
   bool Initialize();
   bool SetInactive();
   bool SetActive();
@@ -162,15 +166,6 @@ public:
   void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status) override;
   //@}
 
-  /// CefContextMenuHandler methods
-  //@{
-  void OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                           CefRefPtr<CefContextMenuParams> params, CefRefPtr<CefMenuModel> model) override;
-  bool RunContextMenu(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefContextMenuParams> params,
-                      CefRefPtr<CefMenuModel> model, CefRefPtr<CefRunContextMenuCallback> callback) override;
-  bool OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefContextMenuParams> params,
-                            int command_id, EventFlags event_flags) override;
-  //@}
 
   /// CefLoadHandler methods
   //@{
@@ -186,65 +181,36 @@ public:
 
   CWebBrowser& GetMain() { return *m_mainBrowserHandler; }
 
-protected:
-  virtual void* Process(void) override;
-
 private:
-  void SendKey(int key);
-  bool HandleScrollEvent(int actionId);
-
-  const int m_uniqueClientId;                // Unique identification id of this control client
-  double m_scrollOffsetX = -1.0;
-  double m_scrollOffsetY = -1.0;
-
-  typedef std::set<CefMessageRouterBrowserSide::Handler*> MessageHandlerSet;
-
   IMPLEMENT_REFCOUNTING(CWebBrowserClient);
   DISALLOW_COPY_AND_ASSIGN(CWebBrowserClient);
 
-  int ZoomLevelToPercentage(double zoomlevel);
-  double PercentageToZoomLevel(int percent);
-  void LoadErrorPage(CefRefPtr<CefFrame> frame,
-                     const std::string& failed_url,
-                     cef_errorcode_t error_code,
-                     const std::string& other_info);
-  std::string GetCertStatusString(cef_cert_status_t status);
-  std::string GetSSLVersionString(cef_ssl_version_t version);
-  std::string GetErrorString(cef_errorcode_t code);
-  std::string GetDataURI(const std::string& data, const std::string& mime_type);
-  std::string GetCertificateInformation(CefRefPtr<CefX509Certificate> cert, cef_cert_status_t certstatus);
+  typedef std::set<CefMessageRouterBrowserSide::Handler*> MessageHandlerSet;
+
+  void SendKey(int key);
+  bool HandleScrollEvent(int actionId);
   void CreateMessageHandlers(MessageHandlerSet& handlers);
 
+  int ZoomLevelToPercentage(double zoomlevel);
+  double PercentageToZoomLevel(int percent);
+
+  const int m_uniqueClientId;                // Unique identification id of this control client
   CWebBrowser* m_mainBrowserHandler;
+  int m_browserId;
+  int m_browserCount; // The current number of browsers using this handler.
+
+  double m_scrollOffsetX = -1.0;
+  double m_scrollOffsetY = -1.0;
+
+  bool m_contextMenuOpenClosed = false; // To know for Keyboard that a context menu is opened
+  bool m_focusOnEditableField = false;
+
   bool m_renderViewReady;
   std::string m_strStartupURL;
-  bool m_bFocusOnEditableField;
   float m_fMouseXScaleFactor;
   float m_fMouseYScaleFactor;
   int m_iMousePreviousFlags;
   cef_mouse_button_type_t m_iMousePreviousControl;
-
-  int m_browserId;
-  CefRefPtr<CefBrowser> m_browser;
-  int m_browserCount; // The current number of browsers using this handler.
-
-  CefRefPtr<CJSDialogHandler> m_jsDialogHandler;
-  CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
-  CefRefPtr<CRendererClient> m_renderer;
-  CefRefPtr<CefResourceManager> m_resourceManager;        // Manages the registration and delivery of resources.
-
-  typedef struct SFocusedField
-  {
-    bool focusOnEditableField;
-    bool isEditable;
-    int x;
-    int y;
-    int width;
-    int height;
-    std::string type;
-    std::string value;
-  } SFocusedField;
-  SFocusedField m_focusedField;
 
   bool m_isFullScreen;
   bool m_isLoading;
@@ -258,72 +224,13 @@ private:
 
   MessageHandlerSet m_messageHandlers; // Set of Handlers registered with the message router.
 
-
-
-
-
-  #define TMSG_CLIENTTHREAD_DIALOG_SELECT   200
-  #define TMSG_CLIENTTHREAD_DIALOG_KEYBOARD 201
-
-  struct ClientThreadData
-  {
-    ClientThreadData() = default;
-    virtual ~ClientThreadData() = default;
-  };
-
-  struct ClientThreadData_DialogSelect : public ClientThreadData
-  {
-    virtual ~ClientThreadData_DialogSelect() = default;
-    std::string url;
-    std::string type;
-    std::string header;
-    std::string value;
-    std::string id;
-    std::string name;
-    std::string markup;
-    std::vector<SSelectionEntry> entries;
-  };
-
-  struct ClientThreadData_DialogKeyboard : public ClientThreadData
-  {
-    virtual ~ClientThreadData_DialogKeyboard() = default;
-    std::string url;
-    std::string type;
-    std::string header;
-    std::string value;
-  };
-
-  class ThreadMessage
-  {
-  public:
-    ThreadMessage(int dwMessageType)
-      : dwMessage(dwMessageType),
-        data(nullptr)
-    {
-      if (dwMessageType == TMSG_CLIENTTHREAD_DIALOG_SELECT)
-        data = new ClientThreadData_DialogSelect;
-      else if (dwMessageType == TMSG_CLIENTTHREAD_DIALOG_KEYBOARD)
-        data = new ClientThreadData_DialogKeyboard;
-    }
-    ~ThreadMessage() = default;
-
-    unsigned int dwMessage;
-    int param1;
-    int param2;
-    int param3;
-    std::string strParam;
-    std::vector<std::string> params;
-    std::shared_ptr<P8PLATFORM::CEvent> waitEvent;
-    void* lpVoid;
-    ClientThreadData* data;
-  };
-
-  void SendThreadMessage(ThreadMessage& message, bool wait);
-  void HandleThreadMessages();
-  std::queue <ThreadMessage*> m_processThreadQueue;
-  P8PLATFORM::CMutex m_processThreadMutex;
-  P8PLATFORM::CEvent m_processThreadEvent;
-
+  CefRefPtr<CefBrowser> m_browser;
+  CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
+  CefRefPtr<CefResourceManager> m_resourceManager;        // Manages the registration and delivery of resources.
 
   CefRefPtr<CAudioHandler> m_audioHandler;
+  CefRefPtr<CBrowerDialogContextMenu> m_dialogContextMenu;
+  CefRefPtr<CJSDialogHandler> m_jsDialogHandler;
+  CefRefPtr<CRendererClient> m_renderer;
+  CV8Kodi m_v8Kodi;
 };

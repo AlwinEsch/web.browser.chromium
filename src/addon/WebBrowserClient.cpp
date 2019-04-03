@@ -20,11 +20,12 @@
 #include "WebBrowserClient.h"
 #include "URICheckHandler.h"
 #include "Utils.h"
-#include "DOMVisitor.h"
 #include "MessageIds.h"
 #include "utils/SystemTranslator.h"
 #include "interface/Handler.h"
 #include "interface/JSDialogHandler.h"
+
+#include "gui/DialogBrowserContextMenu.h"
 
 #include "include/cef_app.h"
 #include "include/cef_browser.h"
@@ -58,13 +59,6 @@
 using namespace std;
 using namespace P8PLATFORM;
 
-// Custom menu command Ids.
-enum client_menu_ids {
-  CLIENT_ID_OPEN_SELECTED_SIDE = MENU_ID_USER_FIRST,
-  CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB,
-  CLIENT_ID_OPEN_KEYBOARD,
-};
-
 CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int uniqueClientId, const std::string& startURL, CWebBrowser* instance)
   : CWebControl(handle, uniqueClientId),
     m_mainBrowserHandler{instance},
@@ -76,8 +70,8 @@ CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int uniqueClientId, con
     m_browser{nullptr},
     m_browserCount{0},
     m_isFullScreen{false},
-    m_focusedField{0},
-    m_isLoading{false}
+    m_isLoading{false},
+    m_v8Kodi(this)
 {
   m_fMouseXScaleFactor = GetWidth() / GetSkinWidth();
   m_fMouseYScaleFactor = GetHeight() / GetSkinHeight();
@@ -101,13 +95,11 @@ CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int uniqueClientId, con
   m_jsDialogHandler = new CJSDialogHandler(this);
   m_renderer = new CRendererClient(this);
   m_audioHandler = new CAudioHandler();
-
-//   CreateThread();
+  m_dialogContextMenu = new CBrowerDialogContextMenu(this);
 }
 
 CWebBrowserClient::~CWebBrowserClient()
 {
-//   StopThread();
 }
 
 bool CWebBrowserClient::SetActive()
@@ -213,7 +205,7 @@ bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unic
 fprintf(stderr, "--> %s %i %i %i %i\n", __PRETTY_FUNCTION__, actionId, buttoncode, unicode, nextItem);
 
   CefRefPtr<CefBrowserHost> host = m_browser->GetHost();
-  if (!m_focusedField.isEditable)
+  if (!m_focusOnEditableField)
   {
     int deltaX = 0;
     int deltaY = 0;
@@ -289,7 +281,7 @@ fprintf(stderr, "--> %s %i %i %i %i\n", __PRETTY_FUNCTION__, actionId, buttoncod
   key_event.is_system_key = false;
   key_event.character = unicode;
   key_event.unmodified_character = CSystemTranslator::ButtonCodeToUnmodifiedCharacter(buttoncode);
-  key_event.focus_on_editable_field = m_focusedField.isEditable;
+  key_event.focus_on_editable_field = m_focusOnEditableField;
 
   if (key_event.windows_key_code == VKEY_RETURN)
   {
@@ -300,9 +292,9 @@ fprintf(stderr, "--> %s %i %i %i %i\n", __PRETTY_FUNCTION__, actionId, buttoncod
 
   key_event.type = KEYEVENT_RAWKEYDOWN;
   host->SendKeyEvent(key_event);
-  key_event.type = KEYEVENT_KEYUP;
-  host->SendKeyEvent(key_event);
   key_event.type = KEYEVENT_CHAR;
+  host->SendKeyEvent(key_event);
+  key_event.type = KEYEVENT_KEYUP;
   host->SendKeyEvent(key_event);
 
   return true;
@@ -310,7 +302,6 @@ fprintf(stderr, "--> %s %i %i %i %i\n", __PRETTY_FUNCTION__, actionId, buttoncod
 
 bool CWebBrowserClient::OnMouseEvent(int id, double x, double y, double offsetX, double offsetY, int state)
 {
-//   fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   if (!m_browser.get())
     return true;
 
@@ -326,27 +317,12 @@ bool CWebBrowserClient::OnMouseEvent(int id, double x, double y, double offsetX,
   {
     case ACTION_MOUSE_LEFT_CLICK:
     {
-      if (m_focusedField.focusOnEditableField &&
-          mouse_event.x >= m_focusedField.x &&
-          mouse_event.x <= m_focusedField.x + m_focusedField.width &&
-          mouse_event.y >= m_focusedField.y &&
-          mouse_event.y <= m_focusedField.y + m_focusedField.height)
-      {
-        fprintf(stderr, "----ACTION_MOUSE_LEFT_CLICK---------------------<> %s\n", __PRETTY_FUNCTION__);
-        CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(AddonClientMessage::FocusedSelected);
-        m_browser->SendProcessMessage(PID_RENDERER, message);
-      }
-      else
-      {
-        m_focusedField = {0};
-
-        mouse_event.modifiers = 0;
-        mouse_event.modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
-        host->SendMouseClickEvent(mouse_event, MBT_LEFT, false, 1);
-        host->SendMouseClickEvent(mouse_event, MBT_LEFT, true, 1);
-        m_iMousePreviousFlags = mouse_event.modifiers;
-        m_iMousePreviousControl = MBT_LEFT;
-      }
+      mouse_event.modifiers = 0;
+      mouse_event.modifiers |= EVENTFLAG_LEFT_MOUSE_BUTTON;
+      host->SendMouseClickEvent(mouse_event, MBT_LEFT, false, 1);
+      host->SendMouseClickEvent(mouse_event, MBT_LEFT, true, 1);
+      m_iMousePreviousFlags = mouse_event.modifiers;
+      m_iMousePreviousControl = MBT_LEFT;
       break;
     }
     case ACTION_MOUSE_RIGHT_CLICK:
@@ -542,7 +518,7 @@ void CWebBrowserClient::StopSearch(bool clearSelection)
 
 void CWebBrowserClient::ScreenSizeChange(float x, float y, float width, float height, bool fullscreen)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
+  fprintf(stderr, "--> %s %f %f %f %f %i\n", __PRETTY_FUNCTION__, x, y, width, height, fullscreen);
   m_isFullScreen = true;
   m_renderer->ScreenSizeChange(x, y, width, height);
   if (m_browser.get())
@@ -564,6 +540,11 @@ float CWebBrowserClient::GetHeight() const
 CefRefPtr<CefAudioHandler> CWebBrowserClient::GetAudioHandler()
 {
   return m_audioHandler;
+}
+
+CefRefPtr<CefContextMenuHandler> CWebBrowserClient::GetContextMenuHandler()
+{
+  return m_dialogContextMenu;
 }
 
 CefRefPtr<CefDialogHandler> CWebBrowserClient::GetDialogHandler()
@@ -594,7 +575,6 @@ CefRefPtr<CefRenderHandler> CWebBrowserClient::GetRenderHandler()
 bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process,
                                                  CefRefPtr<CefProcessMessage> message)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
 
   if (m_messageRouter->OnProcessMessageReceived(browser, source_process, message))
@@ -602,83 +582,18 @@ bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, 
 
   std::string message_name = message->GetName();
   CefRefPtr<CefBrowserHost> host = browser->GetHost();
-  if (message_name == RendererMessage::ExecuteJavaScriptBrowserSide)
+  if (message_name == RendererMessage::FocusedNodeChanged)
   {
-    browser->GetMainFrame()->ExecuteJavaScript(message->GetArgumentList()->GetString(0),
-                                               message->GetArgumentList()->GetString(1),
-                                               message->GetArgumentList()->GetInt(2));
+    // A message is sent from ClientRenderDelegate to tell us whether the
+    // currently focused DOM node is editable. Use of |focus_on_editable_field_|
+    // is redundant with CefKeyEvent.focus_on_editable_field in OnPreKeyEvent
+    // but is useful for demonstration purposes.
+    m_focusOnEditableField = message->GetArgumentList()->GetBool(0);
     return true;
   }
-  else if (message_name == RendererMessage::FocusedNodeChanged)
+  else if (message_name == RendererMessage::V8AddonCall)
   {
-    m_focusedField.focusOnEditableField = message->GetArgumentList()->GetBool(0);
-    m_focusedField.isEditable = message->GetArgumentList()->GetBool(1);
-    m_focusedField.x = message->GetArgumentList()->GetInt(2);
-    m_focusedField.y = message->GetArgumentList()->GetInt(3);
-    m_focusedField.width = message->GetArgumentList()->GetInt(4);
-    m_focusedField.height = message->GetArgumentList()->GetInt(5);
-    m_focusedField.type = message->GetArgumentList()->GetString(6);
-    m_focusedField.value = message->GetArgumentList()->GetString(7);
-
-    if (kodi::GetSettingBoolean("main.editdialogdirect"))
-    {
-      CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(AddonClientMessage::FocusedSelected);
-      browser->SendProcessMessage(PID_RENDERER, message);
-    }
-    return true;
-  }
-  else if (message_name == RendererMessage::SendString)
-  {
-    if (m_focusedField.focusOnEditableField)
-    {
-      CefRange replacement_range;
-      replacement_range.from = 0;
-      replacement_range.to = -1;
-      m_browser->GetHost()->ImeCommitText(message->GetArgumentList()->GetString(0), replacement_range, 0);
-    }
-    return true;
-  }
-  else if (message_name == RendererMessage::ShowKeyboard)
-  {
-    if (m_isLoading)
-      return true;
-
-    ThreadMessage tMsg(TMSG_CLIENTTHREAD_DIALOG_KEYBOARD);
-
-    ClientThreadData_DialogKeyboard* data = dynamic_cast<ClientThreadData_DialogKeyboard*>(tMsg.data);
-    data->url = browser->GetFocusedFrame()->GetURL();
-    data->type = message->GetArgumentList()->GetString(0);
-    data->header = message->GetArgumentList()->GetString(1);
-    data->value = message->GetArgumentList()->GetString(2);
-
-    SendThreadMessage(tMsg, false);
-    return true;
-  }
-  else if (message_name == RendererMessage::ShowSelect)
-  {
-    if (m_isLoading)
-      return true;
-
-    ThreadMessage tMsg(TMSG_CLIENTTHREAD_DIALOG_SELECT);
-
-    ClientThreadData_DialogSelect* data = dynamic_cast<ClientThreadData_DialogSelect*>(tMsg.data);
-    data->url = browser->GetFocusedFrame()->GetURL();
-    data->type = message->GetArgumentList()->GetString(0);
-    data->header = message->GetArgumentList()->GetString(1);
-    data->value = message->GetArgumentList()->GetString(2);
-    data->id = message->GetArgumentList()->GetString(3);
-    data->name = message->GetArgumentList()->GetString(4);
-    data->markup = message->GetArgumentList()->GetString(5);
-    for (int i = 0; i < message->GetArgumentList()->GetInt(6); ++i)
-    {
-      SSelectionEntry entry;
-      entry.id = message->GetArgumentList()->GetString(i*3+0+7);
-      entry.name = message->GetArgumentList()->GetString(i*3+1+7);
-      entry.selected = message->GetArgumentList()->GetBool(i*3+2+7);
-      data->entries.push_back(std::move(entry));
-    }
-
-    SendThreadMessage(tMsg, false);
+    m_v8Kodi.OnProcessMessageReceived(browser, source_process, message);
     return true;
   }
 
@@ -801,15 +716,11 @@ bool CWebBrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - windowInfo.height '%i'", windowInfo.height);
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - windowInfo.width '%i'", windowInfo.width);
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - windowInfo.windowless_rendering_enabled '%i'", windowInfo.windowless_rendering_enabled);
-//   LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.dialog '%i'", popupFeatures.dialog);
-//   LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.fullscreen '%i'", popupFeatures.fullscreen);
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.height '%i'", popupFeatures.height);
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.width '%i'", popupFeatures.width);
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.heightSet '%i'", popupFeatures.heightSet);
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.widthSet '%i'", popupFeatures.widthSet);
-//   LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.locationBarVisible '%i'", popupFeatures.locationBarVisible);
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.menuBarVisible '%i'", popupFeatures.menuBarVisible);
-//   LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.resizable '%i'", popupFeatures.resizable);
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.scrollbarsVisible '%i'", popupFeatures.scrollbarsVisible);
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.statusBarVisible '%i'", popupFeatures.statusBarVisible);
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - popupFeatures.toolBarVisible '%i'", popupFeatures.toolBarVisible);
@@ -833,7 +744,6 @@ bool CWebBrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
 
 void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
 
   m_browserCount++;
@@ -850,6 +760,10 @@ void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
       m_messageRouter->AddHandler(entry, false);
   }
 
+  // Disable mouse cursor change if requested via the settings
+  if (kodi::GetSettingBoolean("system.mouse_cursor_change_disabled"))
+    browser->GetHost()->SetMouseCursorChangeDisabled(true);
+
   if (!m_browser.get())
   {
     m_browser = browser;
@@ -858,9 +772,6 @@ void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
     /* Inform Kodi the control is ready */
     SetControlReady(true);
   }
-
-  if (kodi::GetSettingBoolean("system.mouse_cursor_change_disabled"))
-    browser->GetHost()->SetMouseCursorChangeDisabled(true);
 }
 
 bool CWebBrowserClient::DoClose(CefRefPtr<CefBrowser> browser)
@@ -890,10 +801,9 @@ void CWebBrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 //@{
 bool CWebBrowserClient::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
 
-//   m_messageRouter->OnBeforeBrowse(browser, frame);
+  m_messageRouter->OnBeforeBrowse(browser, frame);
   return false;
 }
 
@@ -907,7 +817,6 @@ bool CWebBrowserClient::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPt
 CefRequestHandler::ReturnValue CWebBrowserClient::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                                        CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   CEF_REQUIRE_IO_THREAD();
 
 #ifdef DEBUG_LOGS
@@ -925,7 +834,6 @@ CefRequestHandler::ReturnValue CWebBrowserClient::OnBeforeResourceLoad(CefRefPtr
 CefRefPtr<CefResourceHandler> CWebBrowserClient::GetResourceHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                                     CefRefPtr<CefRequest> request)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   CEF_REQUIRE_IO_THREAD();
 
   return m_resourceManager->GetResourceHandler(browser, frame, request);
@@ -936,6 +844,7 @@ void CWebBrowserClient::OnResourceRedirect(CefRefPtr<CefBrowser> browser, CefRef
                                            CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response, CefString& new_url)
 {
   CEF_REQUIRE_IO_THREAD();
+
 #ifdef DEBUG_LOGS
   LOG_MESSAGE(ADDON_LOG_DEBUG, "On Resource Redirect:");
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - status = %i", response->GetStatus());
@@ -951,6 +860,7 @@ bool CWebBrowserClient::OnResourceResponse(CefRefPtr<CefBrowser> browser, CefRef
                                            CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response)
 {
   CEF_REQUIRE_IO_THREAD();
+
 #ifdef DEBUG_LOGS
   LOG_MESSAGE(ADDON_LOG_DEBUG, "On Resource Response:");
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - status      = %i", response->GetStatus());
@@ -1007,7 +917,7 @@ bool CWebBrowserClient::OnCertificateError(CefRefPtr<CefBrowser> browser, ErrorC
   {
     bool canceled = false;
     std::string subject = cert->GetSubject()->GetDisplayName().ToString();
-    std::string certStatusString = GetCertStatusString(ssl_info->GetCertStatus());
+    std::string certStatusString = CURICheck::GetCertStatusString(ssl_info->GetCertStatus());
     std::string text = StringUtils::Format(kodi::GetLocalizedString(31001).c_str(), subject.c_str(), certStatusString.c_str(), subject.c_str());
     bool ret = kodi::gui::dialogs::YesNo::ShowAndGetInput(kodi::GetLocalizedString(31000), text, canceled,
                                                           kodi::GetLocalizedString(31003), kodi::GetLocalizedString(31002));
@@ -1039,7 +949,6 @@ void CWebBrowserClient::OnRenderViewReady(CefRefPtr<CefBrowser> browser)
 
 void CWebBrowserClient::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
 
@@ -1074,7 +983,6 @@ void CWebBrowserClient::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 void CWebBrowserClient::OnFindResult(CefRefPtr<CefBrowser> browser, int identifier, int count, const CefRect& selectionRect,
                                      int activeMatchOrdinal, bool finalUpdate)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   if (finalUpdate && activeMatchOrdinal <= 1)
   {
     std::string text = StringUtils::Format(kodi::GetLocalizedString(30038).c_str(), count, m_currentSearchText.c_str());
@@ -1084,141 +992,8 @@ void CWebBrowserClient::OnFindResult(CefRefPtr<CefBrowser> browser, int identifi
 }
 //@}
 
-/// CefContextMenuHandler methods
-//@{
-void CWebBrowserClient::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                                                CefRefPtr<CefContextMenuParams> params, CefRefPtr<CefMenuModel> model)
-{
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
-  std::string url = params->GetLinkUrl().ToString();
-  if (!url.empty())
-  {
-    model->InsertItemAt(0, CLIENT_ID_OPEN_SELECTED_SIDE, kodi::GetLocalizedString(30000 + CLIENT_ID_OPEN_SELECTED_SIDE));
-    if (!m_isFullScreen)
-      model->InsertItemAt(0, CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB, kodi::GetLocalizedString(30000 + CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB));
-  }
 
-  int flags = params->GetTypeFlags();
-  if (flags & CM_TYPEFLAG_EDITABLE)
-    model->InsertItemAt(0, CLIENT_ID_OPEN_KEYBOARD, kodi::GetLocalizedString(30000 + CLIENT_ID_OPEN_KEYBOARD));
 
-// #ifdef DEBUG_LOGS
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "CefContextMenuParams");
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- %ix%i - TypeFlags: 0x%X - ImageContents: %s - MediaType: %i - MediaStateFlags %i - EditStateFlags %i", params->GetXCoord(),
-      params->GetYCoord(), (int)params->GetTypeFlags(), params->HasImageContents() ? "yes" : "no",
-      (int)params->GetMediaType(), (int)params->GetMediaStateFlags(), (int)params->GetEditStateFlags());
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- LinkUrl:                %s", params->GetLinkUrl().ToString().c_str());
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- UnfilteredLinkUrl:      %s", params->GetUnfilteredLinkUrl().ToString().c_str());
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- SourceUrl:              %s", params->GetSourceUrl().ToString().c_str());
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- PageUrl:                %s", params->GetPageUrl().ToString().c_str());
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- FrameUrl :              %s", params->GetFrameUrl().ToString().c_str());
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- FrameCharset :          %s", params->GetFrameCharset().ToString().c_str());
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- SelectionText :         %s", params->GetSelectionText().ToString().c_str());
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- MisspelledWord :        %s", params->GetMisspelledWord().ToString().c_str());
-  std::vector<CefString> suggestions;
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- DictionarySuggestions : %s", params->GetDictionarySuggestions(suggestions) ? "OK" : "fail");
-  for (unsigned int i = 0; i < suggestions.size(); i++)
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "  - %02i: %s", i, suggestions[i].ToString().c_str());
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- IsEditable :            %s", params->IsEditable() ? "yes" : "no");
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- IsSpellCheckEnabled :   %s", params->IsSpellCheckEnabled() ? "yes" : "no");
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- IsCustomMenu :          %s", params->IsCustomMenu() ? "yes" : "no");
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- IsPepperMenu :          %s", params->IsPepperMenu() ? "yes" : "no");
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "CefMenuModel");
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "- Count:                  %i", model->GetCount());
-  for (unsigned int i = 0; i < model->GetCount(); i++)
-    LOG_MESSAGE(ADDON_LOG_DEBUG, "  - %02i: ID '%i' Type '%i' - Name '%s'",
-                    i, model->GetCommandIdAt(i), model->GetTypeAt(i), model->GetLabelAt(i).ToString().c_str());
-// #endif
-}
-
-bool CWebBrowserClient::RunContextMenu(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefContextMenuParams> params,
-                                           CefRefPtr<CefMenuModel> model, CefRefPtr<CefRunContextMenuCallback> callback)
-{
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
-  std::vector<std::pair<int, std::string>> entries;
-  for (unsigned int i = 0; i < model->GetCount(); ++i)
-  {
-    int id = model->GetCommandIdAt(i);
-    if (id < 0 ||
-        id == MENU_ID_PRINT ||
-        id == MENU_ID_VIEW_SOURCE ||
-        !model->IsEnabled(id))
-    {
-      // ignored parts!
-      continue;
-    }
-
-    cef_menu_item_type_t type = model->GetTypeAt(i);
-    if (type == MENUITEMTYPE_SEPARATOR)
-    {
-      // ignore separators
-      continue;
-    }
-    else if (type != MENUITEMTYPE_COMMAND)
-    {
-      // TODO add support for other formats e.g. boolean check
-      LOG_MESSAGE(ADDON_LOG_ERROR, "cef_menu_item_type_t '%i' currently not supported!", type);
-      continue;
-    }
-
-    entries.push_back(std::pair<int, std::string>(id, kodi::GetLocalizedString(30000 + id)));
-  }
-
-  if (entries.empty())
-  {
-    callback->Cancel();
-    return true;
-  }
-
-  int ret = kodi::gui::dialogs::ContextMenu::Show("", entries);
-  if (ret >= 0)
-    callback->Continue(entries[ret].first, EVENTFLAG_LEFT_MOUSE_BUTTON);
-  else
-    callback->Cancel();
-
-  return true;
-}
-
-bool CWebBrowserClient::OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefContextMenuParams> params,
-                                                 int command_id, EventFlags event_flags)
-{
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
-  if (command_id == CLIENT_ID_OPEN_SELECTED_SIDE)
-  {
-    std::string url = params->GetLinkUrl().ToString();
-    OpenWebsite(url);
-  }
-  if (command_id == CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB)
-  {
-    std::string url = params->GetLinkUrl().ToString();
-    RequestOpenSiteInNewTab(url);
-  }
-  else if (command_id == CLIENT_ID_OPEN_KEYBOARD)
-  {
-    if (m_focusedField.focusOnEditableField)
-    {
-      CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(AddonClientMessage::FocusedSelected);
-      browser->SendProcessMessage(PID_RENDERER, message);
-    }
-    else
-    {
-      ThreadMessage tMsg(TMSG_CLIENTTHREAD_DIALOG_KEYBOARD);
-
-      ClientThreadData_DialogKeyboard* data = dynamic_cast<ClientThreadData_DialogKeyboard*>(tMsg.data);
-      data->url = params->GetLinkUrl().ToString();
-      data->type = m_focusedField.type;
-      data->value = m_focusedField.value;
-      SendThreadMessage(tMsg, false);
-    }
-  }
-  else
-  {
-    return false;
-  }
-
-  return true;
-}
-//@}
 
 /// CefLoadHandler methods
 //@{
@@ -1268,7 +1043,6 @@ void CWebBrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFr
 void CWebBrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode errorCode,
                                     const CefString& errorText, const CefString& failedUrl)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
 
   // Don't display an error for downloaded files.
@@ -1287,402 +1061,21 @@ void CWebBrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
   kodi::QueueNotification(QUEUE_WARNING, kodi::GetLocalizedString(30133), failedUrl.ToString());
 
   // Load the error page.
-  LoadErrorPage(frame, failedUrl, errorCode, errorText);
+  CURICheck::LoadErrorPage(frame, failedUrl, errorCode, errorText);
 }
 //@}
 
-
 int CWebBrowserClient::ZoomLevelToPercentage(double zoomlevel)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   return static_cast<int>((zoomlevel*ZOOM_MULTIPLY)+100.0);
 }
 
 double CWebBrowserClient::PercentageToZoomLevel(int percent)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   return (static_cast<double>(percent-100))/ZOOM_MULTIPLY;
-}
-
-void CWebBrowserClient::LoadErrorPage(CefRefPtr<CefFrame> frame,
-                   const std::string& failed_url,
-                   cef_errorcode_t error_code,
-                   const std::string& other_info)
-{
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
-  std::stringstream ss;
-  ss << "<html><head><title>"<< kodi::GetLocalizedString(30133) << "</title></head>"
-        "<body bgcolor=\"white\">"
-        "<h3>"<< kodi::GetLocalizedString(30133) << ".</h3>"
-        "URL: <a href=\""
-     << failed_url << "\">" << failed_url
-     << "</a><br/>Error: " << GetErrorString(error_code) << " ("
-     << error_code << ")";
-
-  if (!other_info.empty())
-    ss << "<br/>" << other_info;
-
-  ss << "</body></html>";
-  frame->LoadURL(GetDataURI(ss.str(), "text/html"));
-}
-
-std::string CWebBrowserClient::GetCertStatusString(cef_cert_status_t status)
-{
-#define FLAG(flag)                          \
-  if (status & flag) {                      \
-    result += std::string(#flag); \
-  }
-
-  std::string result;
-
-  FLAG(CERT_STATUS_COMMON_NAME_INVALID);
-  FLAG(CERT_STATUS_DATE_INVALID);
-  FLAG(CERT_STATUS_AUTHORITY_INVALID);
-  FLAG(CERT_STATUS_NO_REVOCATION_MECHANISM);
-  FLAG(CERT_STATUS_UNABLE_TO_CHECK_REVOCATION);
-  FLAG(CERT_STATUS_REVOKED);
-  FLAG(CERT_STATUS_INVALID);
-  FLAG(CERT_STATUS_WEAK_SIGNATURE_ALGORITHM);
-  FLAG(CERT_STATUS_NON_UNIQUE_NAME);
-  FLAG(CERT_STATUS_WEAK_KEY);
-  FLAG(CERT_STATUS_PINNED_KEY_MISSING);
-  FLAG(CERT_STATUS_NAME_CONSTRAINT_VIOLATION);
-  FLAG(CERT_STATUS_VALIDITY_TOO_LONG);
-  FLAG(CERT_STATUS_IS_EV);
-  FLAG(CERT_STATUS_REV_CHECKING_ENABLED);
-  FLAG(CERT_STATUS_SHA1_SIGNATURE_PRESENT);
-  FLAG(CERT_STATUS_CT_COMPLIANCE_FAILED);
-
-  if (result.empty())
-    return "&nbsp;";
-  return result;
-}
-
-std::string CWebBrowserClient::GetSSLVersionString(cef_ssl_version_t version)
-{
-#define VALUE(val, def)       \
-  if (val == def) {           \
-    return std::string(#def); \
-  }
-
-  VALUE(version, SSL_CONNECTION_VERSION_UNKNOWN);
-  VALUE(version, SSL_CONNECTION_VERSION_SSL2);
-  VALUE(version, SSL_CONNECTION_VERSION_SSL3);
-  VALUE(version, SSL_CONNECTION_VERSION_TLS1);
-  VALUE(version, SSL_CONNECTION_VERSION_TLS1_1);
-  VALUE(version, SSL_CONNECTION_VERSION_TLS1_2);
-  VALUE(version, SSL_CONNECTION_VERSION_QUIC);
-  return std::string();
-}
-
-std::string CWebBrowserClient::GetErrorString(cef_errorcode_t code)
-{
-// Case condition that returns |code| as a string.
-#define CASE(code) \
-  case code:       \
-    return #code
-
-  switch (code) {
-    CASE(ERR_NONE);
-    CASE(ERR_FAILED);
-    CASE(ERR_ABORTED);
-    CASE(ERR_INVALID_ARGUMENT);
-    CASE(ERR_INVALID_HANDLE);
-    CASE(ERR_FILE_NOT_FOUND);
-    CASE(ERR_TIMED_OUT);
-    CASE(ERR_FILE_TOO_BIG);
-    CASE(ERR_UNEXPECTED);
-    CASE(ERR_ACCESS_DENIED);
-    CASE(ERR_NOT_IMPLEMENTED);
-    CASE(ERR_CONNECTION_CLOSED);
-    CASE(ERR_CONNECTION_RESET);
-    CASE(ERR_CONNECTION_REFUSED);
-    CASE(ERR_CONNECTION_ABORTED);
-    CASE(ERR_CONNECTION_FAILED);
-    CASE(ERR_NAME_NOT_RESOLVED);
-    CASE(ERR_INTERNET_DISCONNECTED);
-    CASE(ERR_SSL_PROTOCOL_ERROR);
-    CASE(ERR_ADDRESS_INVALID);
-    CASE(ERR_ADDRESS_UNREACHABLE);
-    CASE(ERR_SSL_CLIENT_AUTH_CERT_NEEDED);
-    CASE(ERR_TUNNEL_CONNECTION_FAILED);
-    CASE(ERR_NO_SSL_VERSIONS_ENABLED);
-    CASE(ERR_SSL_VERSION_OR_CIPHER_MISMATCH);
-    CASE(ERR_SSL_RENEGOTIATION_REQUESTED);
-    CASE(ERR_CERT_COMMON_NAME_INVALID);
-    CASE(ERR_CERT_DATE_INVALID);
-    CASE(ERR_CERT_AUTHORITY_INVALID);
-    CASE(ERR_CERT_CONTAINS_ERRORS);
-    CASE(ERR_CERT_NO_REVOCATION_MECHANISM);
-    CASE(ERR_CERT_UNABLE_TO_CHECK_REVOCATION);
-    CASE(ERR_CERT_REVOKED);
-    CASE(ERR_CERT_INVALID);
-    CASE(ERR_CERT_END);
-    CASE(ERR_INVALID_URL);
-    CASE(ERR_DISALLOWED_URL_SCHEME);
-    CASE(ERR_UNKNOWN_URL_SCHEME);
-    CASE(ERR_TOO_MANY_REDIRECTS);
-    CASE(ERR_UNSAFE_REDIRECT);
-    CASE(ERR_UNSAFE_PORT);
-    CASE(ERR_INVALID_RESPONSE);
-    CASE(ERR_INVALID_CHUNKED_ENCODING);
-    CASE(ERR_METHOD_NOT_SUPPORTED);
-    CASE(ERR_UNEXPECTED_PROXY_AUTH);
-    CASE(ERR_EMPTY_RESPONSE);
-    CASE(ERR_RESPONSE_HEADERS_TOO_BIG);
-    CASE(ERR_CACHE_MISS);
-    CASE(ERR_INSECURE_RESPONSE);
-    default:
-      return "UNKNOWN";
-  }
-}
-
-std::string CWebBrowserClient::GetDataURI(const std::string& data, const std::string& mime_type)
-{
-  return "data:" + mime_type + ";base64," +
-         CefURIEncode(CefBase64Encode(data.data(), data.size()), false)
-             .ToString();
-}
-
-std::string GetTimeString(const CefTime& value)
-{
-  if (value.GetTimeT() == 0)
-    return "Unspecified";
-
-  static const char* kMonths[] = {
-      "January", "February", "March",     "April",   "May",      "June",
-      "July",    "August",   "September", "October", "November", "December"};
-  std::string month;
-  if (value.month >= 1 && value.month <= 12)
-    month = kMonths[value.month - 1];
-  else
-    month = "Invalid";
-
-  std::stringstream ss;
-  ss << month << " " << value.day_of_month << ", " << value.year << " "
-     << std::setfill('0') << std::setw(2) << value.hour << ":"
-     << std::setfill('0') << std::setw(2) << value.minute << ":"
-     << std::setfill('0') << std::setw(2) << value.second;
-  return ss.str();
-}
-
-std::string GetBinaryString(CefRefPtr<CefBinaryValue> value)
-{
-  if (!value.get())
-    return "&nbsp;";
-
-  // Retrieve the value.
-  const size_t size = value->GetSize();
-  std::string src;
-  src.resize(size);
-  value->GetData(const_cast<char*>(src.data()), size, 0);
-
-  // Encode the value.
-  return CefBase64Encode(src.data(), src.size());
-}
-
-// Return HTML string with information about a certificate.
-std::string CWebBrowserClient::GetCertificateInformation(CefRefPtr<CefX509Certificate> cert, cef_cert_status_t certstatus)
-{
-  CefRefPtr<CefX509CertPrincipal> subject = cert->GetSubject();
-  CefRefPtr<CefX509CertPrincipal> issuer = cert->GetIssuer();
-
-  // Build a table showing certificate information. Various types of invalid
-  // certificates can be tested using https://badssl.com/.
-  std::stringstream ss;
-  ss << "<h3>X.509 Certificate Information:</h3>"
-        "<table border=1><tr><th>Field</th><th>Value</th></tr>";
-
-  if (certstatus != CERT_STATUS_NONE)
-  {
-    ss << "<tr><td>Status</td><td>" << GetCertStatusString(certstatus) + "<br/>"
-       << "</td></tr>";
-  }
-
-  ss << "<tr><td>Subject</td><td>"
-     << (subject.get() ? subject->GetDisplayName().ToString() : "&nbsp;")
-     << "</td></tr>"
-        "<tr><td>Issuer</td><td>"
-     << (issuer.get() ? issuer->GetDisplayName().ToString() : "&nbsp;")
-     << "</td></tr>"
-        "<tr><td>Serial #*</td><td>"
-     << GetBinaryString(cert->GetSerialNumber()) << "</td></tr>"
-     << "<tr><td>Valid Start</td><td>" << GetTimeString(cert->GetValidStart())
-     << "</td></tr>"
-        "<tr><td>Valid Expiry</td><td>"
-     << GetTimeString(cert->GetValidExpiry()) << "</td></tr>";
-
-  CefX509Certificate::IssuerChainBinaryList der_chain_list;
-  CefX509Certificate::IssuerChainBinaryList pem_chain_list;
-  cert->GetDEREncodedIssuerChain(der_chain_list);
-  cert->GetPEMEncodedIssuerChain(pem_chain_list);
-  DCHECK_EQ(der_chain_list.size(), pem_chain_list.size());
-
-  der_chain_list.insert(der_chain_list.begin(), cert->GetDEREncoded());
-  pem_chain_list.insert(pem_chain_list.begin(), cert->GetPEMEncoded());
-
-  for (size_t i = 0U; i < der_chain_list.size(); ++i)
-  {
-    ss << "<tr><td>DER Encoded*</td>"
-          "<td style=\"max-width:800px;overflow:scroll;\">"
-       << GetBinaryString(der_chain_list[i])
-       << "</td></tr>"
-          "<tr><td>PEM Encoded*</td>"
-          "<td style=\"max-width:800px;overflow:scroll;\">"
-       << GetBinaryString(pem_chain_list[i]) << "</td></tr>";
-  }
-
-  ss << "</table> * Displayed value is base64 encoded.";
-  return ss.str();
 }
 
 void CWebBrowserClient::CreateMessageHandlers(MessageHandlerSet& handlers)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
   handlers.insert(new CJSHandler(this));
-}
-
-void* CWebBrowserClient::Process(void)
-{
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
-  while (!IsStopped())
-  {
-    HandleThreadMessages();
-    m_processThreadEvent.Wait();
-  }
-
-  return nullptr;
-}
-
-void CWebBrowserClient::SendThreadMessage(ThreadMessage& message, bool wait)
-{
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
-  if (!m_renderViewReady)
-    return;
-
-  std::shared_ptr<CEvent> waitEvent;
-  if (wait)
-  {
-    message.waitEvent.reset(new CEvent(true));
-    waitEvent = message.waitEvent;
-  }
-
-  CLockObject lock(m_processThreadMutex);
-
-  ThreadMessage* msg = new ThreadMessage(message.dwMessage);
-  msg->dwMessage  = message.dwMessage;
-  msg->param1     = message.param1;
-  msg->param2     = message.param2;
-  msg->param3     = message.param3;
-  msg->lpVoid     = message.lpVoid;
-  msg->strParam   = message.strParam;
-  msg->params     = message.params;
-  msg->waitEvent  = message.waitEvent;
-  msg->data       = message.data;
-
-  m_processThreadQueue.push(msg);
-  m_processThreadEvent.Signal();
-  lock.Unlock();
-
-  if (waitEvent)
-    waitEvent->Wait(1000);
-}
-
-void CWebBrowserClient::HandleThreadMessages()
-{
-  // process threadmessages
-  CLockObject lock(m_processThreadMutex);
-  while (!m_processThreadQueue.empty())
-  {
-    ThreadMessage* pMsg = m_processThreadQueue.front();
-    m_processThreadQueue.pop();
-
-    std::shared_ptr<CEvent> waitEvent = pMsg->waitEvent;
-    lock.Unlock();
-    switch (pMsg->dwMessage)
-    {
-      case TMSG_CLIENTTHREAD_DIALOG_SELECT:
-      {
-        ClientThreadData_DialogSelect* data = dynamic_cast<ClientThreadData_DialogSelect*>(pMsg->data);
-        if (!data->entries.empty())
-        {
-          bool ret = false;
-          if (data->type == "select-multiple")
-            ret = kodi::gui::dialogs::Select::ShowMultiSelect(data->header, data->entries);
-          else
-            ret = kodi::gui::dialogs::Select::Show(data->header, data->entries) >= 0;
-
-          if (ret)
-          {
-            std::string values = "";
-            for (const auto& entry : data->entries)
-            {
-              if (entry.selected)
-                values += entry.id + ",";
-            }
-            const std::string& code =
-                "var values = \"" + values + "\";\n"
-                "var myselect = document.getElementsByName(\"" + data->name +"\");\n"
-                "for (var i=0; i<myselect.length; i++) {\n"
-                "  if (myselect[i].nodeType != 1)\n"
-                "    continue;\n"
-                "  for (var j=0; j<myselect[i].options.length; j++) {\n"
-                "    myselect[i].options[j].selected=false;\n"
-                "  }\n"
-                "  values.split(',').forEach(function(v) {\n"
-                "    Array.from(myselect[i]).find(c => c.value == v).selected = true;\n"
-                "  });\n"
-                "}\n";
-            m_browser->GetMainFrame()->ExecuteJavaScript(code, data->url, 0);
-          }
-        }
-        break;
-      }
-      case TMSG_CLIENTTHREAD_DIALOG_KEYBOARD:
-      {
-        ClientThreadData_DialogKeyboard* data = dynamic_cast<ClientThreadData_DialogKeyboard*>(pMsg->data);
-        if (data->header.empty())
-        {
-          if (data->type == "password")
-            data->header = kodi::GetLocalizedString(30012);
-          else if (data->type == "text")
-            data->header = kodi::GetLocalizedString(30013);
-          else if (data->type == "textarea")
-            data->header = kodi::GetLocalizedString(30014);
-        }
-
-        if (kodi::gui::dialogs::Keyboard::ShowAndGetInput(data->value, data->header, true, data->type == "password"))
-        {
-          m_browser->GetMainFrame()->SelectAll();
-          m_browser->GetMainFrame()->Delete();
-
-          CefRefPtr<CefBrowserHost> host = m_browser->GetHost();
-          CefKeyEvent keyEvent;
-
-          cef_string_wide_t retws = {0};
-          cef_string_utf8_to_wide(data->value.c_str(), data->value.size(), &retws);
-          for (size_t i = 0; i < retws.length; ++i)
-          {
-            keyEvent.character = retws.str[i];
-            keyEvent.type = KEYEVENT_KEYDOWN;
-            host->SendKeyEvent(keyEvent);
-            keyEvent.type = KEYEVENT_CHAR;
-            host->SendKeyEvent(keyEvent);
-            keyEvent.type = KEYEVENT_KEYUP;
-            host->SendKeyEvent(keyEvent);
-          }
-        }
-      }
-      default:
-        break;
-    };
-
-    if (waitEvent)
-      waitEvent->Signal();
-    if (pMsg->data)
-      delete pMsg->data;
-    delete pMsg;
-
-    lock.Lock();
-  }
 }

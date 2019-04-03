@@ -19,7 +19,6 @@
 #include "addon.h"
 
 #include "AppBrowser.h"
-#include "DOMVisitor.h"
 #include "MessageIds.h"
 #include "RequestContextHandler.h"
 #include "SandboxControl.h"
@@ -40,6 +39,7 @@ CWebBrowser::CWebBrowser()
   : m_guiManager(this),
     m_isActive(false)
 {
+
 }
 
 WEB_ADDON_ERROR CWebBrowser::StartInstance()
@@ -52,6 +52,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
     LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
     return WEB_ADDON_ERROR_FAILED;
   }
+
 
   std::string path;
 

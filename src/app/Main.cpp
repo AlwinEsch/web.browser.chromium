@@ -17,7 +17,7 @@
  */
 
 #include "AppOther.h"
-#include "AppRenderer.h"
+#include "renderer/AppRenderer.h"
 
 #include "include/base/cef_logging.h"
 #include "include/base/cef_scoped_ptr.h"

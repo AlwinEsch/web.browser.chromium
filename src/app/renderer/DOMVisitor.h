@@ -1,6 +1,5 @@
-#pragma once
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -17,20 +16,21 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string>
+#pragma once
 
-class RendererMessage
+#include "include/cef_browser.h"
+#include "include/cef_dom.h"
+
+class CDOMVisitor : public CefDOMVisitor
 {
 public:
-  static const std::string FocusedNodeChanged;
-  static const std::string ExecuteJavaScriptBrowserSide;
-  static const std::string SendString;
-  static const std::string ShowKeyboard;
-  static const std::string ShowSelect;
-};
+  explicit CDOMVisitor(CefRefPtr<CefBrowser> browser);
 
-class AddonClientMessage
-{
-public:
-  static const std::string FocusedSelected;
+  void Visit(CefRefPtr<CefDOMDocument> document) override;
+
+private:
+  IMPLEMENT_REFCOUNTING(CDOMVisitor);
+  DISALLOW_COPY_AND_ASSIGN(CDOMVisitor);
+
+  CefRefPtr<CefBrowser> m_browser;
 };

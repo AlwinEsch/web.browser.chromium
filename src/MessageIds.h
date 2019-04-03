@@ -17,19 +17,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "include/cef_browser.h"
-#include "include/cef_dom.h"
+#include <string>
 
-class CDOMVisitor : public CefDOMVisitor
+class RendererMessage
 {
 public:
-  explicit CDOMVisitor(CefRefPtr<CefBrowser> browser);
+  static const std::string FocusedNodeChanged;
+  static const std::string V8AddonCall;
+};
 
-  virtual void Visit(CefRefPtr<CefDOMDocument> document) override;
-
-private:
-  IMPLEMENT_REFCOUNTING(CDOMVisitor);
-  DISALLOW_COPY_AND_ASSIGN(CDOMVisitor);
-
-  CefRefPtr<CefBrowser> m_browser;
+class BrowserMessage
+{
+public:
+  static const std::string dummy;
 };

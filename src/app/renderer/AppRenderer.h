@@ -19,12 +19,13 @@
 #pragma once
 
 #include "include/cef_app.h"
+#include "include/wrapper/cef_message_router.h"
 
 // Client app implementation for other process types.
 class CWebAppRenderer : public CefApp, public CefRenderProcessHandler
 {
  public:
-  CWebAppRenderer();
+  CWebAppRenderer() = default;
 
   void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info) override;
   void OnWebKitInitialized() override;
@@ -38,8 +39,14 @@ class CWebAppRenderer : public CefApp, public CefRenderProcessHandler
   void OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefDOMNode> node) override;
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;
 
+  CefRefPtr<CefBrowser> GetBrowser() { return m_browser; }
+
  private:
   CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override { return this; }
+
+  CefRefPtr<CefMessageRouterRendererSide> m_messageRouter;
+  bool m_lastNodeIsEditable = false;
+  CefRefPtr<CefBrowser> m_browser;
 
   IMPLEMENT_REFCOUNTING(CWebAppRenderer);
   DISALLOW_COPY_AND_ASSIGN(CWebAppRenderer);

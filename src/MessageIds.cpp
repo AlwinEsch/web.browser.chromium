@@ -1,4 +1,3 @@
-#pragma once
 /*
  *      Copyright (C) 2015-2017 Team KODI
  *      http:/kodi.tv
@@ -17,24 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "include/cef_v8.h"
-#include "include/wrapper/cef_helpers.h"
+#include "MessageIds.h"
 
-class CWebBrowser;
+const std::string RendererMessage::FocusedNodeChanged = "ClientRenderer.FocusedNodeChanged";
+const std::string RendererMessage::V8AddonCall = "ClientRenderer.V8AddonCall";
 
-class CV8Handler : public CefV8Handler
-{
-public:
-  CV8Handler() = default;
-
-  virtual bool Execute(const CefString& name,
-                       CefRefPtr<CefV8Value> object,
-                       const CefV8ValueList& arguments,
-                       CefRefPtr<CefV8Value>& retval,
-                       CefString& exception) override;
-
-  static void OnWebKitInitialized();
-
-private:
-  IMPLEMENT_REFCOUNTING(CV8Handler);
-};
+const std::string BrowserMessage::dummy = "ClientBrowser.dummy";

@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2015-2017 Team KODI
+ *      Copyright (C) 2015-2019 Team KODI
  *      http:/kodi.tv
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,8 @@
  */
 
 #include "V8Handler.h"
-#include "addon.h"
+#include "AppRenderer.h"
+#include "MessageIds.h"
 
 #include <kodi/General.h>
 
@@ -27,6 +28,9 @@ bool CV8Handler::Execute(const CefString& name,
                          CefRefPtr<CefV8Value>& retval,
                          CefString& exception)
 {
+  if (!m_renderer->GetBrowser())
+    return false;
+
   if (name == "Log")
   {
     CefRefPtr<CefV8Value> opt = arguments[0];
@@ -48,7 +52,12 @@ bool CV8Handler::Execute(const CefString& name,
       level = opt->HasValue("level") ? static_cast<AddonLog>(opt->GetValue("level")->GetIntValue()) : ADDON_LOG_INFO;
       message += opt->GetValue("message")->GetStringValue();
     }
-    kodi::Log(level, message.c_str());
+
+    CefRefPtr<CefProcessMessage> browserMessage = CefProcessMessage::Create(RendererMessage::V8AddonCall);
+    browserMessage->GetArgumentList()->SetString(0, name);
+    browserMessage->GetArgumentList()->SetInt(1, level);
+    browserMessage->GetArgumentList()->SetString(2, message);
+    m_renderer->GetBrowser()->SendProcessMessage(PID_BROWSER, browserMessage);
     return true;
   }
   else if (name == "QueueNotification")
@@ -63,19 +72,28 @@ bool CV8Handler::Execute(const CefString& name,
 
     std::string header = opt->GetValue("header")->GetStringValue();
     std::string message = opt->GetValue("message")->GetStringValue();
-    QueueMsg type = opt->HasValue("type") ? static_cast<QueueMsg>(opt->GetValue("type")->GetIntValue()) : QUEUE_INFO;
+    int type = opt->HasValue("type") ? opt->GetValue("type")->GetIntValue() : QUEUE_INFO;
     std::string imageFile = opt->HasValue("imageFile") ? opt->GetValue("imageFile")->GetStringValue() : "";
-    unsigned int displayTime = opt->HasValue("displayTime") ? opt->GetValue("displayTime")->GetIntValue() : 5000;
+    int displayTime = opt->HasValue("displayTime") ? opt->GetValue("displayTime")->GetIntValue() : 5000;
     bool withSound = opt->HasValue("withSound") ? opt->GetValue("withSound")->GetBoolValue() : true;
-    unsigned int messageTime = opt->HasValue("messageTime") ? opt->GetValue("messageTime")->GetIntValue() : 5000;
+    int messageTime = opt->HasValue("messageTime") ? opt->GetValue("messageTime")->GetIntValue() : 5000;
 
-    kodi::QueueNotification(type, header, message, imageFile, displayTime, withSound, messageTime);
+    CefRefPtr<CefProcessMessage> browserMessage = CefProcessMessage::Create(RendererMessage::V8AddonCall);
+    browserMessage->GetArgumentList()->SetString(0, name);
+    browserMessage->GetArgumentList()->SetInt(1, type);
+    browserMessage->GetArgumentList()->SetString(2, header);
+    browserMessage->GetArgumentList()->SetString(3, message);
+    browserMessage->GetArgumentList()->SetString(4, imageFile);
+    browserMessage->GetArgumentList()->SetInt(5, displayTime);
+    browserMessage->GetArgumentList()->SetBool(6, withSound);
+    browserMessage->GetArgumentList()->SetInt(7, messageTime);
+    m_renderer->GetBrowser()->SendProcessMessage(PID_BROWSER, browserMessage);
     return true;
   }
   return false;
 }
 
-void CV8Handler::OnWebKitInitialized()
+void CV8Handler::OnWebKitInitialized(CWebAppRenderer* renderer)
 {
   // Register the client_app extension.
   std::string app_code =
@@ -115,5 +133,5 @@ void CV8Handler::OnWebKitInitialized()
     "  };"
     "})();";
 
-  CefRegisterExtension("kodi", app_code, new CV8Handler());
+  CefRegisterExtension("kodi", app_code, new CV8Handler(renderer));
 }

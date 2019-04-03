@@ -17,61 +17,66 @@
  */
 
 #include "AppRenderer.h"
-
-CWebAppRenderer::CWebAppRenderer()
-{
-  fprintf(stderr, "---> %s\n", __PRETTY_FUNCTION__);
-}
+#include "MessageIds.h"
+#include "DOMVisitor.h"
+#include "V8Handler.h"
 
 void CWebAppRenderer::OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info)
 {
-  fprintf(stderr, "---> %s\n", __PRETTY_FUNCTION__);
 }
 
 void CWebAppRenderer::OnWebKitInitialized()
 {
-  fprintf(stderr, "---> %s\n", __PRETTY_FUNCTION__);
+  CefMessageRouterConfig config;
+  m_messageRouter = CefMessageRouterRendererSide::Create(config);
+  CV8Handler::OnWebKitInitialized(this);
 }
 
 void CWebAppRenderer::OnBrowserCreated(CefRefPtr<CefBrowser> browser)
 {
-  fprintf(stderr, "---> %s\n", __PRETTY_FUNCTION__);
+  m_browser = browser;
 }
 
 void CWebAppRenderer::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser)
 {
-  fprintf(stderr, "---> %s\n", __PRETTY_FUNCTION__);
+  m_browser = nullptr;
 }
 
 CefRefPtr<CefLoadHandler> CWebAppRenderer::GetLoadHandler()
 {
-  fprintf(stderr, "---> %s\n", __PRETTY_FUNCTION__);
   return nullptr;
 }
 
 void CWebAppRenderer::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context)
 {
-  fprintf(stderr, "---> %s\n", __PRETTY_FUNCTION__);
+  m_messageRouter->OnContextCreated(browser, frame, context);
 }
 
 void CWebAppRenderer::OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context)
 {
-  fprintf(stderr, "---> %s\n", __PRETTY_FUNCTION__);
+  m_messageRouter->OnContextReleased(browser, frame, context);
 }
 
 void CWebAppRenderer::OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,CefRefPtr<CefV8Context> context,
                                           CefRefPtr<CefV8Exception> exception, CefRefPtr<CefV8StackTrace> stackTrace)
 {
-  fprintf(stderr, "---> %s\n", __PRETTY_FUNCTION__);
 }
 
 void CWebAppRenderer::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefDOMNode> node)
 {
-  fprintf(stderr, "---> %s\n", __PRETTY_FUNCTION__);
+    bool is_editable = (node.get() && node->IsEditable());
+    if (is_editable != m_lastNodeIsEditable)
+    {
+      // Notify the browser of the change in focused element type.
+      m_lastNodeIsEditable = is_editable;
+      CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(RendererMessage::FocusedNodeChanged);
+      message->GetArgumentList()->SetBool(0, is_editable);
+      browser->SendProcessMessage(PID_BROWSER, message);
+    }
+
 }
 
 bool CWebAppRenderer::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
 {
-  fprintf(stderr, "---> %s\n", __PRETTY_FUNCTION__);
   return false;
 }
