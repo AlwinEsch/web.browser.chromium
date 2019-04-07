@@ -37,7 +37,7 @@
  * Currently with Kodi's context menu system only the button is supported.
  */
 
-//#define DEBUG_LOGS
+#define DEBUG_LOGS
 
 // Custom menu command Ids.
 enum client_menu_ids {

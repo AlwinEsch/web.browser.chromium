@@ -78,7 +78,23 @@
       </group>
     </category>
     <category id="system" label="30190" help="-1">
-      <group id="1" label="-1">
+      <group id="1" label="30191">
+        <setting id="system.widevine-path" type="path" label="30192" help="-1">
+          <default></default>
+          <constraints>
+            <allowempty>true</allowempty>
+          </constraints>
+          <control type="button" format="path">
+            <heading>657</heading>
+          </control>
+        </setting>
+        <setting id="system.widevine-path-asked" type="boolean" label="30195" help="-1">
+          <visible>false</visible>
+          <default>false</default>
+          <control type="toggle" />
+        </setting>
+      </group>
+      <group id="2" label="30191">
         <setting id="system.loglevelcef" type="integer" label="30200" help="-1">
           <default>0</default>
           <constraints>

@@ -326,6 +326,45 @@ msgctxt "#30190"
 msgid "System"
 msgstr ""
 
+#: Settings group entry
+msgctxt "#30191"
+msgid "Logging"
+msgstr ""
+
+#: Settings group entry
+msgctxt "#30192"
+msgid "DRM configuration"
+msgstr ""
+
+#: Settings entry
+msgctxt "#30193"
+msgid "Path to widevine"
+msgstr ""
+
+#: Notfication entry
+msgctxt "#30194"
+msgid "In settings given Widevine path not available!"
+msgstr ""
+
+#: Not visible seeting for boolean
+msgctxt "#30195"
+msgid "Widevine installation asked"
+msgstr ""
+
+#: File selection dialog to select widevine library
+msgctxt "#30196"
+msgid "Select the optional for DRM required '%s' library"
+msgstr ""
+
+#: Yes/no dialog header
+msgctxt "#30197"
+msgid "DRM required widevine library"
+msgstr ""
+
+#: Yes/no dialog header
+msgctxt "#30198"
+msgid "Do you want to try on next start to add this library?"
+msgstr ""
 
 msgctxt "#30200"
 msgid "Chromium log severity"
@@ -355,6 +394,20 @@ msgctxt "#30206"
 msgid "Completely disable logging"
 msgstr ""
 
+#: CEF context menu entry
+msgctxt "#30220"
+msgid "Adobe Flash Player"
+msgstr ""
+
+#: CEF context menu entry
+msgctxt "#30221"
+msgid "Run this plug-in"
+msgstr ""
+
+#: CEF context menu entry
+msgctxt "#30222"
+msgid "Hide this plug-in"
+msgstr ""
 
 msgctxt "#30300"
 msgid "Cookies"

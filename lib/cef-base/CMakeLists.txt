@@ -65,7 +65,19 @@ set(TARGET_BUILD_STEPS
 )
 
 set(ENV{PATH} "${PROJECT_BINARY_DIR}/depot_tools:$ENV{PATH}")
-set(GN_DEFINES "use_jumbo_build=true use_mkdev=${MAJOR_IN_MKDEV} use_cups=false treat_warnings_as_errors=false")
+set(GN_DEFINES "${GN_DEFINES} use_jumbo_build=true")
+set(GN_DEFINES "${GN_DEFINES} use_mkdev=${MAJOR_IN_MKDEV}")
+set(GN_DEFINES "${GN_DEFINES} use_cups=false")
+set(GN_DEFINES "${GN_DEFINES} treat_warnings_as_errors=false")
+set(GN_DEFINES "${GN_DEFINES} enable_widevine=true")
+set(GN_DEFINES "${GN_DEFINES} use_alsa=false")
+set(GN_DEFINES "${GN_DEFINES} use_pulseaudio=false")
+set(GN_DEFINES "${GN_DEFINES} rtc_use_h264=true")
+set(GN_DEFINES "${GN_DEFINES} use_libpci=true")
+set(GN_DEFINES "${GN_DEFINES} is_official_build=true")
+set(GN_DEFINES "${GN_DEFINES} use_allocator=none")
+set(GN_DEFINES "${GN_DEFINES} proprietary_codecs=true")
+set(GN_DEFINES "${GN_DEFINES} ffmpeg_branding=Chrome")
 
 add_custom_command(OUTPUT cef_load
                    COMMAND python ${CMAKE_CURRENT_LIST_DIR}/automate-git.py

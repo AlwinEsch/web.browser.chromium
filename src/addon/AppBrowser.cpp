@@ -20,7 +20,6 @@
 
 CClientAppBrowser::CClientAppBrowser(CWebBrowser* addonMain) : m_addonMain(addonMain)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
 }
 
 /// CefResourceBundleHandler
@@ -49,10 +48,8 @@ bool CClientAppBrowser::GetDataResourceForScale(int resource_id, ScaleFactor sca
 void CClientAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line)
 {
   command_line->AppendSwitch("kodi-addon-path=" + kodi::GetAddonPath());
-  command_line->AppendSwitch("disable-gpu");
+  command_line->AppendSwitch("disable-gpu-compositing");
   command_line->AppendSwitch("disable-software-rasterizer");
-  command_line->AppendSwitch("enable-system-flash");
-  command_line->AppendSwitch("enable-media-stream");
 }
 
 void CClientAppBrowser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)

@@ -23,6 +23,7 @@
 #include "RequestContextHandler.h"
 #include "SandboxControl.h"
 #include "WebBrowserClient.h"
+#include "WidevineControl.h"
 #include "utils/Utils.h"
 #include "utils/StringUtils.h"
 
@@ -30,6 +31,7 @@
 #include "include/cef_version.h"
 #include "include/wrapper/cef_library_loader.h"
 
+#include <kodi/Filesystem.h>
 #include <kodi/gui/dialogs/OK.h>
 #include <kodi/gui/dialogs/FileBrowser.h>
 
@@ -39,7 +41,6 @@ CWebBrowser::CWebBrowser()
   : m_guiManager(this),
     m_isActive(false)
 {
-
 }
 
 WEB_ADDON_ERROR CWebBrowser::StartInstance()
@@ -55,6 +56,8 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   }
 
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Setup add-on CEF directories:");
+
+  WidevineControl::InitializeWidevine();
 
   std::string path;
 
@@ -147,7 +150,11 @@ bool CWebBrowser::MainInitialize()
     kodi::SetSettingString("downloads.path", path);
   }
 
-  CefMainArgs args;
+  const char* cmdLine[3];
+  cmdLine[0] = "";
+  cmdLine[1] = "--disable-gpu";
+  cmdLine[2] = "--disable-software-rasterizer";
+  CefMainArgs args(3, (char**)cmdLine);
   m_app = new CClientAppBrowser(this);
   if (!CefInitialize(args, *m_cefSettings, m_app, nullptr))
   {

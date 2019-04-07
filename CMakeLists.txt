@@ -47,6 +47,55 @@ elseif(APP_RENDER_SYSTEM STREQUAL "gles")
   add_definitions(${OPENGLES_DEFINITIONS})
 endif()
 
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+  set(IS_64BIT FALSE)
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(IS_64BIT TRUE)
+else()
+  message(FATAL_ERROR "Unknown current CPU bit size: ${CMAKE_SIZEOF_VOID_P}")
+endif()
+
+if(MSVC64 OR MINGW64)
+  if(IS_64BIT)
+    add_definitions(-DWIDEVINE_CPU="x64")
+  else()
+    add_definitions(-DWIDEVINE_CPU="ia32")
+  endif()
+elseif(MINGW OR (MSVC AND NOT CMAKE_CROSSCOMPILING))
+  add_definitions(-DWIDEVINE_CPU="ia32")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*")
+  if(IS_64BIT)
+    add_definitions(-DWIDEVINE_CPU="x64")
+  else()
+    add_definitions(-DWIDEVINE_CPU="ia32")
+  endif()
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i686.*|i386.*|x86.*|amd64.*|AMD64.*")
+  add_definitions(-DWIDEVINE_CPU="ia32")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
+  add_definitions(-DWIDEVINE_CPU="arm")
+  message(WARNING "ARM currently not supported for widevine!")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*)")
+  add_definitions(-DWIDEVINE_CPU="aarch64")
+  message(WARNING "AARCH64 currently not supported for widevine!")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64le")
+  add_definitions(-DWIDEVINE_CPU="powerpc64le")
+  message(WARNING "POWERPC64LE currently not supported for widevine!")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64")
+  add_definitions(-DWIDEVINE_CPU="powerpc64")
+  message(WARNING "POWERPC64 currently not supported for widevine!")
+endif()
+
+if(WIN32)
+  add_definitions(-DWIDEVINE_OS="win")
+  add_definitions(-DWIDEVINE_LIB="widevinecdm.dll")
+elseif(TARGET_DARWIN)
+  add_definitions(-DWIDEVINE_OS="mac")
+  add_definitions(-DWIDEVINE_LIB="libwidevinecdm.dylib")
+else()
+  add_definitions(-DWIDEVINE_OS="linux")
+  add_definitions(-DWIDEVINE_LIB="libwidevinecdm.so")
+endif()
+
 #-------------------------------------------------------------------------------
 
 # Don't allow binary install for CEF (does not support empty INSTALL_COMMAND in system)
@@ -123,7 +172,6 @@ add_executable(kodichromium ${KODICHROMIUM_BIN_SOURCES})
 add_dependencies(kodichromium cef-binary)
 target_link_libraries(kodichromium ${DEPLIBS} cef dl)
 
-
 #-------------------------------------------------------------------------------
   add_definitions(-DDEBUG)
   set(CMAKE_BUILD_TYPE Debug)
@@ -147,6 +195,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/SandboxControl.cpp
                                  src/addon/URICheckHandler.cpp
                                  src/addon/WebBrowserClient.cpp
+                                 src/addon/WidevineControl.cpp
                                  src/addon/audio/AudioHandler.cpp
                                  src/addon/gui/DialogBrowserContextMenu.cpp
                                  src/addon/gui/DialogCookie.cpp
@@ -170,6 +219,7 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/SandboxControl.h
                                  src/addon/URICheckHandler.h
                                  src/addon/WebBrowserClient.h
+                                 src/addon/WidevineControl.h
                                  src/addon/audio/AudioHandler.h
                                  src/addon/gui/DialogBrowserContextMenu.h
                                  src/addon/gui/DialogCookie.h
