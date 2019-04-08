@@ -84,7 +84,6 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   m_strLibPath = path + "kodichromium";
 
   path = AddonSharePath();
-  fprintf(stderr, "AddonSharePath %s\n", path.c_str());
   m_strLocalesPath = path + "resources/cef/locales";
   m_strResourcesPath = path + "resources/cef/";
 

@@ -34,15 +34,12 @@ namespace SandboxControl
 /*!
  * @note and @todo
  *
- * Function is initial version and support currently only 'sudo' which present on ubuntu.
- * The super user way must be added with a better solution. Primary Idea is to add
- * related support to Kodi itself to allow also for other add-ons used with Linux and to
- * support it on all distribution types.
- *
- * Also need this easy sudo way to be tested on Mac OS X where it is also present.
+ * Check and confirm still needed?:
+ * https://chromium.googlesource.com/chromium/src/+/master/docs/linux_suid_sandbox_development.md
  */
 bool SetSandbox()
 {
+#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
   std::string sandboxBinary = kodi::GetAddonPath("chrome-sandbox");
 
   struct stat st;
@@ -68,9 +65,16 @@ bool SetSandbox()
     {
       if (kodi::gui::dialogs::Keyboard::ShowAndGetNewPassword(strPassword, kodi::GetLocalizedString(30003), true))
       {
-        if (stat("/usr/bin/sudo", &st) == 0)
+        if (stat("/usr/bin/sudo", &st) == 0 || stat("/bin/sudo", &st) == 0)
         {
           command = StringUtils::Format("echo %s | sudo -S bash -c \"chown root:root %s; sudo -- chmod 4755 %s\"",
+                                            strPassword.c_str(),
+                                            sandboxBinary.c_str(),
+                                            sandboxBinary.c_str());
+        }
+        else if (stat("/usr/bin/su", &st) == 0 || stat("/bin/su", &st) == 0)
+        {
+          command = StringUtils::Format("echo %s | su root -c bash -c \"chown root:root %s; sudo -- chmod 4755 %s\"",
                                             strPassword.c_str(),
                                             sandboxBinary.c_str(),
                                             sandboxBinary.c_str());
@@ -88,6 +92,7 @@ bool SetSandbox()
     }
     return false;
   }
+#endif
   return true;
 }
 
