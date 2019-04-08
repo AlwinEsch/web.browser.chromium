@@ -38,27 +38,42 @@
 int CWebBrowser::m_iUniqueClientId = 0;
 
 CWebBrowser::CWebBrowser()
-  : m_guiManager(this),
-    m_isActive(false)
+  : m_guiManager(this)
 {
 }
 
 WEB_ADDON_ERROR CWebBrowser::StartInstance()
 {
-  kodi::Log(ADDON_LOG_DEBUG, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
+  kodi::Log(ADDON_LOG_INFO, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
 
   // Load CEF library by self
   std::string cefLib = kodi::GetAddonPath(LIBRARY_PREFIX "cef" LIBRARY_SUFFIX);
   if (!cef_load_library(cefLib.c_str()))
   {
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
+    kodi::Log(ADDON_LOG_ERROR, "%s - Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
     return WEB_ADDON_ERROR_FAILED;
   }
 
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "Setup add-on CEF directories:");
+  // Check set of sandbox and if needed ask user about root password to set correct rights of them
+  if (!SandboxControl::SetSandbox())
+    return WEB_ADDON_ERROR_FAILED;
 
+  // Initialize widevine
   WidevineControl::InitializeWidevine();
 
+  // Set download path if not available
+  if (kodi::GetSettingString("downloads.path").empty())
+  {
+    kodi::gui::dialogs::OK::ShowAndGetInput(kodi::GetLocalizedString(30080), kodi::GetLocalizedString(30081));
+
+    std::string path;
+    while (path.empty())
+      kodi::gui::dialogs::FileBrowser::ShowAndGetDirectory("local", kodi::GetLocalizedString(30081), path, true);
+
+    kodi::SetSettingString("downloads.path", path);
+  }
+
+  // Set below the for CEF required paths
   std::string path;
 
   path = kodi::GetBaseUserPath();
@@ -79,13 +94,10 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strResourcesPath %s", m_strResourcesPath.c_str());
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strLibPath       %s", m_strLibPath.c_str());
 
-  if (!SandboxControl::SetSandbox())
-    return WEB_ADDON_ERROR_FAILED;
-
   std::string language = kodi::GetLanguage(LANG_FMT_ISO_639_1, true);
 
   // Create and delete CefSettings itself, otherwise comes seqfault during
-  // "CefSettingsTraits::clear" call, on
+  // "CefSettingsTraits::clear" call on destruction of CWebBrowser
   m_cefSettings = new CefSettings;
   m_cefSettings->no_sandbox                          = 0;
   CefString(&m_cefSettings->browser_subprocess_path) = m_strLibPath;
@@ -117,7 +129,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   CefString(&m_cefSettings->accept_language_list)    = language;
   CefString(&m_cefSettings->kodi_addon_dir_path)     = path;
 
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_INFO, "%s - Started web browser add-on process", __FUNCTION__);
+  kodi::Log(ADDON_LOG_DEBUG, "%s - Started web browser add-on process", __FUNCTION__);
 
   return WEB_ADDON_ERROR_NO_ERROR;
 }
@@ -139,17 +151,6 @@ void CWebBrowser::StopInstance()
 
 bool CWebBrowser::MainInitialize()
 {
-  if (kodi::GetSettingString("downloads.path").empty())
-  {
-    kodi::gui::dialogs::OK::ShowAndGetInput(kodi::GetLocalizedString(30080), kodi::GetLocalizedString(30081));
-
-    std::string path;
-    while (path.empty())
-      kodi::gui::dialogs::FileBrowser::ShowAndGetDirectory("local", kodi::GetLocalizedString(30081), path, true);
-
-    kodi::SetSettingString("downloads.path", path);
-  }
-
   const char* cmdLine[3];
   cmdLine[0] = "";
   cmdLine[1] = "--disable-gpu";

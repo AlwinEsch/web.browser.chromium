@@ -58,8 +58,6 @@ public:
   // ---------------------------------------------------------------------------
   // Internal interface parts
 
-  bool IsActive() const { return m_isActive; }
-
   CBrowserGUIManager& GetGUIManager() { return m_guiManager; }
 
 private:
@@ -72,7 +70,6 @@ private:
 
   std::mutex m_mutex;
 
-  bool m_isActive;
   CefSettings* m_cefSettings;
   std::string m_strHTMLCachePath;
   std::string m_strCookiePath;
