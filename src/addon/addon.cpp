@@ -22,6 +22,7 @@
 #include "MessageIds.h"
 #include "RequestContextHandler.h"
 #include "SandboxControl.h"
+#include "SchemeKodi.h"
 #include "WebBrowserClient.h"
 #include "WidevineControl.h"
 #include "utils/Utils.h"
@@ -162,6 +163,9 @@ bool CWebBrowser::MainInitialize()
     return false;
   }
 
+  // Register kodi:// scheme's
+  CefRegisterSchemeHandlerFactory("kodi", "home", new CSchemeKodiFactory());
+
   return true;
 }
 
@@ -209,7 +213,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
 
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
 
-  CWebBrowserClient *pBrowserClient;
+  CWebBrowserClient *pBrowserClient = nullptr;
 
   std::lock_guard<std::mutex> lock(m_mutex);
 

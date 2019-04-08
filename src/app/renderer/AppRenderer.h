@@ -27,6 +27,8 @@ class CWebAppRenderer : public CefApp, public CefRenderProcessHandler
  public:
   CWebAppRenderer() = default;
 
+  void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
+
   void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info) override;
   void OnWebKitInitialized() override;
   void OnBrowserCreated(CefRefPtr<CefBrowser> browser) override;

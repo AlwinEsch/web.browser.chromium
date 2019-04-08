@@ -25,6 +25,11 @@ void CWebAppRenderer::OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info)
 {
 }
 
+void CWebAppRenderer::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
+{
+  registrar->AddCustomScheme("kodi", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_CORS_ENABLED);
+}
+
 void CWebAppRenderer::OnWebKitInitialized()
 {
   CefMessageRouterConfig config;

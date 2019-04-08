@@ -1,0 +1,118 @@
+/*
+ *      Copyright (C) 2015-2019 Team KODI
+ *      http:/kodi.tv
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "SchemeKodi.h"
+
+#include <kodi/General.h>
+#include <kodi/Filesystem.h>
+#include <algorithm>
+#include <string>
+
+bool CSchemeKodiHandler::ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback)
+{
+  CEF_REQUIRE_IO_THREAD();
+
+  bool handled = false;
+
+  std::string url = request->GetURL();
+  if (strstr(url.c_str(), "index.html") != nullptr)
+  {
+    // Build the response html
+    m_data =
+        "<html>"
+          "<head>"
+            "<title>Kodi</title>"
+            "<link rel=\"shortcut icon\" href=\"https://kodi.tv/sites/default/themes/kodi/favicon.png\" type=\"image/png\">"
+            "<style>"
+"p.sansserif {"
+"  font-family: Arial, Helvetica, sans-serif;"
+"}"
+            "</style>"
+          "</head>"
+          "<body bgcolor=\"white\">"
+            "<div align=\"center\">"
+              "<img src=\"kodi://home/icon.png\"><br/>"
+              "<header>"
+                "<h1><p class=\"sansserif\">Kodi's scheme homepage</p></h1>"
+              "</header>"
+            "</div>"
+          "</body>"
+        "</html>";
+
+    handled = true;
+
+    // Set the resulting mime type
+    m_mime_type = "text/html";
+  }
+  else if (strstr(url.c_str(), "icon.png") != nullptr)
+  {
+    // Load the response image
+    kodi::vfs::CFile file;
+    if (file.OpenFile(kodi::GetAddonPath("resources/icon.png")))
+    {
+      char buf[1 << 16];
+      ssize_t len;
+      while ((len = file.Read(buf, sizeof(buf))) > 0)
+        m_data.append(buf, len);
+      handled = true;
+    }
+  }
+
+  if (handled)
+  {
+    // Indicate the headers are available.
+    callback->Continue();
+    return true;
+  }
+
+  return false;
+}
+
+void CSchemeKodiHandler::GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl)
+{
+  CEF_REQUIRE_IO_THREAD();
+
+  DCHECK(!m_data.empty());
+
+  response->SetMimeType(m_mime_type);
+  response->SetStatus(200);
+
+  // Set the resulting response length
+  response_length = m_data.length();
+}
+
+bool CSchemeKodiHandler::ReadResponse(void* m_dataout, int bytes_to_read, int& bytes_read, CefRefPtr<CefCallback> callback)
+{
+  CEF_REQUIRE_IO_THREAD();
+
+  bool has_data = false;
+  bytes_read = 0;
+
+  if (m_offset < m_data.length())
+  {
+    // Copy the next block of data into the buffer.
+    int transfer_size = std::min(bytes_to_read, static_cast<int>(m_data.length() - m_offset));
+    memcpy(m_dataout, m_data.c_str() + m_offset, transfer_size);
+    m_offset += transfer_size;
+
+    bytes_read = transfer_size;
+    has_data = true;
+  }
+
+  return has_data;
+}

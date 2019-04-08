@@ -54,7 +54,7 @@ void CClientAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 
 void CClientAppBrowser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
+  registrar->AddCustomScheme("kodi", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_CORS_ENABLED);
 }
 
 void CClientAppBrowser::OnContextInitialized()

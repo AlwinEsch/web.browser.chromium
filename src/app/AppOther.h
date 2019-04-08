@@ -24,7 +24,9 @@
 class CWebAppOther : public CefApp
 {
  public:
-  CWebAppOther();
+  CWebAppOther() = default;
+
+  void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
 
  private:
   IMPLEMENT_REFCOUNTING(CWebAppOther);

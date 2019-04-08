@@ -18,4 +18,7 @@
 
 #include "AppOther.h"
 
-CWebAppOther::CWebAppOther() {}
+void CWebAppOther::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
+{
+  registrar->AddCustomScheme("kodi", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_CORS_ENABLED);
+}
