@@ -70,6 +70,9 @@ bool CSchemeKodiHandler::ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr
       while ((len = file.Read(buf, sizeof(buf))) > 0)
         m_data.append(buf, len);
       handled = true;
+
+      // Set the resulting mime type
+      m_mime_type = "image/png";
     }
   }
 
