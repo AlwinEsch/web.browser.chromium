@@ -159,7 +159,7 @@ bool CWebBrowser::MainInitialize()
   m_app = new CClientAppBrowser(this);
   if (!CefInitialize(args, *m_cefSettings, m_app, nullptr))
   {
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
+    kodi::Log(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
     return false;
   }
 
@@ -277,7 +277,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
                                                                                     new CRequestContextHandler);
     if (!CefBrowserHost::CreateBrowser(info, pBrowserClient, "", settings, request_context))
     {
-      LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);
+      kodi::Log(ADDON_LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);
       if (pBrowserClient)
       {
         delete pBrowserClient;
@@ -298,7 +298,7 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
   CWebBrowserClient* browserClient = static_cast<CWebBrowserClient*>(control);
   if (browserClient == nullptr)
   {
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser control destroy called without handle!", __FUNCTION__);
+    kodi::Log(ADDON_LOG_ERROR, "%s - Web browser control destroy called without handle!", __FUNCTION__);
     return false;
   }
 
@@ -323,7 +323,7 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
     LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control destroy to set inactive", __FUNCTION__);
     if (itr == m_browserClients.end())
     {
-      LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Web browser control destroy called for invalid id '%i'",
+      kodi::Log(ADDON_LOG_ERROR, "%s - Web browser control destroy called for invalid id '%i'",
                                               __FUNCTION__, browserClient->GetDataIdentifier());
       return false;
     }
