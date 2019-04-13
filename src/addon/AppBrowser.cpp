@@ -17,6 +17,7 @@
  */
 
 #include "AppBrowser.h"
+#include "SchemeKodi.h"
 
 CClientAppBrowser::CClientAppBrowser(CWebBrowser* addonMain) : m_addonMain(addonMain)
 {
@@ -52,14 +53,15 @@ void CClientAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
   command_line->AppendSwitch("disable-software-rasterizer");
 }
 
+void CClientAppBrowser::OnContextInitialized()
+{
+  // Register kodi:// scheme's
+  CefRegisterSchemeHandlerFactory("kodi", "home", new CSchemeKodiFactory());
+}
+
 void CClientAppBrowser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {
   registrar->AddCustomScheme("kodi", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_CORS_ENABLED);
-}
-
-void CClientAppBrowser::OnContextInitialized()
-{
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
 }
 
 void CClientAppBrowser::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line)

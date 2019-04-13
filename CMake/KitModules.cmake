@@ -136,6 +136,7 @@ function(add_external_project name)
     PREFIX ${name}
     DOWNLOAD_DIR ${download_location}
     INSTALL_DIR ${install_location}
+    BUILD_ALWAYS TRUE
     ${NO_INSTALL_CMD} ""
 
     # add url/mdf/git-repo etc. specified in versions.cmake

@@ -33,56 +33,31 @@ find_package(glm REQUIRED)
 include(ExternalProject)
 include(KitModules)
 
+# Chromium creator
 include(lib/cef-base/CMakeLists.txt)
 
 if(APP_RENDER_SYSTEM STREQUAL "gl" OR NOT APP_RENDER_SYSTEM)
   find_package(OpenGl REQUIRED)
   set(DEPLIBS ${OPENGL_LIBRARIES})
-  set(includes ${OPENGL_INCLUDE_DIR})
+  set(INCLUDES ${OPENGL_INCLUDE_DIR})
   add_definitions(${OPENGL_DEFINITIONS})
 elseif(APP_RENDER_SYSTEM STREQUAL "gles")
   find_package(OpenGLES REQUIRED)
   set(DEPLIBS ${OPENGLES_LIBRARIES})
-  set(u ${OPENGLES_INCLUDE_DIR})
+  set(INCLUDES ${OPENGLES_INCLUDE_DIR})
   add_definitions(${OPENGLES_DEFINITIONS})
 endif()
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 4)
-  set(IS_64BIT FALSE)
-elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(IS_64BIT TRUE)
-else()
-  message(FATAL_ERROR "Unknown current CPU bit size: ${CMAKE_SIZEOF_VOID_P}")
-endif()
-
-if(MSVC64 OR MINGW64)
-  if(IS_64BIT)
-    add_definitions(-DWIDEVINE_CPU="x64")
-  else()
-    add_definitions(-DWIDEVINE_CPU="ia32")
-  endif()
-elseif(MINGW OR (MSVC AND NOT CMAKE_CROSSCOMPILING))
+if(ARCH STREQUAL x86_64)
+  add_definitions(-DWIDEVINE_CPU="x64")
+elseif(ARCH STREQUAL x86)
   add_definitions(-DWIDEVINE_CPU="ia32")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*")
-  if(IS_64BIT)
-    add_definitions(-DWIDEVINE_CPU="x64")
-  else()
-    add_definitions(-DWIDEVINE_CPU="ia32")
-  endif()
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i686.*|i386.*|x86.*|amd64.*|AMD64.*")
-  add_definitions(-DWIDEVINE_CPU="ia32")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
+elseif(ARCH STREQUAL arm)
   add_definitions(-DWIDEVINE_CPU="arm")
-  message(WARNING "ARM currently not supported for widevine!")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*)")
+elseif(ARCH STREQUAL aarch64)
   add_definitions(-DWIDEVINE_CPU="aarch64")
-  message(WARNING "AARCH64 currently not supported for widevine!")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64le")
-  add_definitions(-DWIDEVINE_CPU="powerpc64le")
-  message(WARNING "POWERPC64LE currently not supported for widevine!")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64")
-  add_definitions(-DWIDEVINE_CPU="powerpc64")
-  message(WARNING "POWERPC64 currently not supported for widevine!")
+else()
+  message(SEND_ERROR "System '${CORE_SYSTEM_NAME}' Unknown CPU: ${CPU}")
 endif()
 
 if(WIN32)
@@ -104,6 +79,7 @@ set(cef-binary_NO_INSTALL 1)
 add_external_project(cef-binary SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/cef)
 ExternalProject_Get_Property(cef-binary SOURCE_DIR)
 ExternalProject_Get_Property(cef-binary BINARY_DIR)
+ExternalProject_Add_StepDependencies(cef-binary download cef-lib-creator)
 
 set_include_dir(cef-binary ${SOURCE_DIR})
 set_libraries(cef-binary cef)
@@ -116,20 +92,20 @@ add_custom_command(TARGET cef-binary
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/cef
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/cef/locales
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/Resources/locales                  ${CMAKE_CURRENT_BINARY_DIR}/share/cef/locales
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef.pak                            ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_100_percent.pak                ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_200_percent.pak                ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_extensions.pak                 ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/devtools_resources.pak             ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/Resources/locales      ${CMAKE_CURRENT_BINARY_DIR}/share/cef/locales
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef.pak                ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_100_percent.pak    ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_200_percent.pak    ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_extensions.pak     ${CMAKE_CURRENT_BINARY_DIR}/share/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/devtools_resources.pak ${CMAKE_CURRENT_BINARY_DIR}/share/cef
 
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/${CMAKE_SHARED_LIBRARY_PREFIX}cef${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/chrome-sandbox           ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/natives_blob.bin         ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/snapshot_blob.bin        ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}/v8_context_snapshot.bin  ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/icudtl.dat                         ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/${CMAKE_BUILD_TYPE}                ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Release/${CMAKE_SHARED_LIBRARY_PREFIX}cef${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Release/chrome-sandbox           ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Release/natives_blob.bin         ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Release/snapshot_blob.bin        ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Release/v8_context_snapshot.bin  ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/icudtl.dat             ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/Release                ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
 )
 
 #-------------------------------------------------------------------------------
@@ -173,8 +149,6 @@ add_dependencies(kodichromium cef-binary)
 target_link_libraries(kodichromium ${DEPLIBS} cef dl)
 
 #-------------------------------------------------------------------------------
-  add_definitions(-DDEBUG)
-  set(CMAKE_BUILD_TYPE Debug)
 
 set(KODICHROMIUM_CUSTOM_DATA "${CMAKE_CURRENT_BINARY_DIR}/share/cef")
 set(KODICHROMIUM_ADDITIONAL_BINARY "${CMAKE_CURRENT_BINARY_DIR}/kodichromium"
@@ -244,6 +218,5 @@ add_dependencies(web.browser.chromium cef-lib-creator cef-binary kodichromium)
 add_definitions(-DKODICHROMIUM_VERSION="${KODICHROMIUM_VERSION}"
                 -DLIBRARY_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}"
                 -DLIBRARY_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}")
-
 
 include(CPack)

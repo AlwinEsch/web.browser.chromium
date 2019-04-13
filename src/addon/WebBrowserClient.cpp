@@ -748,6 +748,8 @@ void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
   {
     // Create the browser-side router for query handling.
     CefMessageRouterConfig config;
+//     config.js_query_function = "kodiQuery";
+//     config.js_cancel_function = "kodiQueryCancel";
     m_messageRouter = CefMessageRouterBrowserSide::Create(config);
 
     // Register handlers with the router.

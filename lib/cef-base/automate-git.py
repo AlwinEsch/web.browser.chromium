@@ -298,7 +298,7 @@ def apply_deps_patch():
       run('%s %s --patch-file "%s" --patch-dir "%s"' %
           (python_exe, patch_tool, patch_file,
            chromium_src_dir), chromium_src_dir, depot_tools_dir)
-    elif cef_branch_version != 'trunk' and int(cef_branch_version) <= 1916:
+    elif cef_branch != 'trunk' and int(cef_branch) <= 1916:
       # Release branch DEPS files older than 37.0.2007.0 may include a 'src'
       # entry. This entry needs to be removed otherwise `gclient sync` will
       # fail.
@@ -1003,39 +1003,33 @@ if options.clientdistrib or options.clientdistribonly:
     sys.exit()
 
 # CEF branch.
-cef_branch = options.branch
-
-if '-' in cef_branch:
-  cef_branch_version,cef_branch_child = cef_branch.split('-', 1)
-else:
-  cef_branch_version = cef_branch
-  cef_branch_child = ''
-
-if cef_branch_version != 'trunk' and not cef_branch_version.isdigit():
-  print 'Invalid branch value: %s' % (cef_branch_version)
+if options.branch != 'trunk' and not options.branch.isdigit():
+  print 'Invalid branch value: %s' % (options.branch)
   sys.exit()
 
-if cef_branch_version != 'trunk' and int(cef_branch_version) <= 1453:
+cef_branch = options.branch
+
+if cef_branch != 'trunk' and int(cef_branch) <= 1453:
   print 'The requested branch is too old to build using this tool.'
   sys.exit()
 
 # True if the requested branch is 2272 or newer.
-branch_is_2272_or_newer = (cef_branch_version == 'trunk' or int(cef_branch_version) >= 2272)
+branch_is_2272_or_newer = (cef_branch == 'trunk' or int(cef_branch) >= 2272)
 
 # True if the requested branch is 2357 or newer.
-branch_is_2357_or_newer = (cef_branch_version == 'trunk' or int(cef_branch_version) >= 2357)
+branch_is_2357_or_newer = (cef_branch == 'trunk' or int(cef_branch) >= 2357)
 
 # True if the requested branch is 2743 or older.
-branch_is_2743_or_older = (cef_branch_version != 'trunk' and int(cef_branch_version) <= 2743)
+branch_is_2743_or_older = (cef_branch != 'trunk' and int(cef_branch) <= 2743)
 
 # True if the requested branch is newer than 2785.
-branch_is_newer_than_2785 = (cef_branch_version == 'trunk' or int(cef_branch_version) > 2785)
+branch_is_newer_than_2785 = (cef_branch == 'trunk' or int(cef_branch) > 2785)
 
 # True if the requested branch is 3029 or older.
-branch_is_3029_or_older = (cef_branch_version != 'trunk' and int(cef_branch_version) <= 3029)
+branch_is_3029_or_older = (cef_branch != 'trunk' and int(cef_branch) <= 3029)
 
 # True if the requested branch is newer than 3497.
-branch_is_newer_than_3497 = (cef_branch_version == 'trunk' or int(cef_branch_version) > 3497)
+branch_is_newer_than_3497 = (cef_branch == 'trunk' or int(cef_branch) > 3497)
 
 # Enable GN by default for branches newer than 2785.
 if branch_is_newer_than_2785 and not 'CEF_USE_GN' in os.environ.keys():
@@ -1216,7 +1210,7 @@ msg("CEF Source Directory: %s" % (cef_dir))
 # Determine the CEF Git branch to use.
 if options.checkout == '':
   # Target the most recent branch commit from the remote repo.
-  if cef_branch_version == 'trunk':
+  if cef_branch == 'trunk':
     cef_checkout = 'origin/master'
   else:
     cef_checkout = 'origin/' + cef_branch

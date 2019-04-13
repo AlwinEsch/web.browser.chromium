@@ -22,7 +22,6 @@
 #include "MessageIds.h"
 #include "RequestContextHandler.h"
 #include "SandboxControl.h"
-#include "SchemeKodi.h"
 #include "WebBrowserClient.h"
 #include "WidevineControl.h"
 #include "utils/Utils.h"
@@ -162,9 +161,6 @@ bool CWebBrowser::MainInitialize()
     kodi::Log(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
     return false;
   }
-
-  // Register kodi:// scheme's
-  CefRegisterSchemeHandlerFactory("kodi", "home", new CSchemeKodiFactory());
 
   return true;
 }

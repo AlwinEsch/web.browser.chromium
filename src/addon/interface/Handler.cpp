@@ -61,7 +61,11 @@ bool CJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> fram
     std::string message = frame->GetURL().ToString() + " - " + level.substr(delim + 1);
     level = level.substr(0, delim);
 
+    fprintf(stderr, "---- %s %s\n", level.c_str(), message.c_str());
+
     kodi::Log(static_cast<AddonLog>(std::atoi(level.c_str())), message.c_str());
+//     callback->Continue("Incorrect message format");
+    return true;
   }
   else if (message_name.find(msg_queue_notification) == 0)
   {
@@ -100,6 +104,8 @@ bool CJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> fram
     kodi::QueueNotification(static_cast<QueueMsg>(std::stoi(type)), header, message, imageFile,
                             std::stoi(displayTime), withSound == "true" ? true : false, std::stoi(messageTime));
   }
+
+  callback->Success(CefString());
 
   return true;
 }

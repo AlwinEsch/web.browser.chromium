@@ -33,6 +33,8 @@ void CWebAppRenderer::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> regi
 void CWebAppRenderer::OnWebKitInitialized()
 {
   CefMessageRouterConfig config;
+//   config.js_query_function = "kodiQuery";
+//   config.js_cancel_function = "kodiQueryCancel";
   m_messageRouter = CefMessageRouterRendererSide::Create(config);
   CV8Handler::OnWebKitInitialized(this);
 }
@@ -83,5 +85,9 @@ void CWebAppRenderer::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRef
 
 bool CWebAppRenderer::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
 {
+  if (m_messageRouter->OnProcessMessageReceived(browser, source_process, message))
+    return true;
+
+  fprintf(stderr, "---------------------------------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<<\n");
   return false;
 }
