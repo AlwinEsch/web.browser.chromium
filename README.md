@@ -20,6 +20,12 @@ suggested by the README.
 4. `cmake -DADDONS_TO_BUILD=web.browser.chromium -DADDON_SRC_PREFIX=../.. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=$HOME/.kodi/addons -DPACKAGE_ZIP=1 ../../kodi/cmake/addons`
 5. `make`
 
+### Windows
+
+Chromium have very long path and filenames to prevent `Filename too long` error make:
+
+`git config --system core.longpaths true`
+
 **WARNING**: 
 - With debug generated libcef have ~4GB!
 - Chromium download and build takes a long time! Around 14GB source and longer build time.
