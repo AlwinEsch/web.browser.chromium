@@ -22,9 +22,9 @@ suggested by the README.
 
 ### Windows
 
-Chromium have very long path and filenames to prevent `Filename too long` error make:
-
-`git config --system core.longpaths true`
+Chromium have very long path and filenames, to prevent `Filename too long` error, make:
+- `git config --system core.longpaths true`
+- Change Registry described here: https://www.howtogeek.com/266621/how-to-make-windows-10-accept-file-paths-over-260-characters/
 
 **WARNING**: 
 - With debug generated libcef have ~4GB!
