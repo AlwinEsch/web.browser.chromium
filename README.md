@@ -23,3 +23,4 @@ suggested by the README.
 **WARNING**: 
 - With debug generated libcef have ~4GB!
 - Chromium download and build takes a long time! Around 14GB source and longer build time.
+- After build 41GB data in source folder
