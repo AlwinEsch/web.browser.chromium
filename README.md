@@ -18,15 +18,15 @@ This uses CMake as its building system but instructions are highly dependent on 
 **Warning**:<br>Building this addon with Chromium requires at least 16 GB of RAM (better 32 GB) and more than 15 GB will be downloaded and over 40 GB can be used on your hard drive! Also, the construction can take up to several hours.
 
 <p align="center">
-  <a href="README.Android.md" title="Android"><img src="docs/resources/android.svg" height="84"></a>
-  <a href="README.Fedora.md" title="Fedora"><img src="docs/resources/fedora.svg" height="84"></a>
-  <a href="README.FreeBSD.md" title="FreeBSD"><img src="docs/resources/freebsd.svg" height="84"></a>
-  <a href="README.iOS.md" title="iOS"><img src="docs/resources/ios.svg" height="84"></a>
-  <a href="README.Linux.md" title="Linux"><img src="docs/resources/linux.svg" height="84"></a>
-  <a href="README.macOS.md" title="macOS"><img src="docs/resources/macos.svg" height="84"></a>
-  <a href="README.openSUSE.md" title="openSUSE"><img src="docs/resources/opensuse.svg" height="84"></a>
-  <a href="README.RaspberryPi.md" title="Raspberry Pi"><img src="docs/resources/raspberrypi.svg" height="84"></a>
-  <a href="README.Ubuntu.md" title="Ubuntu"><img src="docs/resources/ubuntu.svg" height="84"></a>
-  <a href="README.Windows.md" title="Windows"><img src="docs/resources/windows.svg" height="84"></a>
+  <a href="docs/README.Android.md" title="Android"><img src="docs/resources/android.svg" height="84"></a>
+  <a href="docs/README.Fedora.md" title="Fedora"><img src="docs/resources/fedora.svg" height="84"></a>
+  <a href="docs/README.FreeBSD.md" title="FreeBSD"><img src="docs/resources/freebsd.svg" height="84"></a>
+  <a href="docs/README.iOS.md" title="iOS"><img src="docs/resources/ios.svg" height="84"></a>
+  <a href="docs/README.Linux.md" title="Linux"><img src="docs/resources/linux.svg" height="84"></a>
+  <a href="docs/README.macOS.md" title="macOS"><img src="docs/resources/macos.svg" height="84"></a>
+  <a href="docs/README.openSUSE.md" title="openSUSE"><img src="docs/resources/opensuse.svg" height="84"></a>
+  <a href="docs/README.RaspberryPi.md" title="Raspberry Pi"><img src="docs/resources/raspberrypi.svg" height="84"></a>
+  <a href="docs/README.Ubuntu.md" title="Ubuntu"><img src="docs/resources/ubuntu.svg" height="84"></a>
+  <a href="docs/README.Windows.md" title="Windows"><img src="docs/resources/windows.svg" height="84"></a>
 </p>
 
