@@ -8,7 +8,7 @@ If you haven't done so, we encourage you to read our **[contributing guide](http
 ## Building Addon
 This uses CMake as its building system but instructions are highly dependent on your operating system and target platform. Choose your platform below and read the guide carefully before proceeding.
 
-**Warning**:<br>Building this addon with Chrmium requires at least 16 GB of RAM (better 32 GB) and more than 15 GB will be downloaded and over 40 GB can be used on your hard drive! Also, the construction can take up to several hours.
+**Warning**:<br>Building this addon with Chromium requires at least 16 GB of RAM (better 32 GB) and more than 15 GB will be downloaded and over 40 GB can be used on your hard drive! Also, the construction can take up to several hours.
 
 <p align="center">
   <a href="README.Android.md" title="Android"><img src="resources/android.svg" height="84"></a>
