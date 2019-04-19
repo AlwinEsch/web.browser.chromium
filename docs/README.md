@@ -1,6 +1,6 @@
 ![Logo](resources/banner_slim.png)
 
-# Kodi's <ins>web.browser.chromium</ins> Addon Documentation Home
+# Kodi's web.browser.chromium Addon Documentation Home
 Welcome to Kodi's Web Browser addon documentation home. Geared at developers and it contains platform specific build guides.
 
 If you haven't done so, we encourage you to read our **[contributing guide](https://github.com/xbmc/xbmc/blob/master/docs/CONTRIBUTING.md)** first. It contains pertinent information about our development model.
