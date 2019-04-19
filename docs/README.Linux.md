@@ -1,6 +1,8 @@
-
 <p align="center">
-  <a href="README.Linux.md" title="Linux"><img src="resources/linux.svg" height="128"></a>
+  <div style="position:relative">
+    <img src="resources/banner_slim.png">
+    <img style="position: absolute; right: 10px; top: 10px;" src="resources/linux.svg" height="128">
+  </div>
 </p>
 
 # Linux build guide
