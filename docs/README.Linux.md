@@ -1,9 +1,4 @@
-<p align="center">
-  <div style="position:relative">
-    <img src="resources/banner_slim.png">
-    <img style="position: absolute; right: 10px; top: 10px;" src="resources/linux.svg" height="128">
-  </div>
-</p>
+![Logo](resources/banner_slim.png)
 
 # Linux build guide
 This is the general Linux build guide. Please read it in full before you proceed to familiarize yourself with the build procedure.
