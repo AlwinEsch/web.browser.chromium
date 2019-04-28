@@ -26,23 +26,21 @@ CBrowserGUIManager::CBrowserGUIManager(CWebBrowser* instance) : m_instance(insta
 bool CBrowserGUIManager::Create()
 {
 
-  CreateThread();
+  //CreateThread();
   return true;
 }
 
 void CBrowserGUIManager::Destroy()
 {
-  StopThread();
+  //StopThread();
 }
 
-void* CBrowserGUIManager::Process()
+void CBrowserGUIManager::Process()
 {
 
   while (!IsStopped())
   {
 
   }
-
-  return nullptr;
 }
 

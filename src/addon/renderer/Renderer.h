@@ -36,7 +36,7 @@ public:
   void Render();
   bool Dirty();
   void ScreenSizeChange(float x, float y, float width, float height);
-  
+
   double ScrollOffsetX() { return m_scrollOffsetX; }
   double ScrollOffsetY() { return m_scrollOffsetY; }
 
@@ -45,6 +45,7 @@ public:
   void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
   bool GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY) override;
   void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width, int height) override;
+  void OnAcceleratedPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, void* shared_handle) override;
   void OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, CursorType type, const CefCursorInfo& custom_cursor_info) override;
   void OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) override;
   void OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect) override;

@@ -23,8 +23,12 @@
 #include "include/base/cef_scoped_ptr.h"
 #include "include/cef_app.h"
 #include "include/cef_command_line.h"
+#include "include/cef_sandbox_win.h"
 #include "include/wrapper/cef_helpers.h"
 #include "include/wrapper/cef_library_loader.h"
+
+#include <windows.h>
+#include <direct.h>
 
 // These flags must match the Chromium values.
 std::string kProcessType = "type";
@@ -32,26 +36,26 @@ std::string kRendererProcess = "renderer";
 std::string kZygoteProcess = "zygote";
 std::string kGPUProcess = "gpu-process";
 
-int main(int argc, char* argv[])
+int APIENTRY wWinMain(HINSTANCE hInstance,
+                      HINSTANCE hPrevInstance,
+                      PWSTR lpCmdLine,
+                      int nCmdShow) 
 {
+  UNREFERENCED_PARAMETER(hPrevInstance);
+  UNREFERENCED_PARAMETER(lpCmdLine);
+
+  // Enable High-DPI support on Windows 7 or newer.
+  CefEnableHighDPISupport();
+
+  //void* sandbox_info = nullptr;
   int ret = -1;
 
-  // Get the path where this sandbox app part is located. This is needed
-  // to know from where the needed libcef becomes loaded.
-  std::string path = argv[0];
-  path.erase(path.length()-std::strlen("kodichromium"), path.length());
-  std::string cefLib = path + LIBRARY_PREFIX "cef" LIBRARY_SUFFIX;
-  if (!cef_load_library(cefLib.c_str()))
-  {
-    fprintf(stderr, "FATAL: Failed to load CEF library: '%s'", argv[0]);
-    return ret;
-  }
-
-  CefMainArgs main_args(argc, argv);
+  // Provide CEF with command-line arguments.
+  CefMainArgs main_args(hInstance);
 
   // Parse command-line arguments.
   CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
-  command_line->InitFromArgv(argc, argv);
+  command_line->InitFromString(::GetCommandLineW());
 
   // Create a ClientApp of the correct type.
   CefRefPtr<CefApp> app;
@@ -83,9 +87,6 @@ int main(int argc, char* argv[])
   {
     fprintf(stderr, "FATAL: kodichromium sandbox seems to start as browser type (process type undefined!)");
   }
-
-  if (!cef_unload_library())
-    fprintf(stderr, "FATAL: Failed to unload CEF library '%s'", argv[0]);
 
 #ifdef DEBUG
   fprintf(stderr, "DEBUG_INFO: Sandbox Kodi Chromium ended for process_type %s\n", process_type.c_str());

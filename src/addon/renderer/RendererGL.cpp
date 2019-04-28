@@ -19,8 +19,8 @@
 #include "RendererGL.h"
 
 #include "addon.h"
-#include "Utils.h"
 #include "WebBrowserClient.h"
+#include "utils/Utils.h"
 
 #include "include/wrapper/cef_helpers.h"
 

@@ -30,7 +30,6 @@
 #include "include/cef_render_handler.h"
 #include "include/wrapper/cef_message_router.h"
 #include "include/wrapper/cef_resource_manager.h"
-#include "include/views/cef_textfield_delegate.h"
 
 #include <kodi/AudioEngine.h>
 #include <kodi/addon-instance/Web.h>

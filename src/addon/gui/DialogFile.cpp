@@ -18,7 +18,7 @@
 
 
 #include "DialogFile.h"
-#include "Utils.h"
+#include "utils/Utils.h"
 
 #include <kodi/gui/dialogs/FileBrowser.h>
 #include <thread>

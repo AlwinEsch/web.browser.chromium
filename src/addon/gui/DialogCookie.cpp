@@ -267,7 +267,7 @@ bool CBrowserDialogCookie::OnContextButton(int itemNumber, unsigned int button)
 
         std::string text;
         std::size_t found = std::string::npos;
-        for (; m_findPosition < m_items.size(); ++m_findPosition)
+        for (; m_findPosition < static_cast<int>(m_items.size()); ++m_findPosition)
         {
           text = CefString(&m_items[m_findPosition].name).ToString();
           StringUtils::ToLower(text);

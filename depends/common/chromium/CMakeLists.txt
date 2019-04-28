@@ -119,9 +119,9 @@ endif()
 #------------------------------------------------------------------------------.
 #                                                                              |
 
-# if CMAKE_BUILD_TYPE is not set fallback to debug as default
+# if CMAKE_BUILD_TYPE is not set fallback to Release as default
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Debug")
+  set(CMAKE_BUILD_TYPE "Release")
 endif()
 
 # Set the used Python or
@@ -398,6 +398,12 @@ set(NINJA_BUILD_PARTS "cef")
 # If linux add also sandbox build
 if(CORE_SYSTEM_NAME STREQUAL linux)
   list(APPEND NINJA_BUILD_PARTS "chrome_sandbox")
+  set(NINJA_BUILD_TYPE ${CMAKE_BUILD_TYPE}_GN_${CEF_BUILD_CPU})
+elseif(CORE_SYSTEM_NAME STREQUAL windows)
+  list(APPEND NINJA_BUILD_PARTS "cef_sandbox")
+  set(NINJA_BUILD_TYPE ${CMAKE_BUILD_TYPE}_GN_${CEF_BUILD_CPU}_sandbox)
+else()
+  set(NINJA_BUILD_TYPE ${CMAKE_BUILD_TYPE}_GN_${CEF_BUILD_CPU})
 endif()
 
 ExternalProject_Add(
@@ -422,7 +428,7 @@ ExternalProject_Add_Step(
   build_chromium
   builder
 
-  COMMAND             ninja -C out/Release_GN_${CEF_BUILD_CPU} ${NINJA_BUILD_PARTS}
+  COMMAND             ninja -C out/${NINJA_BUILD_TYPE} ${NINJA_BUILD_PARTS}
   COMMENT             "Run GN ninja build process"
   WORKING_DIRECTORY   ${THIRD_PARTY_PATH}/chromium_git/chromium/src
   DEPENDEES           build
@@ -463,12 +469,13 @@ ExternalProject_Add_Step(
 
   COMMAND             ${PYTHON} make_distrib.py --ninja-build
                                                 --output-dir ${THIRD_PARTY_PATH}/chromium_package
+                                                --allow-partial
                                                 --package $<$<BOOL:${CEF_NO_ARCHIVE}>:--no-archive>
                                                 ${CEF_BUILD_TYPE}
   COMMAND             ${PYTHON} cef_version.py current > ${THIRD_PARTY_PATH}/cef_version.txt
   COMMENT             "Creating CEF chromium package"
   WORKING_DIRECTORY   ${THIRD_PARTY_PATH}/chromium_git/chromium/src/cef/tools
-  DEPENDEES           download
+  DEPENDEES           build
 )
 
 # Step to copy for addon needed CEF package to right place
@@ -477,20 +484,24 @@ ExternalProject_Add_Step(
 # "cef_binary_74.0.0-kodi.1973+ga51c714+chromium-74.0.3729.0_windows32_package"
 # where it becomes harder for a Kodi addon to find it before it is created.
 # With this becomes it copied by separated CMake script to:
-# ${PROJECT_BINARY_DIR}/cef where the addons ExternalProject find it.
+# ${PROJECT_BINARY_DIR}/cef where it is easier found.
+#
 ExternalProject_Add_Step(
   cef_package 
   install_build_package
 
   COMMAND             ${CMAKE_COMMAND} -DPROJECT_BINARY_DIR=${THIRD_PARTY_PATH}
-                                       -DSOURCE_DIR=${PROJECT_BINARY_DIR}
+                                       -DSOURCE_DIR=${PROJECT_BINARY_DIR}/cef
                                        -DCORE_SYSTEM_NAME=${CORE_SYSTEM_NAME}
                                        -DCEF_BIT_STR=${CEF_BIT_STR}
                                        -P ${CMAKE_SOURCE_DIR}/CMake/copy-cef.cmake
   COMMENT             "Move CEF to addon source"
   WORKING_DIRECTORY   ${THIRD_PARTY_PATH}/chromium_package
-  DEPENDEES           build
+  DEPENDEES           create_package
 )
 
 #                                                                              |
 #------------------------------------------------------------------------------*
+
+# Install the CEF to addon's depends install folder
+install(DIRECTORY ${PROJECT_BINARY_DIR}/cef DESTINATION src)

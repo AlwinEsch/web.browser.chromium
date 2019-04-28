@@ -351,8 +351,11 @@ void CBrowserDialogKeyboard::Character(const std::string& ch)
   if (ch.empty())
     return;
 
-  std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert;
-  std::u16string dest = convert.from_bytes(ch);
+  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> convert; // conversion between UTF-16 and UTF-8
+  std::wstring dest = convert.from_bytes(ch); // convert UTF-8 std::string to UTF-16 std::wstring
+
+  //std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert;
+  //std::u16string dest = convert.from_bytes(ch);
 
   CefKeyEvent key_event;
   key_event.native_key_code = 0;

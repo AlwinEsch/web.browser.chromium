@@ -23,11 +23,11 @@
 #include "DialogFile.h"
 #include "DialogKeyboard.h"
 
-#include <p8-platform/threads/threads.h>
+#include "utils/Thread.h"
 
 class CWebBrowser;
 
-class CBrowserGUIManager : public P8PLATFORM::CThread
+class CBrowserGUIManager : public CThread
 {
 public:
   CBrowserGUIManager(CWebBrowser* instance);
@@ -41,7 +41,7 @@ public:
   CBrowserDialogKeyboard& GetKeyboard() { return m_keyboard; }
 
 protected:
-  void* Process() override;
+  void Process() override;
 
 private:
   CWebBrowser* m_instance;

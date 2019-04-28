@@ -35,10 +35,6 @@ IRenderer::IRenderer(CWebBrowserClient const* client)
   m_useTransparentBackground = m_client->UseTransparentBackground();
 }
 
-IRenderer::~IRenderer()
-{
-}
-
 void IRenderer::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show)
 {
   if (!show)

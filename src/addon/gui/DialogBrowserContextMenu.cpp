@@ -91,7 +91,7 @@ void CBrowerDialogContextMenu::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser
   LOG_MESSAGE(ADDON_LOG_DEBUG, "- IsPepperMenu :          %s", params->IsPepperMenu() ? "yes" : "no");
   LOG_MESSAGE(ADDON_LOG_DEBUG, "CefMenuModel");
   LOG_MESSAGE(ADDON_LOG_DEBUG, "- Count:                  %i", model->GetCount());
-  for (unsigned int i = 0; i < model->GetCount(); i++)
+  for (int i = 0; i < model->GetCount(); i++)
     LOG_MESSAGE(ADDON_LOG_DEBUG, "  - %02i: ID '%i' Type '%i' - Name '%s'",
                     i, model->GetCommandIdAt(i), model->GetTypeAt(i), model->GetLabelAt(i).ToString().c_str());
 #endif
@@ -104,7 +104,7 @@ bool CBrowerDialogContextMenu::RunContextMenu(CefRefPtr<CefBrowser> browser,
                                               CefRefPtr<CefRunContextMenuCallback> callback)
 {
   std::vector<std::pair<int, std::string>> entries;
-  for (unsigned int i = 0; i < model->GetCount(); ++i)
+  for (int i = 0; i < model->GetCount(); ++i)
   {
     int id = model->GetCommandIdAt(i);
     if (id < 0 ||

@@ -21,12 +21,12 @@
 #include "addon.h"
 #include "MessageIds.h"
 #include "URICheckHandler.h"
-#include "Utils.h"
 #include "gui/DialogBrowserContextMenu.h"
 #include "interface/Handler.h"
 #include "interface/JSDialogHandler.h"
 #include "utils/StringUtils.h"
 #include "utils/SystemTranslator.h"
+#include "utils/Utils.h"
 
 #include "include/cef_app.h"
 #include "include/cef_browser.h"
@@ -199,14 +199,11 @@ bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unic
   if (!m_browser.get())
     return false;
 
-fprintf(stderr, "--> %s %i %i %i %i\n", __PRETTY_FUNCTION__, actionId, buttoncode, unicode, nextItem);
+fprintf(stderr, "--> %s %i %i %i %i\n", __FUNCTION__, actionId, buttoncode, unicode, nextItem);
 
   CefRefPtr<CefBrowserHost> host = m_browser->GetHost();
   if (!m_focusOnEditableField)
   {
-    int deltaX = 0;
-    int deltaY = 0;
-
     switch (actionId)
     {
       case ACTION_VOLUME_UP:
@@ -307,8 +304,8 @@ bool CWebBrowserClient::OnMouseEvent(int id, double x, double y, double offsetX,
   CefRefPtr<CefBrowserHost> host = m_browser->GetHost();
 
   CefMouseEvent mouse_event;
-  mouse_event.x = (x - GetSkinXPos()) * m_fMouseXScaleFactor;
-  mouse_event.y = (y - GetSkinYPos()) * m_fMouseYScaleFactor;
+  mouse_event.x = static_cast<int>((x - GetSkinXPos()) * m_fMouseXScaleFactor);
+  mouse_event.y = static_cast<int>((y - GetSkinYPos()) * m_fMouseYScaleFactor);
 
   switch (id)
   {
@@ -515,7 +512,7 @@ void CWebBrowserClient::StopSearch(bool clearSelection)
 
 void CWebBrowserClient::ScreenSizeChange(float x, float y, float width, float height, bool fullscreen)
 {
-  fprintf(stderr, "--> %s %f %f %f %f %i\n", __PRETTY_FUNCTION__, x, y, width, height, fullscreen);
+  fprintf(stderr, "--> %s %f %f %f %f %i\n", __FUNCTION__, x, y, width, height, fullscreen);
   m_isFullScreen = true;
   m_renderer->ScreenSizeChange(x, y, width, height);
   if (m_browser.get())
@@ -700,7 +697,6 @@ bool CWebBrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
                                       CefBrowserSettings& settings,
                                       bool* no_javascript_access)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
 // #ifdef DEBUG_LOGS
   LOG_MESSAGE(ADDON_LOG_DEBUG, "--------------------------------------->%s - %s", __FUNCTION__, std::string(target_url).c_str());
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - target_url '%s'", std::string(target_url).c_str());
@@ -730,6 +726,9 @@ bool CWebBrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
   }
 
   windowInfo.windowless_rendering_enabled = true;
+#ifdef WIN32
+  windowInfo.shared_texture_enabled = true;
+#endif
 
   if (!m_isFullScreen && kodi::GetSettingBoolean("main.allow_open_to_tabs") && target_disposition != WOD_CURRENT_TAB)
     RequestOpenSiteInNewTab(target_url); /* Request to do on kodi itself */
@@ -774,14 +773,14 @@ void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 
 bool CWebBrowserClient::DoClose(CefRefPtr<CefBrowser> browser)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
+  fprintf(stderr, "--> %s\n", __FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
   return false; /* Allow the close. For windowed browsers this will result in the OS close event being sent */
 }
 
 void CWebBrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
+  fprintf(stderr, "--> %s\n", __FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
 
   m_messageRouter->OnBeforeClose(browser);
@@ -808,7 +807,7 @@ bool CWebBrowserClient::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<
 bool CWebBrowserClient::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url,
                                          CefRequestHandler::WindowOpenDisposition target_disposition, bool user_gesture)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
+  fprintf(stderr, "--> %s\n", __FUNCTION__);
   return false;
 }
 
@@ -873,14 +872,14 @@ bool CWebBrowserClient::OnResourceResponse(CefRefPtr<CefBrowser> browser, CefRef
 bool CWebBrowserClient::GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, bool isProxy, const CefString& host,
                                            int port, const CefString& realm, const CefString& scheme, CefRefPtr<CefAuthCallback> callback)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
+  fprintf(stderr, "--> %s\n", __FUNCTION__);
   ///TODO Useful and secure?
   return false;
 }
 
 bool CWebBrowserClient::OnQuotaRequest(CefRefPtr<CefBrowser> browser, const CefString& origin_url, int64 new_size, CefRefPtr<CefRequestCallback> callback)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
+  fprintf(stderr, "--> %s\n", __FUNCTION__);
   CEF_REQUIRE_IO_THREAD();
 
   static const int64 max_size = 1024 * 1024 * 20;  // 20mb.

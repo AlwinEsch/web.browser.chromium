@@ -38,4 +38,5 @@ lib/cef/
 *.vcxproj.user
 
 build/
+.vs/
 VS2013Kodi_AddonProject/

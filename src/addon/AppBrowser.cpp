@@ -49,8 +49,13 @@ bool CClientAppBrowser::GetDataResourceForScale(int resource_id, ScaleFactor sca
 void CClientAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line)
 {
   command_line->AppendSwitch("kodi-addon-path=" + kodi::GetAddonPath());
+#ifdef WIN32
+  command_line->AppendSwitch("disable-gpu-shader-disk-cache");
+  command_line->AppendSwitchWithValue("use-angle", "d3d11");
+#else
   command_line->AppendSwitch("disable-gpu-compositing");
   command_line->AppendSwitch("disable-software-rasterizer");
+#endif // WIN32
 }
 
 void CClientAppBrowser::OnContextInitialized()
@@ -67,22 +72,22 @@ void CClientAppBrowser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> re
 void CClientAppBrowser::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line)
 {
   std::string commandLine = command_line->GetCommandLineString();
-  fprintf(stderr, "--> %s '%s'\n", __PRETTY_FUNCTION__, commandLine.c_str());
+  fprintf(stderr, "--> %s '%s'\n", __FUNCTION__, commandLine.c_str());
 }
 
 void CClientAppBrowser::OnRenderProcessThreadCreated(CefRefPtr<CefListValue> extra_info)
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
+  fprintf(stderr, "--> %s\n", __FUNCTION__);
 }
 
 CefRefPtr<CefPrintHandler> CClientAppBrowser::GetPrintHandler()
 {
-  fprintf(stderr, "--> %s\n", __PRETTY_FUNCTION__);
+  fprintf(stderr, "--> %s\n", __FUNCTION__);
   return NULL;
 }
 
 void CClientAppBrowser::OnScheduleMessagePumpWork(int64 delay_ms)
 {
-//   fprintf(stderr, "--> %s delay_ms %li\n", __PRETTY_FUNCTION__, delay_ms);
+//   fprintf(stderr, "--> %s delay_ms %li\n", __FUNCTION__, delay_ms);
 }
 //@}

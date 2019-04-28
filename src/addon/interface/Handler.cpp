@@ -19,7 +19,7 @@
 #include "Handler.h"
 
 #include "WebBrowserClient.h"
-#include "Utils.h"
+#include "utils/Utils.h"
 
 #include <kodi/General.h>
 
@@ -49,7 +49,6 @@ bool CJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> fram
 {
   CEF_REQUIRE_UI_THREAD();
 
-  bool ret = false;
   const std::string& message_name = request;
   if (message_name.find(msg_kodi_log) == 0)
   {

@@ -25,7 +25,6 @@
 #include "RendererGL.h"
 #elif defined(HAS_DX)
 #include "RendererDX.h"
-#error Render system is currently not implemented.
 #else
 #error Render system is not supported.
 #endif
@@ -78,10 +77,10 @@ void CRendererClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 
   // The simulated screen and view rectangle are the same. This is necessary
   // for popup menus to be located and sized inside the view.
-  rect.x = 0.0f;
-  rect.y = 0.0f;
-  rect.width = m_client->GetWidth();
-  rect.height = m_client->GetHeight();
+  rect.x = 0;
+  rect.y = 0;
+  rect.width = static_cast<int>(m_client->GetWidth());
+  rect.height = static_cast<int>(m_client->GetHeight());
 }
 
 bool CRendererClient::GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY)
@@ -100,6 +99,14 @@ void CRendererClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType ty
   CEF_REQUIRE_UI_THREAD();
 
   m_renderer->OnPaint(type, dirtyRects, buffer, width, height);
+}
+
+void CRendererClient::OnAcceleratedPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, 
+                                         const RectList& dirtyRects, void* shared_handle)
+{
+  CEF_REQUIRE_UI_THREAD();
+
+  m_renderer->OnAcceleratedPaint(type, dirtyRects, shared_handle);
 }
 
 void CRendererClient::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show)

@@ -25,7 +25,7 @@
 #include <kodi/gui/dialogs/YesNo.h>
 
 #ifdef _WIN32                   // windows
-#include <p8-platform/windows/dlfcn-win32.h>
+#include "utils/dlfcn-win32.h"
 #else
 #include <dlfcn.h>              // linux+osx
 #endif
@@ -33,6 +33,12 @@
 #include "include/cef_app.h"
 #include "include/cef_version.h"
 #include "include/cef_web_plugin.h"
+
+// prevent the use of Windows Macros for file edit (are in conflict with Kodi's one)
+#ifdef WIN32
+#undef CreateDirectory
+#undef CopyFile
+#endif
 
 namespace WidevineControl
 {
@@ -53,8 +59,9 @@ namespace WidevineControl
 
   inline bool ends_with(std::string const & value, std::string const & ending)
   {
-      if (ending.size() > value.size()) return false;
-      return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+    if (ending.size() > value.size()) 
+      return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
   }
 
   bool CreateManifestAndInstall()

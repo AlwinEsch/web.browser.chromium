@@ -21,20 +21,43 @@
 cmake_minimum_required(VERSION 3.5)
 project(web.browser.chromium)
 
+cmake_policy(SET CMP0074 NEW)
+
+# Search on addon depends generated CEF dev kit and set CEF_ROOT
+find_path(CEF_PROJECT_DIR NAMES src/cef/CMakeLists.txt)
+if(NOT CEF_PROJECT_DIR)
+  message(FATAL_ERROR "Required CEF dev kit not found!")
+endif()
+set(CEF_ROOT "${CEF_PROJECT_DIR}/src/cef")
+
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake
-                      ${CMAKE_MODULE_PATH}
-                      ${PROJECT_SOURCE_DIR})
+                      ${PROJECT_SOURCE_DIR}
+                      ${CEF_ROOT}/cmake
+                      ${CMAKE_MODULE_PATH})
 
 find_package(Kodi REQUIRED)
-find_package(kodiplatform REQUIRED)
-find_package(p8-platform REQUIRED)
 find_package(glm REQUIRED)
+find_package(CEF REQUIRED)
 
 include(ExternalProject)
 include(KitModules)
+include(CheckSymbolExists)
+include(ArchSetup)
 
-# Chromium creator
-include(lib/cef-base/CMakeLists.txt)
+# if CMAKE_BUILD_TYPE is not set fallback to Release as default
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+# Include the libcef_dll_wrapper target.
+# Comes from the libcef_dll/CMakeLists.txt file in the binary distribution
+# directory.
+add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
+
+PRINT_CEF_CONFIG()
+
+# Logical target used to link the libcef library.
+ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 
 if(APP_RENDER_SYSTEM STREQUAL "gl" OR NOT APP_RENDER_SYSTEM)
   find_package(OpenGl REQUIRED)
@@ -46,6 +69,8 @@ elseif(APP_RENDER_SYSTEM STREQUAL "gles")
   set(DEPLIBS ${OPENGLES_LIBRARIES})
   set(INCLUDES ${OPENGLES_INCLUDE_DIR})
   add_definitions(${OPENGLES_DEFINITIONS})
+elseif(APP_RENDER_SYSTEM STREQUAL "dx11")
+  add_definitions(-DHAS_DX)
 endif()
 
 if(ARCH STREQUAL x86_64)
@@ -71,97 +96,84 @@ else()
   add_definitions(-DWIDEVINE_LIB="libwidevinecdm.so")
 endif()
 
-#-------------------------------------------------------------------------------
-
-# Don't allow binary install for CEF (does not support empty INSTALL_COMMAND in system)
-set(cef-binary_NO_INSTALL 1)
-
-add_external_project(cef-binary SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/cef)
-ExternalProject_Get_Property(cef-binary SOURCE_DIR)
-ExternalProject_Get_Property(cef-binary BINARY_DIR)
-ExternalProject_Add_StepDependencies(cef-binary download cef-lib-creator)
-
-set_include_dir(cef-binary ${SOURCE_DIR})
-set_libraries(cef-binary cef)
-
-add_custom_command(TARGET cef-binary
-  # Static libs which becomes added
-  COMMAND ${CMAKE_COMMAND} -E copy ${BINARY_DIR}/libcef_dll_wrapper/${CMAKE_STATIC_LIBRARY_PREFIX}cef_dll_wrapper${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}
-
-  # Shared libs and parts which need present on add-on
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/cef/locales
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/Resources/locales      ${CMAKE_CURRENT_BINARY_DIR}/share/cef/locales
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef.pak                ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_100_percent.pak    ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_200_percent.pak    ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/cef_extensions.pak     ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/devtools_resources.pak ${CMAKE_CURRENT_BINARY_DIR}/share/cef
-
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Release/${CMAKE_SHARED_LIBRARY_PREFIX}cef${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Release/chrome-sandbox           ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Release/natives_blob.bin         ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Release/snapshot_blob.bin        ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Release/v8_context_snapshot.bin  ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE_DIR}/Resources/icudtl.dat             ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR}/Release                ${CMAKE_CURRENT_BINARY_DIR}/lib/cef
-)
-
-#-------------------------------------------------------------------------------
-
-list(APPEND DEPENDS cef-lib-creator cef-binary)
-
-link_directories(${CMAKE_CURRENT_BINARY_DIR}
-                 ${CMAKE_CURRENT_BINARY_DIR}/lib/cef)
-
+# Include addon depended folders to find files
 include_directories(${INCLUDES}
-                    ${kodiplatform_INCLUDE_DIRS}
-                    ${p8-platform_INCLUDE_DIRS}
+                    ${CEF_INCLUDE_PATH}
                     ${GLM_INCLUDE_DIR}
                     ${KODI_INCLUDE_DIR}/..
-                    ${PROJECT_SOURCE_DIR}/lib/cef
+                    ${PROJECT_BINARY_DIR}/cef
                     ${PROJECT_SOURCE_DIR}/src/
-                    ${PROJECT_SOURCE_DIR}/src/addon/
-                    ${PROJECT_SOURCE_DIR}/src/addon/Dialogs/
-                    ${PROJECT_SOURCE_DIR}/src/addon/settings/
-                    ${PROJECT_SOURCE_DIR}/src/addon/utils/)
+                    ${PROJECT_SOURCE_DIR}/src/addon/)
 
-list(APPEND DEPLIBS ${p8-platform_LIBRARIES}
-                    ${kodiplatform_LIBRARIES}
-                    cef_dll_wrapper)
+#-------------------------------------------------------------------------------
 
-if(WIN32)
-  list(APPEND DEPLIBS ws2_32)
+set(USE_SANDBOX ON)
+
+set(KODICHROMIUM_BIN_SOURCES src/app/AppOther.cpp
+                             src/app/renderer/AppRenderer.cpp
+                             src/app/renderer/DOMVisitor.cpp
+                             src/app/renderer/V8Handler.cpp
+                             src/MessageIds.cpp)
+
+if(CORE_SYSTEM_NAME STREQUAL windows)
+  set(DEPLIBS libcef_lib
+              libcef_dll_wrapper
+              ${CEF_STANDARD_LIBS})
+
+  list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main_win.cpp)
+
+  add_executable(kodichromium WIN32 ${KODICHROMIUM_BIN_SOURCES})
+  add_dependencies(kodichromium libcef_dll_wrapper)
+
+  SET_EXECUTABLE_TARGET_PROPERTIES(kodichromium)
+  target_link_libraries(kodichromium ${DEPLIBS} d3d11.lib)
+
+  if(USE_ATL)
+    # Required by VS2013 to link accessibility API functions.
+    target_link_libraries(kodichromium oleacc.lib)
+  endif()
+
+  if(USE_SANDBOX)
+    # Logical target used to link the cef_sandbox library.
+    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
+    target_link_libraries(kodichromium cef_sandbox_lib ${CEF_SANDBOX_STANDARD_LIBS})
+  endif()
+
+   # The by addon dll needed additional Sandbox binary application
+  list(APPEND KODICHROMIUM_ADDITIONAL_BINARY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/kodichromium${CMAKE_EXECUTABLE_SUFFIX})
+else()
+  set(DEPLIBS libcef_dll_wrapper
+              dl
+              ${CEF_STANDARD_LIBS})
+
+  list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main.cpp)
+
+  add_executable(kodichromium ${KODICHROMIUM_BIN_SOURCES})
+  add_dependencies(kodichromium libcef_dll_wrapper)
+
+  target_link_libraries(kodichromium ${DEPLIBS})
+  
+   # The by addon dll needed additional Sandbox binary application
+  list(APPEND KODICHROMIUM_ADDITIONAL_BINARY ${CMAKE_CURRENT_BINARY_DIR}/kodichromium${CMAKE_EXECUTABLE_SUFFIX})
 endif()
 
 #-------------------------------------------------------------------------------
 
-list(APPEND KODICHROMIUM_BIN_SOURCES src/app/Main.cpp
-                                     src/app/AppOther.cpp
-                                     src/app/renderer/AppRenderer.cpp
-                                     src/app/renderer/DOMVisitor.cpp
-                                     src/app/renderer/V8Handler.cpp
-                                     src/MessageIds.cpp)
+set(KODICHROMIUM_CUSTOM_DATA ${CEF_ROOT}/Resources/) # TODO: icudtl.dat defined there but currently needed by dll folder
+set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS ${CEF_ROOT}/Resources/icudtl.dat) # icudtl.dat also required on addon binary folder
+set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS ${CEF_ROOT}/${CMAKE_BUILD_TYPE}/) # To have all Chromium lib parts on addon binary folder
 
-add_executable(kodichromium ${KODICHROMIUM_BIN_SOURCES})
-add_dependencies(kodichromium cef-binary)
-target_link_libraries(kodichromium ${DEPLIBS} cef dl)
-
-#-------------------------------------------------------------------------------
-
-set(KODICHROMIUM_CUSTOM_DATA "${CMAKE_CURRENT_BINARY_DIR}/share/cef")
-set(KODICHROMIUM_ADDITIONAL_BINARY "${CMAKE_CURRENT_BINARY_DIR}/kodichromium"
-                                   "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/chrome-sandbox"
-                                   "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/libcef.so")
-set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/icudtl.dat"
-                                         "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/natives_blob.bin"
-                                         "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/snapshot_blob.bin"
-                                         "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/v8_context_snapshot.bin")
-set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/lib/cef/swiftshader")
-
-set(KODICHROMIUM_SOURCES src/addon/renderer/RendererGL.cpp)
-set(KODICHROMIUM_HEADERS src/addon/renderer/RendererGL.h)
+if(${CORE_SYSTEM_NAME} STREQUAL windows)
+  set(KODICHROMIUM_SOURCES src/addon/renderer/RendererDX.cpp
+                           src/addon/renderer/d3d11.cpp
+                           src/addon/utils/dlfcn-win32.cpp)
+  set(KODICHROMIUM_HEADERS src/addon/renderer/RendererDX.h
+                           src/addon/renderer/d3d11.h
+                           src/addon/utils/dlfcn-win32.h)
+else()
+  set(KODICHROMIUM_SOURCES src/addon/renderer/RendererGL.cpp)
+  set(KODICHROMIUM_HEADERS src/addon/renderer/RendererGL.h)
+endif()
 
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/AppBrowser.cpp
@@ -186,6 +198,11 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/utils/StringUtils.cpp
                                  src/addon/utils/SystemTranslator.cpp
                                  src/addon/utils/Utils.cpp
+                                 src/addon/utils/XMLUtils.cpp
+                                 src/addon/third_party/tinyxml/tinystr.cpp
+                                 src/addon/third_party/tinyxml/tinyxml.cpp
+                                 src/addon/third_party/tinyxml/tinyxmlerror.cpp
+                                 src/addon/third_party/tinyxml/tinyxmlparser.cpp
                                  src/MessageIds.cpp)
 
 list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
@@ -210,11 +227,19 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/renderer/Renderer.h
                                  src/addon/utils/StringUtils.h
                                  src/addon/utils/SystemTranslator.h
+                                 src/addon/utils/Thread.h
                                  src/addon/utils/Utils.h
+                                 src/addon/utils/XMLUtils.h
+                                 src/addon/third_party/tinyxml/tinystr.h
+                                 src/addon/third_party/tinyxml/tinyxml.h
                                  src/MessageIds.h)
 
 build_addon(web.browser.chromium KODICHROMIUM DEPLIBS)
-add_dependencies(web.browser.chromium cef-lib-creator cef-binary kodichromium)
+
+if(${CORE_SYSTEM_NAME} STREQUAL windows)
+  SET_LIBRARY_TARGET_PROPERTIES(web.browser.chromium)
+endif()
+add_dependencies(web.browser.chromium libcef_dll_wrapper)
 add_definitions(-DKODICHROMIUM_VERSION="${KODICHROMIUM_VERSION}"
                 -DLIBRARY_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}"
                 -DLIBRARY_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}")

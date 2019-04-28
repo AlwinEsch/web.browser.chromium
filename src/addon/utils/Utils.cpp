@@ -20,7 +20,12 @@
 
 #include "addon.h"
 #include "Utils.h"
-#include "p8-platform/util/StringUtils.h"
+#include "StringUtils.h"
+
+// prevent the use of Windows Macros for file edit (are in conflict with Kodi's one)
+#ifdef WIN32
+#undef DeleteFile
+#endif
 
 static unsigned int logCount = 0;
 static std::string logFile;

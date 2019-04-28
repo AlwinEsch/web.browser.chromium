@@ -79,7 +79,7 @@ void CJSDialogHandler::OnJSDialogProcess(std::string origin_url,
     case JSDIALOGTYPE_PROMPT:
     {
       std::string text;
-      std::string header = StringUtils::Format(kodi::GetLocalizedString(30035).c_str(), message_text);
+      std::string header = StringUtils::Format(kodi::GetLocalizedString(30035).c_str(), message_text.c_str());
       bool ret = kodi::gui::dialogs::Keyboard::ShowAndGetInput(text, header, true, false);
       callback->Continue(ret, text);
       break;

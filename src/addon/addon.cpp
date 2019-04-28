@@ -29,7 +29,14 @@
 
 #include "include/cef_app.h"
 #include "include/cef_version.h"
+#ifdef WIN32
+#include "include/cef_sandbox_win.h"
+#endif
+#ifndef WIN32
 #include "include/wrapper/cef_library_loader.h"
+#endif
+#include "include/views/cef_textfield.h"
+
 
 #include <kodi/Filesystem.h>
 #include <kodi/gui/dialogs/OK.h>
@@ -40,12 +47,14 @@ int CWebBrowser::m_iUniqueClientId = 0;
 CWebBrowser::CWebBrowser()
   : m_guiManager(this)
 {
+
 }
 
 WEB_ADDON_ERROR CWebBrowser::StartInstance()
 {
   kodi::Log(ADDON_LOG_INFO, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
 
+#ifndef WIN32
   // Load CEF library by self
   std::string cefLib = kodi::GetAddonPath(LIBRARY_PREFIX "cef" LIBRARY_SUFFIX);
   if (!cef_load_library(cefLib.c_str()))
@@ -53,13 +62,10 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
     kodi::Log(ADDON_LOG_ERROR, "%s - Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
     return WEB_ADDON_ERROR_FAILED;
   }
-
+#endif
   // Check set of sandbox and if needed ask user about root password to set correct rights of them
   if (!SandboxControl::SetSandbox())
     return WEB_ADDON_ERROR_FAILED;
-
-  // Initialize widevine
-  WidevineControl::InitializeWidevine();
 
   // Set download path if not available
   if (kodi::GetSettingString("downloads.path").empty())
@@ -84,8 +90,8 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   m_strLibPath = path + "kodichromium";
 
   path = AddonSharePath();
-  m_strLocalesPath = path + "resources/cef/locales";
-  m_strResourcesPath = path + "resources/cef/";
+  m_strLocalesPath = path + "resources/locales";
+  m_strResourcesPath = path + "resources/";
 
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strHTMLCacheDir  %s", m_strHTMLCachePath.c_str());
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strCookiePath    %s", m_strCookiePath.c_str());
@@ -126,7 +132,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   m_cefSettings->enable_net_security_expiration      = 0;
   m_cefSettings->background_color                    = 0;
   CefString(&m_cefSettings->accept_language_list)    = language;
-  CefString(&m_cefSettings->kodi_addon_dir_path)     = path;
+  CefString(&m_cefSettings->kodi_addon_dir_path)     = kodi::GetAddonPath();
 
   kodi::Log(ADDON_LOG_DEBUG, "%s - Started web browser add-on process", __FUNCTION__);
 
@@ -140,21 +146,27 @@ void CWebBrowser::StopInstance()
   delete m_cefSettings;
   m_cefSettings = nullptr;
 
+#ifndef WIN32
   // unload cef library
   if (!cef_unload_library())
   {
     LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Failed to unload CEF library", __FUNCTION__);
     return;
   }
+#endif
 }
 
 bool CWebBrowser::MainInitialize()
 {
+#ifndef WIN32
   const char* cmdLine[3];
   cmdLine[0] = "";
   cmdLine[1] = "--disable-gpu";
   cmdLine[2] = "--disable-software-rasterizer";
   CefMainArgs args(3, (char**)cmdLine);
+#else
+  CefMainArgs args;
+#endif
   m_app = new CClientAppBrowser(this);
   if (!CefInitialize(args, *m_cefSettings, m_app, nullptr))
   {
@@ -235,6 +247,11 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
 
     CefWindowInfo info;
     info.SetAsWindowless(kNullWindowHandle);
+#ifdef WIN32
+    info.shared_texture_enabled = true;
+    info.external_begin_frame_enabled = false;
+#endif // WIN32
+
     CefBrowserSettings settings;
     settings.windowless_frame_rate              = static_cast<int>(pBrowserClient->GetFPS());
     CefString(&settings.standard_font_family)   = "";
@@ -264,7 +281,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
     settings.local_storage                      = STATE_DEFAULT;
     settings.databases                          = STATE_DEFAULT;
     settings.application_cache                  = STATE_DEFAULT;
-    settings.webgl                              = STATE_ENABLED;//STATE_DISABLED;//STATE_ENABLED
+    settings.webgl                              = STATE_ENABLED;
     settings.background_color                   = 0;
     CefString(&settings.accept_language_list)   = "";
 

@@ -26,7 +26,9 @@
 #include <kodi/gui/dialogs/OK.h>
 #include <kodi/gui/dialogs/YesNo.h>
 #include <kodi/gui/dialogs/Keyboard.h>
+#if defined(TARGET_LINUX)
 #include <unistd.h>
+#endif
 
 namespace SandboxControl
 {

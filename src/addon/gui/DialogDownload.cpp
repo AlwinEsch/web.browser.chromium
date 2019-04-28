@@ -17,6 +17,7 @@
  */
 
 #include "DialogDownload.h"
+#include "utils/StringUtils.h"
 #include "utils/Utils.h"
 
 #include <kodi/General.h>
@@ -25,7 +26,6 @@
 #include <kodi/gui/dialogs/OK.h>
 #include <kodi/gui/dialogs/YesNo.h>
 #include <kodi/util/XMLUtils.h>
-#include <p8-platform/util/StringUtils.h>
 #include <iomanip>
 #include <thread>
 
@@ -287,9 +287,9 @@ void CWebBrowserDownloadHandler::OnDownloadUpdated(CefRefPtr<CefBrowser> browser
 
   downloadItem->SetCanceled(download_item->IsCanceled());
   downloadItem->SetInProgress(download_item->IsInProgress());
-  downloadItem->SetProgressText(download_item->GetTotalBytes() / 1024 / 1024,
-                                download_item->GetReceivedBytes() / 1024 / 1024,
-                                download_item->GetPercentComplete());
+  downloadItem->SetProgressText(static_cast<long>(download_item->GetTotalBytes() / 1024 / 1024),
+                                static_cast<long>(download_item->GetReceivedBytes() / 1024 / 1024),
+                                static_cast<float>(download_item->GetPercentComplete()));
 
   if (download_item->IsComplete())
   {
@@ -421,7 +421,7 @@ bool CWebBrowserDownloadHandler::SaveDownloadHistory()
         XMLUtils::SetString(pHistoryNode, "name", entry.second->GetName().c_str());
         XMLUtils::SetString(pHistoryNode, "path", entry.second->GetPath().c_str());
         XMLUtils::SetString(pHistoryNode, "url", entry.second->GetURL().c_str());
-        XMLUtils::SetLong(pHistoryNode, "time", entry.second->GetDownloadTime());
+        XMLUtils::SetLong(pHistoryNode, "time", static_cast<long>(entry.second->GetDownloadTime()));
       }
     }
   }

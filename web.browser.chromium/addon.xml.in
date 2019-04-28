@@ -7,7 +7,7 @@
   <requires>@ADDON_DEPENDS@</requires>
   <extension
     point="kodi.web"
-    library_linux="@LIBRARY_FILENAME@">
+    library_@PLATFORM@="@LIBRARY_FILENAME@">
     <provides>webbrowser</provides>
   </extension>
   <extension point="xbmc.addon.metadata">

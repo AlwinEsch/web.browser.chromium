@@ -26,9 +26,10 @@ class IRenderer
 {
 public:
   IRenderer(CWebBrowserClient const* client);
-  virtual ~IRenderer();
+  virtual ~IRenderer() = default;
 
-  virtual void OnPaint(CefBrowserHost::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height) = 0;
+  virtual void OnPaint(CefBrowserHost::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height) { }
+  virtual void OnAcceleratedPaint(CefBrowserHost::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, void* shared_handle) { }
   void SetDirty() { m_dirty = true; }
   bool Dirty();
   
