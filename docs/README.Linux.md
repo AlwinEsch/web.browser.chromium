@@ -29,3 +29,5 @@ suggested by the README.
 3. `cd web.browser.chromium && mkdir build && cd build`
 4. `cmake -DADDONS_TO_BUILD=web.browser.chromium -DADDON_SRC_PREFIX=../.. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=$HOME/.kodi/addons -DPACKAGE_ZIP=1 -DTHIRD_PARTY_PATH=$HOME/chromium ../../kodi/cmake/addons`
 5. `make`
+
+**WARNING**:<br>The libcef.so (Chromium code and needed from addon) created in debug mode can be about 4 GB in size, so in this case the first Kodi start with this library can be extended a little bit (this is cached in the following starts and goes faster).
