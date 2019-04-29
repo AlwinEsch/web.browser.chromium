@@ -37,9 +37,9 @@ suggested by the README.
 1. `git clone https://github.com/AlwinEsch/kodi.git`
 2. `git clone https://github.com/AlwinEsch/web.browser.chromium.git`
 3. `cd web.browser.chromium && mkdir build && cd build`
-4. a. `cmake -G "Visual Studio 15" -T host=x64 -DADDONS_TO_BUILD=web.browser.chromium -DADDON_SRC_PREFIX=../.. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=C:/Users/<YOUR_USER_NAME>/AppData/Roaming/Kodi/addons -DPACKAGE_ZIP=1 -DTHIRD_PARTY_PATH="D:/chromium" ../../kodi/cmake/addons`
+4. a. `cmake -G "Visual Studio 15" -T host=x64 -DADDONS_TO_BUILD=web.browser.chromium -DADDON_SRC_PREFIX=../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:/Users/<YOUR_USER_NAME>/AppData/Roaming/Kodi/addons -DPACKAGE_ZIP=1 -DTHIRD_PARTY_PATH="D:/chromium" ../../kodi/cmake/addons`
 <br>or this for 64 bit build<br>
-   b. `cmake -G "Visual Studio 15 Win64" -T host=x64 -DADDONS_TO_BUILD=web.browser.chromium -DADDON_SRC_PREFIX=../.. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=C:/Users/<YOUR_USER_NAME>/AppData/Roaming/Kodi/addons -DPACKAGE_ZIP=1 -DTHIRD_PARTY_PATH="D:/chromium" ../../kodi/cmake/addons`
+   b. `cmake -G "Visual Studio 15 Win64" -T host=x64 -DADDONS_TO_BUILD=web.browser.chromium -DADDON_SRC_PREFIX=../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:/Users/<YOUR_USER_NAME>/AppData/Roaming/Kodi/addons -DPACKAGE_ZIP=1 -DTHIRD_PARTY_PATH="D:/chromium" ../../kodi/cmake/addons`
 5. `cmake --build . --config "Release"`
 
 > `THIRD_PARTY_PATH` here only as example, leave away to use `C:` or add something else. Also must `<YOUR_USER_NAME>` changed to your user name where Kodi's data becomes handled.
