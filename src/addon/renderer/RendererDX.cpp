@@ -170,6 +170,8 @@ void CRendererClientDirectX::OnAcceleratedPaint(CefBrowserHost::PaintElementType
   {
     m_browser_layer->on_paint(shared_handle);
   }
+
+  SetDirty();
 }
 
 void CRendererClientDirectX::Render()
