@@ -1024,7 +1024,7 @@ int StringUtils::FindEndBracket(const std::string &str, char opener, char closer
     }
   }
 
-  return (int)std::string::npos;
+  return -1;
 }
 
 void StringUtils::WordToDigits(std::string &word)

@@ -57,20 +57,22 @@ add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 PRINT_CEF_CONFIG()
 
 # Logical target used to link the libcef library.
-ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
+ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_RELEASE}" "${CEF_LIB_RELEASE}")
 
-if(APP_RENDER_SYSTEM STREQUAL "gl" OR NOT APP_RENDER_SYSTEM)
-  find_package(OpenGl REQUIRED)
-  set(DEPLIBS ${OPENGL_LIBRARIES})
-  set(INCLUDES ${OPENGL_INCLUDE_DIR})
-  add_definitions(${OPENGL_DEFINITIONS})
-elseif(APP_RENDER_SYSTEM STREQUAL "gles")
-  find_package(OpenGLES REQUIRED)
-  set(DEPLIBS ${OPENGLES_LIBRARIES})
-  set(INCLUDES ${OPENGLES_INCLUDE_DIR})
-  add_definitions(${OPENGLES_DEFINITIONS})
-elseif(APP_RENDER_SYSTEM STREQUAL "dx11")
+if(${CORE_SYSTEM_NAME} STREQUAL windows)
   add_definitions(-DHAS_DX)
+else()
+  if(APP_RENDER_SYSTEM STREQUAL "gl" OR NOT APP_RENDER_SYSTEM)
+    find_package(OpenGl REQUIRED)
+    set(DEPLIBS ${OPENGL_LIBRARIES})
+    set(INCLUDES ${OPENGL_INCLUDE_DIR})
+    add_definitions(${OPENGL_DEFINITIONS})
+  elseif(APP_RENDER_SYSTEM STREQUAL "gles")
+    find_package(OpenGLES REQUIRED)
+    set(DEPLIBS ${OPENGLES_LIBRARIES})
+    set(INCLUDES ${OPENGLES_INCLUDE_DIR})
+    add_definitions(${OPENGLES_DEFINITIONS})
+  endif()
 endif()
 
 if(ARCH STREQUAL x86_64)
@@ -107,8 +109,6 @@ include_directories(${INCLUDES}
 
 #-------------------------------------------------------------------------------
 
-set(USE_SANDBOX ON)
-
 set(KODICHROMIUM_BIN_SOURCES src/app/AppOther.cpp
                              src/app/renderer/AppRenderer.cpp
                              src/app/renderer/DOMVisitor.cpp
@@ -131,12 +131,6 @@ if(CORE_SYSTEM_NAME STREQUAL windows)
   if(USE_ATL)
     # Required by VS2013 to link accessibility API functions.
     target_link_libraries(kodichromium oleacc.lib)
-  endif()
-
-  if(USE_SANDBOX)
-    # Logical target used to link the cef_sandbox library.
-    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
-    target_link_libraries(kodichromium cef_sandbox_lib ${CEF_SANDBOX_STANDARD_LIBS})
   endif()
 
    # The by addon dll needed additional Sandbox binary application

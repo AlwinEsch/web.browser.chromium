@@ -105,7 +105,7 @@ if(CORE_SYSTEM_NAME STREQUAL windows)
   # work with longer (no matter what in Windows registry or somewhere is tried).
   set(THIRD_PARTY_PATH "C:/chromium" CACHE STRING "Chromium build directory")
 else()
-  set(THIRD_PARTY_PATH ${PROJECT_BINARY_DIR} CACHE STRING "Chromium build directory")
+  set(THIRD_PARTY_PATH ${PROJECT_BINARY_DIR}/chromium CACHE STRING "Chromium build directory")
 endif()
 set(DEPOT_TOOLS_DIR ${THIRD_PARTY_PATH}/depot_tools CACHE STRING "Depot_tools directory")
 
@@ -190,10 +190,8 @@ if(CORE_SYSTEM_NAME STREQUAL android)
 elseif(CORE_SYSTEM_NAME STREQUAL freebsd)
   set(GN_DEFINES "${GN_DEFINES} use_libpci=true") # TODO: Check supported!
 elseif(CORE_SYSTEM_NAME STREQUAL ios)
-  set(GN_DEFINES "${GN_DEFINES} use_libpci=true") # TODO: Check supported!
   set(GN_DEFINES "${GN_DEFINES} target_os=ios")
 elseif(CORE_SYSTEM_NAME STREQUAL osx)
-  set(GN_DEFINES "${GN_DEFINES} use_libpci=true") # TODO: Check supported!
   set(GN_DEFINES "${GN_DEFINES} target_os=mac")
 elseif(CORE_SYSTEM_NAME STREQUAL windows)
   set(GN_DEFINES "${GN_DEFINES} target_os=win")
@@ -220,6 +218,10 @@ if(CORE_SYSTEM_NAME STREQUAL windows)
   set(GN_ARGUMENTS                 "--ide=vs2017")
   set(GN_ARGUMENTS "${GN_ARGUMENTS} --sln=cef")
   set(GN_ARGUMENTS "${GN_ARGUMENTS} --filters=//cef/*")
+endif()
+
+if(CORE_SYSTEM_NAME STREQUAL osx)
+  set(AUTOMATE_EXTRA_FLAGS --x64-build)
 endif()
 
 #                                                                              |
@@ -312,7 +314,8 @@ ExternalProject_Add_Step(
                               --no-distrib
                               --no-build
                               --no-depot-tools-update
-                              #--force-clean
+                              ${AUTOMATE_EXTRA_FLAGS}
+#                              --force-clean
   COMMENT             "Performing download of Chromium from Web by automate-git.py from CEF"
   WORKING_DIRECTORY   ${THIRD_PARTY_PATH}/chromium_git
   DEPENDEES           download
@@ -393,17 +396,12 @@ endif()
 #                                                                              |
 
 # Build libcef as mandatory part
+set(NINJA_BUILD_TYPE Release_GN_${CEF_BUILD_CPU})
 set(NINJA_BUILD_PARTS "cef")
 
 # If linux add also sandbox build
 if(CORE_SYSTEM_NAME STREQUAL linux)
   list(APPEND NINJA_BUILD_PARTS "chrome_sandbox")
-  set(NINJA_BUILD_TYPE ${CMAKE_BUILD_TYPE}_GN_${CEF_BUILD_CPU})
-elseif(CORE_SYSTEM_NAME STREQUAL windows)
-  list(APPEND NINJA_BUILD_PARTS "cef_sandbox")
-  set(NINJA_BUILD_TYPE ${CMAKE_BUILD_TYPE}_GN_${CEF_BUILD_CPU}_sandbox)
-else()
-  set(NINJA_BUILD_TYPE ${CMAKE_BUILD_TYPE}_GN_${CEF_BUILD_CPU})
 endif()
 
 ExternalProject_Add(
@@ -424,15 +422,29 @@ ExternalProject_Add(
   DEPENDS             configure_chromium
 )
 
-ExternalProject_Add_Step(
-  build_chromium
-  builder
+if(CORE_SYSTEM_NAME STREQUAL windows)
+  ExternalProject_Add_Step(
+    build_chromium
+    builder
 
-  COMMAND             ninja -C out/${NINJA_BUILD_TYPE} ${NINJA_BUILD_PARTS}
-  COMMENT             "Run GN ninja build process"
-  WORKING_DIRECTORY   ${THIRD_PARTY_PATH}/chromium_git/chromium/src
-  DEPENDEES           build
-)
+    COMMAND             ninja -C out/${NINJA_BUILD_TYPE} ${NINJA_BUILD_PARTS}
+    COMMENT             "Run GN ninja build process"
+    WORKING_DIRECTORY   ${THIRD_PARTY_PATH}/chromium_git/chromium/src
+    DEPENDEES           build
+  )
+else()
+  ExternalProject_Add_Step(
+    build_chromium
+    builder
+
+    COMMAND             ${CMAKE_COMMAND} -E env GN_DEFINES=${GN_DEFINES}
+                                                PATH=$ENV{PATH}
+                                                ninja -C out/${NINJA_BUILD_TYPE} ${NINJA_BUILD_PARTS}
+    COMMENT             "Run GN ninja build process"
+    WORKING_DIRECTORY   ${THIRD_PARTY_PATH}/chromium_git/chromium/src
+    DEPENDEES           build
+  )
+endif()
 
 #                                                                              |
 #------------------------------------------------------------------------------*

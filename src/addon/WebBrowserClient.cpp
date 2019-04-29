@@ -623,7 +623,7 @@ void CWebBrowserClient::OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const 
 {
   CEF_REQUIRE_UI_THREAD();
 
-  unsigned int listSize = icon_urls.size();
+  size_t listSize = icon_urls.size();
 #ifdef DEBUG_LOGS
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "From currently opened web site given icon urls (first one used)");
   for (unsigned int i = 0; i < listSize; ++i)
