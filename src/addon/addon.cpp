@@ -1,19 +1,9 @@
 /*
- *      Copyright (C) 2015-2019 Team KODI
- *      http:/kodi.tv
+ *  Copyright (C) 2015-2019 Alwin Esch (Team Kodi)
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  SPDX-License-Identifier: GPL-3.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #include "addon.h"
@@ -36,7 +26,6 @@
 #include "include/wrapper/cef_library_loader.h"
 #endif
 #include "include/views/cef_textfield.h"
-
 
 #include <kodi/Filesystem.h>
 #include <kodi/gui/dialogs/OK.h>
@@ -63,6 +52,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
     return WEB_ADDON_ERROR_FAILED;
   }
 #endif
+
   // Check set of sandbox and if needed ask user about root password to set correct rights of them
   if (!SandboxControl::SetSandbox())
     return WEB_ADDON_ERROR_FAILED;
@@ -225,7 +215,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
 
   std::lock_guard<std::mutex> lock(m_mutex);
 
-  std::unordered_map<std::string, CWebBrowserClient*>::iterator itr = m_browserClientsInactive.find(sourceName);
+  auto itr = m_browserClientsInactive.find(sourceName);
   if (itr != m_browserClientsInactive.end())
   {
     LOG_INTERNAL_MESSAGE(ADDON_LOG_INFO, "%s - Found control in inactive mode and setting active", __FUNCTION__);

@@ -46,7 +46,7 @@
 #ifdef SHARED
 #define DLFCN_WIN32_EXPORTS
 #endif
-#include "dlfcn-win32.h"
+#include "dlfcn.h"
 
 #if ((defined(_WIN32) || defined(WIN32)) && (defined(_MSC_VER)) )
 #define snprintf sprintf_s

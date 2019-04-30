@@ -155,15 +155,15 @@ endif()
 
 set(KODICHROMIUM_CUSTOM_DATA ${CEF_ROOT}/Resources/) # TODO: icudtl.dat defined there but currently needed by dll folder
 set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS ${CEF_ROOT}/Resources/icudtl.dat) # icudtl.dat also required on addon binary folder
-set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS ${CEF_ROOT}/${CMAKE_BUILD_TYPE}/) # To have all Chromium lib parts on addon binary folder
+set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS ${CEF_ROOT}/Release/) # To have all Chromium lib parts on addon binary folder
 
 if(${CORE_SYSTEM_NAME} STREQUAL windows)
   set(KODICHROMIUM_SOURCES src/addon/renderer/RendererDX.cpp
                            src/addon/renderer/d3d11.cpp
-                           src/addon/utils/dlfcn-win32.cpp)
+                           src/addon/third_party/dlfcn-win32/dlfcn.c)
   set(KODICHROMIUM_HEADERS src/addon/renderer/RendererDX.h
                            src/addon/renderer/d3d11.h
-                           src/addon/utils/dlfcn-win32.h)
+                           src/addon/third_party/dlfcn-win32/dlfcn.h)
 else()
   set(KODICHROMIUM_SOURCES src/addon/renderer/RendererGL.cpp)
   set(KODICHROMIUM_HEADERS src/addon/renderer/RendererGL.h)
