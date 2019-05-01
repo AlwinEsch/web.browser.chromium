@@ -22,7 +22,10 @@ public:
   void OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int64 query_id) override;
 
 private:
-  bool ParseString(std::string& in, std::string& out, size_t& delim);
+  static bool ParseString(std::string& in, std::string& out, size_t& delim);
+
+  static void OnQueryProcess(std::string url, int64 query_id,
+                             std::string request, bool persistent, CefRefPtr<Callback> callback);
 
   CWebBrowserClient* m_client;
 };

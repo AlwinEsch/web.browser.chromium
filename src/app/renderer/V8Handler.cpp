@@ -12,6 +12,52 @@
 
 #include <kodi/General.h>
 
+/*
+ * VERY BIG TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ *
+ * Create Sandbox interface between here and Kodi to allow correct interact with V8 JavaScripts.
+ *
+ * With use of SendProcessMessage(...) or with script `window.cefQuery()` goes on Kodi's
+ * side over main loop and blocks the flow.
+ * Basically does it work and if on Kodi is not a website open with stream does it mostly work,
+ * but unsafe.
+ *
+ * With `window.cefQuery` are currently the most working where the call on Kodi main thread
+ * becomes separated to new Thread and this then do the callback for here.
+ *
+ * Also becomes it a bit muddled up if all Kodi addon interface functions are added by hand.
+ *
+ *
+ * JavaScript testcalls
+function test_kodi_Log()
+{
+  kodi.Log(ADDON_LOG_ERROR, "ADDON_LOG_ERROR test call");
+}
+
+function test_kodi_QueueNotification()
+{
+  kodi.QueueNotification({header:"Test call header", message:"Hello World!"});
+}
+
+function test_kodi_GetAddonInfo()
+{
+  kodi.GetAddonInfo('id', function(name) { alert("GetAddonInfo: "+name); });
+}
+
+function test_kodi_DialogOK()
+{
+  kodi.gui.dialogs.OK.ShowAndGetInput('Test', "Hello World!");
+}
+
+function test_kodi_DialogYesNo()
+{
+  kodi.gui.dialogs.YesNo.ShowAndGetInput('Test', "Hello World!", function(ret)
+  {
+    document.getElementById('yesNoRet').innerText = "returned "+ret;
+  });
+}
+ */
+
 bool CV8Handler::Execute(const CefString& name,
                          CefRefPtr<CefV8Value> object,
                          const CefV8ValueList& arguments,
@@ -21,36 +67,7 @@ bool CV8Handler::Execute(const CefString& name,
   if (!m_renderer->GetBrowser())
     return false;
 
-  if (name == "Log")
-  {
-    CefRefPtr<CefV8Value> opt = arguments[0];
-    AddonLog level;
-    std::string message = "(" + CefV8StackTrace::GetCurrent(1)->GetFrame(0)->GetScriptNameOrSourceURL().ToString() + ") ";
-    if (!opt->HasValue("message"))
-    {
-      if (arguments.size() != 2)
-      {
-        exception = "Invalid values on '" + name.ToString() + "'";
-        return true;
-      }
-
-      level = static_cast<AddonLog>(arguments.at(0)->GetIntValue());
-      message += arguments.at(1)->GetStringValue();
-    }
-    else
-    {
-      level = opt->HasValue("level") ? static_cast<AddonLog>(opt->GetValue("level")->GetIntValue()) : ADDON_LOG_INFO;
-      message += opt->GetValue("message")->GetStringValue();
-    }
-
-    CefRefPtr<CefProcessMessage> browserMessage = CefProcessMessage::Create(RendererMessage::V8AddonCall);
-    browserMessage->GetArgumentList()->SetString(0, name);
-    browserMessage->GetArgumentList()->SetInt(1, level);
-    browserMessage->GetArgumentList()->SetString(2, message);
-    m_renderer->GetBrowser()->SendProcessMessage(PID_BROWSER, browserMessage);
-    return true;
-  }
-  else if (name == "QueueNotification")
+  if (name == "QueueNotification")
   {
     CefRefPtr<CefV8Value> opt = arguments[0];
 
@@ -80,6 +97,7 @@ bool CV8Handler::Execute(const CefString& name,
     m_renderer->GetBrowser()->SendProcessMessage(PID_BROWSER, browserMessage);
     return true;
   }
+
   return false;
 }
 
@@ -90,6 +108,10 @@ void CV8Handler::OnWebKitInitialized(CWebAppRenderer* renderer)
     "var kodi;"
     "if (!kodi) {"
     "    kodi = {};"
+    "    kodi.gui = {};"
+    "    kodi.gui.dialogs = {};"
+    "    kodi.gui.dialogs.OK = {};"
+    "    kodi.gui.dialogs.YesNo = {};"
     "}"
     "const QUEUE_INFO = " + std::to_string(QUEUE_INFO) + ";"
     "const QUEUE_WARNING = " + std::to_string(QUEUE_WARNING) + ";"
@@ -113,15 +135,55 @@ void CV8Handler::OnWebKitInitialized(CWebAppRenderer* renderer)
     "const ADDON_LOG_FATAL = " + std::to_string(ADDON_LOG_FATAL) + ";"
     ""
     "(function() {"
-    "  kodi.Log = function(name, arguments) {"
-    "    native function Log();"
-    "    return Log(name, arguments);"
+    "  kodi.Log = function(level, text) {"
+    "    window.cefQuery({"
+    "      request: 'kodi.Log '+level+':'+text ,"
+    "      onSuccess: function(response) {},"
+    "      onFailure: function(error_code, error_message) {}"
+    "    });"
     "  };"
     "  kodi.QueueNotification = function(options) {"
     "    native function QueueNotification();"
     "    return QueueNotification(options);"
     "  };"
+    "  kodi.GetAddonInfo = function(id, cb) {"
+    "    window.cefQuery({"
+    "      request: 'kodi.GetAddonInfo '+id ,"
+    "      onSuccess: function(response) {"
+    "        cb(response);"
+    "      },"
+    "      onFailure: function(error_code, error_message) {"
+    "        alert(error_message);"
+    "      }"
+    "    });"
+    "  };"
+    "  kodi.gui.dialogs.OK.ShowAndGetInput = function(heading, text, cb) {"
+    "    window.cefQuery({"
+    "      request: 'kodi.gui.dialog.OK.ShowAndGetInput '+heading+':'+text ,"
+    "      onSuccess: function(response) {"
+    "        if (cb)"
+    "          cb();"
+    "      },"
+    "      onFailure: function(error_code, error_message) {"
+    "        alert(error_message);"
+    "      }"
+    "    });"
+    "  };"
+    "  kodi.gui.dialogs.YesNo.ShowAndGetInput = function(heading, text, cb) {"
+    "    window.cefQuery({"
+    "      request: 'kodi.gui.dialog.YesNo.ShowAndGetInput '+heading+':'+text ,"
+    "      onSuccess: function(response) {"
+    "        if (cb)"
+    "          cb(true);"
+    "      },"
+    "      onFailure: function(error_code, error_message) {"
+    "        if (cb)"
+    "          cb(false);"
+    "      }"
+    "    });"
+    "  };"
     "})();";
 
   CefRegisterExtension("kodi", app_code, new CV8Handler(renderer));
 }
+

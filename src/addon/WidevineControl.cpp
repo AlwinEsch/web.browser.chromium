@@ -32,6 +32,7 @@
 
 namespace WidevineControl
 {
+
   class CRegisterCdmCallback : public CefRegisterCdmCallback
   {
   public:
@@ -176,4 +177,4 @@ namespace WidevineControl
     return true;
   }
 
-}
+} /* namespace WidevineControl */

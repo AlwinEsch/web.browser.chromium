@@ -13,6 +13,10 @@
 #include <algorithm>
 #include <string>
 
+/*
+ * Scheme handler for: kodi://home/index.html
+ */
+
 bool CSchemeKodiHandler::ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback)
 {
   CEF_REQUIRE_IO_THREAD();
