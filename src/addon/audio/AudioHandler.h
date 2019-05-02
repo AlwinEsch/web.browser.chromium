@@ -29,6 +29,5 @@ public:
 private:
   IMPLEMENT_REFCOUNTING(CAudioHandler);
 
-  unsigned int m_frames;
   std::map<int, kodi::audioengine::CAddonAEStream*> m_audioStreams;
 };
