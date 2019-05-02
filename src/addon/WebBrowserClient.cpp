@@ -42,7 +42,7 @@
 #include <sstream>
 #include <string>
 
-#define DEBUG_LOGS
+//#define DEBUG_LOGS
 
 #define ZOOM_MULTIPLY 25.0
 

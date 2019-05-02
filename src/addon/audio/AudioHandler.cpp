@@ -11,9 +11,8 @@
 void CAudioHandler::OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int audio_stream_id, int channels, ChannelLayout channel_layout,
                                          int sample_rate, int frames_per_buffer)
 {
-  m_frames = 0;
   AudioEngineFormat format;
-  format.m_dataFormat = AE_FMT_FLOAT;
+  format.m_dataFormat = AE_FMT_FLOATP;
   format.m_channelCount = channels;
   int ptr = 0;
   switch (channel_layout)
@@ -298,9 +297,10 @@ void CAudioHandler::OnAudioStreamPacket(CefRefPtr<CefBrowser> browser,
                                         const float** data,
                                         int frames, int64_t pts)
 {
+
   const auto& handler = m_audioStreams.find(audio_stream_id);
   if (handler != m_audioStreams.end())
-    handler->second->AddData((uint8_t* const *)(&data), 0, frames, pts);
+    handler->second->AddData((uint8_t* const *)(data), 0, frames, pts);
 }
 
 void CAudioHandler::OnAudioStreamStopped(CefRefPtr<CefBrowser> browser,

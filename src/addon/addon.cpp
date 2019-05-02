@@ -54,8 +54,8 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
 #endif
 
   // Check set of sandbox and if needed ask user about root password to set correct rights of them
-  if (!SandboxControl::SetSandbox())
-    return WEB_ADDON_ERROR_FAILED;
+//   if (!SandboxControl::SetSandbox())
+//     return WEB_ADDON_ERROR_FAILED;
 
   // Set download path if not available
   if (kodi::GetSettingString("downloads.path").empty())

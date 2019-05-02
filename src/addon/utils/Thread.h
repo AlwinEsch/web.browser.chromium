@@ -69,10 +69,11 @@ public:
   {
     bool bReturn(false);
     std::unique_lock<std::mutex> lock(m_threadMutex);
-    if (!IsRunning())
+    if (!m_running)
     {
       m_stop = false;
       m_thread = std::thread(CThread::ThreadHandler, this);
+      m_thread.detach();
       if (m_thread.joinable())
       {
         if (wait)
