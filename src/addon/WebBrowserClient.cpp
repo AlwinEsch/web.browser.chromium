@@ -551,6 +551,15 @@ CefRefPtr<CefRenderHandler> CWebBrowserClient::GetRenderHandler()
   return m_renderer;
 }
 
+CefRefPtr<CefResourceRequestHandler> CWebBrowserClient::GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                                                                  CefRefPtr<CefRequest> request, bool is_navigation,
+                                                                                  bool is_download, const CefString& request_initiator,
+                                                                                  bool& disable_default_handling)
+{
+  CEF_REQUIRE_IO_THREAD();
+  return this;
+}
+
 
 
 
@@ -784,25 +793,10 @@ void CWebBrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 }
 //@}
 
-/// CefRequestHandler methods
+/// CefResourceRequestHandler methods
 //@{
-bool CWebBrowserClient::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect)
-{
-  CEF_REQUIRE_UI_THREAD();
-
-  m_messageRouter->OnBeforeBrowse(browser, frame);
-  return false;
-}
-
-bool CWebBrowserClient::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url,
-                                         CefRequestHandler::WindowOpenDisposition target_disposition, bool user_gesture)
-{
-  fprintf(stderr, "--> %s\n", __FUNCTION__);
-  return false;
-}
-
-CefRequestHandler::ReturnValue CWebBrowserClient::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                                                                       CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
+CefResourceRequestHandler::ReturnValue CWebBrowserClient::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                                                               CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
 {
   CEF_REQUIRE_IO_THREAD();
 
@@ -824,7 +818,6 @@ CefRefPtr<CefResourceHandler> CWebBrowserClient::GetResourceHandler(CefRefPtr<Ce
   CEF_REQUIRE_IO_THREAD();
 
   return m_resourceManager->GetResourceHandler(browser, frame, request);
-  return nullptr;
 }
 
 void CWebBrowserClient::OnResourceRedirect(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
@@ -859,6 +852,36 @@ bool CWebBrowserClient::OnResourceResponse(CefRefPtr<CefBrowser> browser, CefRef
   return false;
 }
 
+void CWebBrowserClient::OnProtocolExecution(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                            CefRefPtr<CefRequest> request, bool& allow_os_execution)
+{
+  CEF_REQUIRE_IO_THREAD();
+
+  std::string urlStr = request->GetURL();
+
+  // Allow OS execution of Spotify URIs.
+  if (urlStr.find("spotify:") == 0)
+    allow_os_execution = true;
+}
+//@}
+
+/// CefRequestHandler methods
+//@{
+bool CWebBrowserClient::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect)
+{
+  CEF_REQUIRE_UI_THREAD();
+
+  m_messageRouter->OnBeforeBrowse(browser, frame);
+  return false;
+}
+
+bool CWebBrowserClient::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url,
+                                         CefRequestHandler::WindowOpenDisposition target_disposition, bool user_gesture)
+{
+  fprintf(stderr, "--> %s\n", __FUNCTION__);
+  return false;
+}
+
 bool CWebBrowserClient::GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, bool isProxy, const CefString& host,
                                            int port, const CefString& realm, const CefString& scheme, CefRefPtr<CefAuthCallback> callback)
 {
@@ -882,16 +905,6 @@ bool CWebBrowserClient::OnQuotaRequest(CefRefPtr<CefBrowser> browser, const CefS
   return true;
 }
 
-void CWebBrowserClient::OnProtocolExecution(CefRefPtr<CefBrowser> browser, const CefString& url, bool& allow_os_execution)
-{
-  CEF_REQUIRE_UI_THREAD();
-
-  std::string urlStr = url;
-
-  // Allow OS execution of Spotify URIs.
-  if (urlStr.find("spotify:") == 0)
-    allow_os_execution = true;
-}
 
 bool CWebBrowserClient::OnCertificateError(CefRefPtr<CefBrowser> browser, ErrorCode cert_error,
                                            const CefString& request_url, CefRefPtr<CefSSLInfo> ssl_info,

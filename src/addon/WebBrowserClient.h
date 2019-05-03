@@ -39,10 +39,11 @@ class CWebBrowserClient
   : public kodi::addon::CWebControl,
     public CefClient,
     public CefDisplayHandler,
-    public CefLifeSpanHandler,
     public CefFindHandler,
+    public CefLifeSpanHandler,
+    public CefLoadHandler,
     public CefRequestHandler,
-    public CefLoadHandler
+    public CefResourceRequestHandler
 {
 public:
   CWebBrowserClient(KODI_HANDLE handle, int iUniqueClientId, const std::string& startURL, CWebBrowser* instance);
@@ -54,6 +55,9 @@ public:
   CefRefPtr<CefDownloadHandler> GetDownloadHandler() override;
   CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
   CefRefPtr<CefRenderHandler> GetRenderHandler() override;
+  CefRefPtr<CefResourceRequestHandler> GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                                                 CefRefPtr<CefRequest> request, bool is_navigation, bool is_download,
+                                                                 const CefString& request_initiator, bool& disable_default_handling) override;
 
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
@@ -131,23 +135,34 @@ public:
                             int activeMatchOrdinal, bool finalUpdate) override;
   //@}
 
-  /// CefRequestHandler methods
+  /// CefResourceRequestHandler methods
   //@{
-  bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect) override;
-  bool OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url,
-                        CefRequestHandler::WindowOpenDisposition target_disposition, bool user_gesture) override;
-  CefRequestHandler::ReturnValue OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                                                      CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback) override;
+  CefRefPtr<CefCookieAccessFilter> GetCookieAccessFilter(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                                         CefRefPtr<CefRequest> request) override { return nullptr; }
+  CefResourceRequestHandler::ReturnValue OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                                              CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback) override;
   CefRefPtr<CefResourceHandler> GetResourceHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                    CefRefPtr<CefRequest> request) override;
   void OnResourceRedirect(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                           CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response, CefString& new_url) override;
   bool OnResourceResponse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                           CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response) override;
+  CefRefPtr<CefResponseFilter> GetResourceResponseFilter(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                                         CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response) override { return nullptr; }
+  void OnResourceLoadComplete(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request,
+                              CefRefPtr<CefResponse> response, URLRequestStatus status, int64 received_content_length) override {}
+  void OnProtocolExecution(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request,
+                           bool& allow_os_execution) override;
+  //@}
+
+  /// CefRequestHandler methods
+  //@{
+  bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect) override;
+  bool OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url,
+                        CefRequestHandler::WindowOpenDisposition target_disposition, bool user_gesture) override;
   bool GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, bool isProxy, const CefString& host,
                           int port, const CefString& realm, const CefString& scheme, CefRefPtr<CefAuthCallback> callback) override;
   bool OnQuotaRequest(CefRefPtr<CefBrowser> browser, const CefString& origin_url, int64 new_size, CefRefPtr<CefRequestCallback> callback) override;
-  void OnProtocolExecution(CefRefPtr<CefBrowser> browser, const CefString& url, bool& allow_os_execution) override;
   bool OnCertificateError(CefRefPtr<CefBrowser> browser, ErrorCode cert_error, const CefString& request_url,
                           CefRefPtr<CefSSLInfo> ssl_info, CefRefPtr<CefRequestCallback> callback) override;
   void OnPluginCrashed(CefRefPtr<CefBrowser> browser, const CefString& plugin_path) override;
