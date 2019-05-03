@@ -1,0 +1,93 @@
+<html>
+<head>
+<title>Dialog Test</title>
+<script>
+function show_alert() {
+  alert("I am an alert box!");
+}
+
+function show_confirm() {
+  var r = confirm("Press a button");
+  var msg = r ? "You pressed OK!" : "You pressed Cancel!";
+  document.getElementById('cm').innerText = msg;
+}
+
+function show_prompt() {
+  var name = prompt("Please enter your name" ,"Harry Potter");
+  if (name != null && name != "")
+    document.getElementById('pm').innerText = "Hello " + name + "!";
+}
+
+window.onbeforeunload = function() {
+  return 'This is an onbeforeunload message.';
+}
+
+function update_time() {
+  document.getElementById('time').innerText = new Date().toLocaleString();
+}
+
+function setup() {
+  update_time();
+  setInterval(update_time, 1000);
+
+//   if (location.hostname != 'tests' && location.hostname != 'localhost') {
+//     alert('Parts of this page can only be run from tests or localhost.');
+//     return;
+//   }
+
+  // Enable all elements.
+  var elements = document.getElementById("form").elements;
+  for (var i = 0, element; element = elements[i++]; ) {
+    element.disabled = false;
+  }
+}
+
+function test_kodi_Log()
+{
+  kodi.Log(ADDON_LOG_ERROR, "ADDON_LOG_ERROR test call");
+}
+
+function test_kodi_QueueNotification()
+{
+  kodi.QueueNotification({header:"Test call header", message:"Hello World!"});
+}
+
+function test_kodi_GetAddonInfo()
+{
+  kodi.GetAddonInfo('id', function(name) { alert("GetAddonInfo: "+name); });
+}
+
+function test_kodi_DialogOK()
+{
+  kodi.gui.dialogs.OK.ShowAndGetInput('Test', "Hello World!");
+}
+
+function test_kodi_DialogYesNo()
+{
+  kodi.gui.dialogs.YesNo.ShowAndGetInput('Test', "Hello World!", function(ret)
+  {
+    document.getElementById('yesNoRet').innerText = "returned "+ret;
+  });
+}
+
+
+window.addEventListener('load', setup, false);
+</script>
+</head>
+<body bgcolor="white">
+<form id="form">
+Click a button to show the associated dialog type.
+<br/><input type="button" onclick="show_alert();" value="Show Alert">
+<br/><input type="button" onclick="show_confirm();" value="Show Confirm"> <span id="cm"></span>
+<br/><input type="button" onclick="show_prompt();" value="Show Prompt"> <span id="pm"></span>
+<br/>input type="file": <input type="file" name="pic" accept="text/*,.js,.css,image/*">
+
+<br/><input type="button" onclick="test_kodi_Log();" value="Test: kodi.Log(level, str)" disabled="false">
+<br/><input type="button" onclick="test_kodi_QueueNotification();" value="Test: kodi.QueueNotification(...)" disabled="false">
+<br/><input type="button" onclick="test_kodi_GetAddonInfo();" value="Test: kodi.GetAddonInfo(id)" disabled="false">
+<br/><input type="button" onclick="test_kodi_DialogOK();" value="Test: kodi.gui.dialogs.OK.ShowAndGetInput(...)" disabled="false">
+<br/><input type="button" onclick="test_kodi_DialogYesNo();" value="Test: kodi.gui.dialogs.YesNo.ShowAndGetInput(...)" disabled="false"> <span id="yesNoRet"></span>
+<p id="time"></p>
+</form>
+</body>
+</html>
