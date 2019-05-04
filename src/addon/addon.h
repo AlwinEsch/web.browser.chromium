@@ -29,7 +29,7 @@ class ATTRIBUTE_HIDDEN CWebBrowser
 {
 public:
   CWebBrowser();
-  ~CWebBrowser() = default;
+  ~CWebBrowser() override = default;
 
   // ---------------------------------------------------------------------------
   // Kodi interface parts

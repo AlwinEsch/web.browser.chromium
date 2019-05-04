@@ -38,6 +38,11 @@ CWebBrowser::CWebBrowser()
 
 }
 
+/*
+ * StartInstance() is called from Kodi by other thread as main.
+ * Here becomes the set of data done and the user asked by Dialogs for mandatory
+ * settings.
+ */
 WEB_ADDON_ERROR CWebBrowser::StartInstance()
 {
   kodi::Log(ADDON_LOG_INFO, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
@@ -124,6 +129,9 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   return WEB_ADDON_ERROR_NO_ERROR;
 }
 
+/*
+ * StopInstance() is called from Kodi by other thread as main.
+ */
 void CWebBrowser::StopInstance()
 {
   // deleted the created settings class
@@ -140,6 +148,18 @@ void CWebBrowser::StopInstance()
   }
 #endif
 }
+
+/*
+ * MainInitialize(), MainLoop() and MainShutdown() are called from Kodi main
+ * thread!
+ *
+ * Due to special thread checks inside Chromium is it no more possible to run
+ * over different thread as main.
+ *
+ * Further is the for rendering done stream also mandatory to use main thread.
+ * It use on Direct X shared textures between two processes and CEF brings
+ * soon a shared memory usage to give GL rendering from sandbox to this.
+ */
 
 bool CWebBrowser::MainInitialize()
 {
@@ -238,6 +258,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
 #endif // WIN32
 
     CefBrowserSettings settings;
+    //TODO Check CefBrowserHost::SetWindowlessFrameRate(...) usable for streams?
     settings.windowless_frame_rate              = static_cast<int>(pBrowserClient->GetFPS());
     CefString(&settings.standard_font_family)   = "";
     CefString(&settings.fixed_font_family)      = "";
@@ -249,7 +270,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
     settings.default_fixed_font_size            = 0;
     settings.minimum_font_size                  = 0;
     settings.minimum_logical_font_size          = 0;
-    CefString(&settings.default_encoding)       = "";
+    CefString(&settings.default_encoding)       = ""; // "ISO-8859-1" if empty
     settings.remote_fonts                       = STATE_DEFAULT;
     settings.javascript                         = STATE_ENABLED;
     settings.javascript_close_windows           = STATE_DEFAULT;
@@ -267,10 +288,9 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
     settings.databases                          = STATE_DEFAULT;
     settings.application_cache                  = STATE_DEFAULT;
     settings.webgl                              = STATE_ENABLED;
-    settings.background_color                   = 0;
+    settings.background_color                   = 0x00; // fully transparent
     CefString(&settings.accept_language_list)   = "";
 
-    ///TODO Change CefRequestContext::GetGlobalContext() to a use of own CefRequestContextSettings?
     CefRefPtr<CefRequestContext> request_context = CefRequestContext::CreateContext(CefRequestContext::GetGlobalContext(),
                                                                                     new CRequestContextHandler);
     if (!CefBrowserHost::CreateBrowser(info, pBrowserClient, "", settings, request_context))

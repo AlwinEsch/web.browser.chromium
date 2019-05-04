@@ -13,11 +13,9 @@
 #include "DialogFile.h"
 #include "DialogKeyboard.h"
 
-#include "utils/Thread.h"
-
 class CWebBrowser;
 
-class CBrowserGUIManager : public CThread
+class CBrowserGUIManager
 {
 public:
   CBrowserGUIManager(CWebBrowser* instance);
@@ -29,9 +27,6 @@ public:
   CefRefPtr<CWebBrowserDownloadHandler> GetDownloadDialog() { return &m_download; }
   CefRefPtr<CBrowserDialogFile> GetFileDialog() { return m_file; }
   CBrowserDialogKeyboard& GetKeyboard() { return m_keyboard; }
-
-protected:
-  void Process() override;
 
 private:
   CWebBrowser* m_instance;
