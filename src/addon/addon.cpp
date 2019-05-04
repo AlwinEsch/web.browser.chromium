@@ -163,6 +163,8 @@ void CWebBrowser::StopInstance()
 
 bool CWebBrowser::MainInitialize()
 {
+  WidevineControl::InitializeWidevine();
+
 #ifndef WIN32
   const char* cmdLine[3];
   cmdLine[0] = "";
