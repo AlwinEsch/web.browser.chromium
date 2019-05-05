@@ -11,6 +11,7 @@
 #include "AppBrowser.h"
 #include "MessageIds.h"
 #include "RequestContextHandler.h"
+#include "SandboxControl.h"
 #include "WebBrowserClient.h"
 #include "WidevineControl.h"
 #include "utils/Utils.h"
@@ -56,6 +57,10 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
     return WEB_ADDON_ERROR_FAILED;
   }
 #endif
+
+  // Check set of sandbox and if needed ask user about root password to set correct rights of them
+  if (!SandboxControl::SetSandbox())
+    return WEB_ADDON_ERROR_FAILED;
 
   // Set download path if not available
   if (kodi::GetSettingString("downloads.path").empty())

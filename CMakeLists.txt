@@ -172,6 +172,7 @@ endif()
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/AppBrowser.cpp
                                  src/addon/RequestContextHandler.cpp
+                                 src/addon/SandboxControl.cpp
                                  src/addon/SchemeKodi.cpp
                                  src/addon/URICheckHandler.cpp
                                  src/addon/WebBrowserClient.cpp
@@ -201,6 +202,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
 list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/AppBrowser.h
                                  src/addon/RequestContextHandler.h
+                                 src/addon/SandboxControl.h
                                  src/addon/SchemeKodi.h
                                  src/addon/URICheckHandler.h
                                  src/addon/WebBrowserClient.h
