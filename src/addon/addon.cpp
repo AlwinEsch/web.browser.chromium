@@ -69,6 +69,9 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
     kodi::SetSettingString("downloads.path", path);
   }
 
+  // Initialize DRM widevine
+  WidevineControl::InitializeWidevine();
+
   // Set below the for CEF required paths
   std::string path;
 
@@ -163,8 +166,6 @@ void CWebBrowser::StopInstance()
 
 bool CWebBrowser::MainInitialize()
 {
-  WidevineControl::InitializeWidevine();
-
 #ifndef WIN32
   const char* cmdLine[3];
   cmdLine[0] = "";
