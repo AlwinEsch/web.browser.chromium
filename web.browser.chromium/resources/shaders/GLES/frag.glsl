@@ -1,11 +1,17 @@
-#ifndef GL_ES
-#define lowp
-#endif
+#version 130
 
-uniform sampler2D m_samp;
-varying lowp vec4 m_cord;
+// uniforms
+uniform sampler2D u_sampler;
+uniform bool u_clearColor;
+uniform vec4 u_backgroundColor;
 
-void main ()
+// varyings
+varying vec2 v_coord;
+
+void main()
 {
-  gl_FragColor = vec4(texture2D(m_samp, m_cord.xy));
+  if (u_clearColor)
+    gl_FragColor = u_backgroundColor;
+  else
+    gl_FragColor = vec4(texture2D(u_sampler, v_coord));
 }

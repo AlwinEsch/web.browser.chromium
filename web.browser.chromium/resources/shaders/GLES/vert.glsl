@@ -1,14 +1,17 @@
-attribute vec4 m_attrpos;
-attribute vec4 m_attrcord;
+#version 130
 
-varying vec4 m_cord;
+// uniforms
+uniform mat4 u_modelProjMatrix;
 
-uniform mat4 m_proj;
-uniform mat4 m_model;
+// attributes
+attribute vec4 a_position;
+attribute vec2 a_coord;
 
-void main ()
+// varyings
+varying vec2 v_coord;
+
+void main()
 {
-  mat4 mvp = m_proj * m_model;
-  gl_Position = mvp * m_attrpos;
-  m_cord = m_attrcord;
+  gl_Position = u_modelProjMatrix * a_position;
+  v_coord = a_coord;
 }
