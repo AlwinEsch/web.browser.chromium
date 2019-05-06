@@ -1,5 +1,3 @@
-#version 100
-
 // uniforms
 uniform mat4 u_modelProjMatrix;
 

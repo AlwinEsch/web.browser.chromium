@@ -11,7 +11,7 @@
 #include "addon.h"
 #include "WebBrowserClient.h"
 
-#if defined(HAS_GL) | defined(HAS_GLES2)
+#if defined(HAS_GL) | defined(HAS_GLES)
 #include "RendererGL.h"
 #elif defined(HAS_DX)
 #include "RendererDX.h"
@@ -27,7 +27,7 @@
 
 CRendererClient::CRendererClient(CWebBrowserClient* client) : m_client(client)
 {
-#if defined(HAS_GL) || defined(HAS_GLES2)
+#if defined(HAS_GL) || defined(HAS_GLES)
   m_renderer = new CRendererClientOpenGL(m_client);
 #elif defined(HAS_DX)
   m_renderer = new CRendererClientDirectX(m_client);

@@ -1,5 +1,3 @@
-#version 100
-
 // uniforms
 uniform sampler2D u_sampler;
 uniform bool u_clearColor;

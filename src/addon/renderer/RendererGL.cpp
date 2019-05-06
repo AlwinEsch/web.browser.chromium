@@ -23,7 +23,7 @@
     #define GL_UNPACK_SKIP_ROWS GL_UNPACK_SKIP_ROWS_EXT
     #define GL_UNPACK_SKIP_PIXELS GL_UNPACK_SKIP_PIXELS_EXT
   #else
-    #undef HAS_GLES2
+    #undef HAS_GLES
   #endif
 #endif
 
@@ -72,8 +72,8 @@ CRendererClientOpenGL::~CRendererClientOpenGL()
 
 bool CRendererClientOpenGL::Initialize()
 {
-  std::string fraqShader = kodi::GetAddonPath("resources/shaders/" GL_TYPE_STRING "/frag.glsl");
-  std::string vertShader = kodi::GetAddonPath("resources/shaders/" GL_TYPE_STRING "/vert.glsl");
+  std::string vertShader, fraqShader;
+  GetShaderPath(vertShader, fraqShader);
   if (!LoadShaderFiles(vertShader, fraqShader) || !CompileAndLink())
   {
     kodi::Log(ADDON_LOG_ERROR, "Failed to create or compile shader");
@@ -233,8 +233,8 @@ void CRendererClientOpenGL::Render()
   glDisableVertexAttribArray(m_aPosition);
   glDisableVertexAttribArray(m_aCoord);
 
-#elif defined(HAS_GLES2)
-  glVertexAttribPointer(m_aPosition, 2, GL_FLOAT, 0, 0, m_vertexPos);
+#elif defined(HAS_GLES)
+  glVertexAttribPointer(m_aPosition, 3, GL_FLOAT, 0, 0, m_vertexPos);
   glEnableVertexAttribArray(m_aPosition);
 
   glVertexAttribPointer(m_aCoord, 2, GL_FLOAT, 0, 0, m_vertexCoord);
@@ -327,4 +327,37 @@ bool CRendererClientOpenGL::OnEnabled()
   glUniformMatrix4fv(m_uModelProjMatrix, 1, GL_FALSE, glm::value_ptr(m_modelProjMat));
   glUniform4f(m_uBackgroundColor, m_backgroundColor[0], m_backgroundColor[1], m_backgroundColor[2], m_backgroundColor[3]);
   return true;
+}
+
+void CRendererClientOpenGL::GetShaderPath(std::string& vert, std::string& frag)
+{
+  std::string path;
+
+#if defined(HAS_GL)
+  int glslMajor = 0;
+  int glslMinor = 0;
+
+  const char* ver = reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+  if (ver)
+  {
+    sscanf(ver, "%d.%d", &glslMajor, &glslMinor);
+  }
+  else
+  {
+    glslMajor = 1;
+    glslMinor = 0;
+  }
+
+  if (glslMajor >= 2 || (glslMajor == 1 && glslMinor >= 50))
+    path = kodi::GetAddonPath("resources/shaders/GL/1.5/");
+  else
+    path = kodi::GetAddonPath("resources/shaders/GL/1.2/");
+#else
+  path = kodi::GetAddonPath("resources/shaders/GLES/");
+#endif
+
+  kodi::Log(ADDON_LOG_DEBUG, "Used addon shader language path: '%s'", path.c_str());
+
+  vert = path + "/vert.glsl";
+  frag = path + "/frag.glsl";
 }

@@ -37,6 +37,8 @@ public:
   bool OnEnabled() override;
 
 private:
+  void GetShaderPath(std::string& vert, std::string& frag);
+
   glm::mat4 m_modelProjMat = glm::mat4(1.0f);
   glm::vec3 m_vertexPos[4];
   glm::vec2 m_vertexCoord[4];
