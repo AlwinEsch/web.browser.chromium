@@ -15,11 +15,11 @@
 #include <sstream>
 
 void CURICheck::LoadErrorPage(CefRefPtr<CefFrame> frame,
-                   const std::string& failed_url,
-                   cef_errorcode_t error_code,
-                   const std::string& other_info)
+                              const std::string& failed_url,
+                              cef_errorcode_t error_code,
+                              const std::string& other_info)
 {
-    std::stringstream ss;
+  std::stringstream ss;
   ss << "<html><head><title>"<< kodi::GetLocalizedString(30133) << "</title></head>"
         "<body bgcolor=\"white\">"
         "<h3>"<< kodi::GetLocalizedString(30133) << ".</h3>"
@@ -37,8 +37,8 @@ void CURICheck::LoadErrorPage(CefRefPtr<CefFrame> frame,
 
 std::string CURICheck::GetCertStatusString(cef_cert_status_t status)
 {
-#define FLAG(flag)                          \
-  if (status & flag) {                      \
+#define FLAG(flag)                \
+  if (status & flag) {            \
     result += std::string(#flag); \
   }
 

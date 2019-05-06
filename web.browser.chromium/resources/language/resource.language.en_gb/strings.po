@@ -314,6 +314,8 @@ msgctxt "#30133"
 msgid "Page failed to load"
 msgstr ""
 
+# Empty places
+
 msgctxt "#30188"
 msgid "Start URL"
 msgstr ""
@@ -331,24 +333,21 @@ msgctxt "#30191"
 msgid "Logging"
 msgstr ""
 
+# Empty places
+
 #: Settings group entry
-msgctxt "#30192"
+msgctxt "#30193"
 msgid "DRM configuration"
 msgstr ""
 
-#: Settings entry
-msgctxt "#30193"
-msgid "Path to widevine"
-msgstr ""
-
-#: Notfication entry
+#: Boolean to enable/disable DRM widevine support
 msgctxt "#30194"
-msgid "In settings given Widevine path not available!"
+msgid "DRM over Widevine"
 msgstr ""
 
-#: Not visible seeting for boolean
+#: Boolean to enable/disable DRM widevine support
 msgctxt "#30195"
-msgid "Widevine installation asked"
+msgid "Digital Rights to Manage—DRM technologies enable a broad range of business models"
 msgstr ""
 
 #: File selection dialog to select widevine library
@@ -365,6 +364,8 @@ msgstr ""
 msgctxt "#30198"
 msgid "Do you want to try on next start to add this library?"
 msgstr ""
+
+# Empty places
 
 msgctxt "#30200"
 msgid "Chromium log severity"

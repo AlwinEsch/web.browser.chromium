@@ -78,19 +78,9 @@
       </group>
     </category>
     <category id="system" label="30190" help="-1">
-      <group id="1" label="30191">
-        <setting id="system.widevine-path" type="path" label="30192" help="-1">
-          <default></default>
-          <constraints>
-            <allowempty>true</allowempty>
-          </constraints>
-          <control type="button" format="path">
-            <heading>657</heading>
-          </control>
-        </setting>
-        <setting id="system.widevine-path-asked" type="boolean" label="30195" help="-1">
-          <visible>false</visible>
-          <default>false</default>
+      <group id="1" label="30193">
+        <setting id="system.usewidevine" type="boolean" label="30194" help="30195">
+          <default>true</default>
           <control type="toggle" />
         </setting>
       </group>
