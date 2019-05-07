@@ -9,6 +9,10 @@
 #include "AppBrowser.h"
 #include "SchemeKodi.h"
 
+#include "MessageIds.h"
+
+#include <kodi/General.h>
+
 CClientAppBrowser::CClientAppBrowser(CWebBrowser* addonMain) : m_addonMain(addonMain)
 {
 }
@@ -67,7 +71,10 @@ void CClientAppBrowser::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> com
 
 void CClientAppBrowser::OnRenderProcessThreadCreated(CefRefPtr<CefListValue> extra_info)
 {
-  fprintf(stderr, "--> %s\n", __FUNCTION__);
+  // Give needed Kodi settings to render process application
+  CefRefPtr<CefDictionaryValue> dict = CefDictionaryValue::Create();
+  dict->SetInt(SettingValues::security_webaddon_access, kodi::GetSettingInt("security.webaddon.access"));
+  extra_info->SetDictionary(0, dict);
 }
 
 CefRefPtr<CefPrintHandler> CClientAppBrowser::GetPrintHandler()

@@ -10,15 +10,26 @@
 
 #include <string>
 
-class RendererMessage
+struct RendererMessage
 {
-public:
   static const std::string FocusedNodeChanged;
   static const std::string V8AddonCall;
 };
 
-class BrowserMessage
+struct BrowserMessage
 {
-public:
   static const std::string dummy;
+};
+
+struct SettingValues
+{
+  typedef enum securityWebaddonAccess
+  {
+    webaddonAccess_Off = 0,
+    webaddonAccess_LocalOnly = 1,
+    webaddonAccess_LocalAndKnown = 2,
+    webaddonAccess_Everyone = 3
+  } securityWebaddonAccess;
+
+  static const std::string security_webaddon_access;
 };

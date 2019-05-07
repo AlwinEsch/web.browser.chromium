@@ -12,3 +12,5 @@ const std::string RendererMessage::FocusedNodeChanged = "ClientRenderer.FocusedN
 const std::string RendererMessage::V8AddonCall = "ClientRenderer.V8AddonCall";
 
 const std::string BrowserMessage::dummy = "ClientBrowser.dummy";
+
+const std::string SettingValues::security_webaddon_access = "security.webaddon.access";

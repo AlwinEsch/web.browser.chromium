@@ -14,7 +14,7 @@
 // Client app implementation for other process types.
 class CWebAppRenderer : public CefApp, public CefRenderProcessHandler
 {
- public:
+public:
   CWebAppRenderer() = default;
 
   void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
@@ -33,12 +33,20 @@ class CWebAppRenderer : public CefApp, public CefRenderProcessHandler
 
   CefRefPtr<CefBrowser> GetBrowser() { return m_browser; }
 
- private:
+  bool CurrentSiteInterfaceAllowed() { return m_interfaceAllowed; }
+
+private:
+  static std::vector<std::string> m_allowedInterfaceURLs;
+
   CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override { return this; }
+
+  void InitWebToKodiInterface();
 
   CefRefPtr<CefMessageRouterRendererSide> m_messageRouter;
   bool m_lastNodeIsEditable = false;
   CefRefPtr<CefBrowser> m_browser;
+  int m_securityWebaddonAccess = 0; // controlled by addon settings to set rights for Kodi's interface access
+  bool m_interfaceAllowed = false;
 
   IMPLEMENT_REFCOUNTING(CWebAppRenderer);
   DISALLOW_COPY_AND_ASSIGN(CWebAppRenderer);

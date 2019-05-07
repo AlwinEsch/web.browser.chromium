@@ -64,8 +64,12 @@ bool CV8Handler::Execute(const CefString& name,
                          CefRefPtr<CefV8Value>& retval,
                          CefString& exception)
 {
-  if (!m_renderer->GetBrowser())
+  if (!m_renderer->GetBrowser() ||
+      !m_renderer->CurrentSiteInterfaceAllowed())
     return false;
+
+  CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
+  std::string url = context->GetFrame()->GetURL().ToString();
 
   if (name == "QueueNotification")
   {
