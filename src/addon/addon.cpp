@@ -125,7 +125,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   CefString(&m_cefSettings->locales_dir_path)        = m_strLocalesPath;
   m_cefSettings->pack_loading_disabled               = 0;
   m_cefSettings->remote_debugging_port               = 8457;
-  m_cefSettings->uncaught_exception_stack_size       = 0;
+  m_cefSettings->uncaught_exception_stack_size       = kodi::GetSettingInt("system.uncaught_exception_stack_size");
   m_cefSettings->ignore_certificate_errors           = 0;
   m_cefSettings->enable_net_security_expiration      = 0;
   m_cefSettings->background_color                    = 0;

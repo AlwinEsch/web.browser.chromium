@@ -14,6 +14,7 @@
 #include "gui/DialogBrowserContextMenu.h"
 #include "interface/Handler.h"
 #include "interface/JSDialogHandler.h"
+#include "interface/JSException.h"
 #include "utils/StringUtils.h"
 #include "utils/SystemTranslator.h"
 #include "utils/Utils.h"
@@ -587,6 +588,11 @@ bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, 
   else if (message_name == RendererMessage::V8AddonCall)
   {
     m_v8Kodi.OnProcessMessageReceived(browser, source_process, message);
+    return true;
+  }
+  else if (message_name == RendererMessage::OnUncaughtException)
+  {
+    JSException::ReportJSException(message);
     return true;
   }
 

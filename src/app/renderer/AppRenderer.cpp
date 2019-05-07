@@ -15,6 +15,7 @@
 //TODO Make allowed interface URL's more editable by user (To add own)
 std::vector<std::string> CWebAppRenderer::m_allowedInterfaceURLs =
 {
+  "file://",
   "https://kodi.tv",
   "https://forum.kodi.tv/"
 };
@@ -69,7 +70,7 @@ void CWebAppRenderer::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<
         }
       }
     }
-    // no break is right
+    break;
 
     case SettingValues::webaddonAccess_LocalOnly:
     {
@@ -101,9 +102,37 @@ void CWebAppRenderer::OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr
     m_messageRouter->OnContextReleased(browser, frame, context);
 }
 
-void CWebAppRenderer::OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,CefRefPtr<CefV8Context> context,
+void CWebAppRenderer::OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context,
                                           CefRefPtr<CefV8Exception> exception, CefRefPtr<CefV8StackTrace> stackTrace)
 {
+  auto message = CefProcessMessage::Create(RendererMessage::OnUncaughtException);
+  auto list = message->GetArgumentList();
+
+  // Needed in the browser process to get the frame.
+  int64 value = frame->GetIdentifier();
+  auto binaryValue = CefBinaryValue::Create(&value, sizeof(value));
+  list->SetBinary(0, binaryValue);
+  list->SetString(1, exception->GetMessage());
+  list->SetString(2, exception->GetSourceLine());
+  list->SetString(3, exception->GetScriptResourceName());
+
+  auto frames = CefListValue::Create();
+  for (auto i = 0; i < stackTrace->GetFrameCount(); i++)
+  {
+    auto frame = CefListValue::Create();
+    auto frameArg = stackTrace->GetFrame(i);
+
+    frame->SetString(0, frameArg->GetFunctionName());
+    frame->SetInt(1, frameArg->GetLineNumber());
+    frame->SetInt(2, frameArg->GetColumn());
+    frame->SetString(3, frameArg->GetScriptNameOrSourceURL());
+
+    frames->SetList(i, frame);
+  }
+
+  list->SetList(4, frames);
+
+  browser->SendProcessMessage(CefProcessId::PID_BROWSER, message);
 }
 
 void CWebAppRenderer::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefDOMNode> node)
@@ -113,9 +142,9 @@ void CWebAppRenderer::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRef
   {
     // Notify the browser of the change in focused element type.
     m_lastNodeIsEditable = is_editable;
-    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(RendererMessage::FocusedNodeChanged);
+    auto message = CefProcessMessage::Create(RendererMessage::FocusedNodeChanged);
     message->GetArgumentList()->SetBool(0, is_editable);
-    browser->SendProcessMessage(PID_BROWSER, message);
+    browser->SendProcessMessage(CefProcessId::PID_BROWSER, message);
   }
 
 }

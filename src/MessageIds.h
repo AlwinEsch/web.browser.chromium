@@ -14,6 +14,7 @@ struct RendererMessage
 {
   static const std::string FocusedNodeChanged;
   static const std::string V8AddonCall;
+  static const std::string OnUncaughtException;
 };
 
 struct BrowserMessage

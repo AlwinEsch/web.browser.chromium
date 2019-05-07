@@ -70,6 +70,11 @@ function test_kodi_DialogYesNo()
   });
 }
 
+function test_exception()
+{
+  // generates: Uncaught ReferenceError
+  aaa();
+}
 
 window.addEventListener('load', setup, false);
 </script>
@@ -81,7 +86,10 @@ Click a button to show the associated dialog type.
 <br/><input type="button" onclick="show_confirm();" value="Show Confirm"> <span id="cm"></span>
 <br/><input type="button" onclick="show_prompt();" value="Show Prompt"> <span id="pm"></span>
 <br/>input type="file": <input type="file" name="pic" accept="text/*,.js,.css,image/*">
-
+<br/>
+<br/>
+<input type="button" onclick="test_exception();" value="Test: test_exception()" disabled="false">
+<br/>
 <br/><input type="button" onclick="test_kodi_Log();" value="Test: kodi.Log(level, str)" disabled="false">
 <br/><input type="button" onclick="test_kodi_QueueNotification();" value="Test: kodi.QueueNotification(...)" disabled="false">
 <br/><input type="button" onclick="test_kodi_GetAddonInfo();" value="Test: kodi.GetAddonInfo(id)" disabled="false">

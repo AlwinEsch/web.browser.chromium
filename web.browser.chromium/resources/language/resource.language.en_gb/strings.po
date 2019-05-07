@@ -148,7 +148,6 @@ msgctxt "#30029"
 msgid "Every website (Warning: this may allow uncontrollable external access!)"
 msgstr ""
 
-
 msgctxt "#30030"
 msgid "Allow"
 msgstr ""
@@ -200,6 +199,68 @@ msgstr ""
 msgctxt "#30042"
 msgid "Show editing dialog direct after field select"
 msgstr ""
+
+#. /src/addon/interface/JSException.cpp
+#: Text dialog header
+msgctxt "#30043"
+msgid "JavaScript exception"
+msgstr ""
+
+#. /src/addon/interface/JSException.cpp
+#: JS exception text top position
+msgctxt "#30044"
+msgid "The website generated a JavaScript exception and interrupted the further process.\n\n"
+msgstr ""
+
+#. /src/addon/interface/JSException.cpp
+#: JS exception text
+msgctxt "#30045"
+msgid "Exception: %s\n"
+msgstr ""
+
+#. /src/addon/interface/JSException.cpp
+#: JS exception text
+msgctxt "#30046"
+msgid "Source function: %s\n"
+msgstr ""
+
+#. /src/addon/interface/JSException.cpp
+#: JS exception text
+msgctxt "#30047"
+msgid "Resource name: %s\n\n"
+msgstr ""
+
+#. /src/addon/interface/JSException.cpp
+#: JS exception text
+msgctxt "#30048"
+msgid "Stack:\n"
+msgstr ""
+
+#. /src/addon/interface/JSException.cpp
+#: JS exception text
+msgctxt "#30049"
+msgid " - Line %05i: Column %05i: Function: %s(...)\n   URL: %s\n"
+msgstr ""
+
+#. settings.xml
+#: Settings uncaught exception stack size (with 0 it is disabled)
+msgctxt "#30050"
+msgid "Uncaught exception stack size to show"
+msgstr ""
+
+#. settings.xml
+#: Settings uncaught exception stack size help
+msgctxt "#30051"
+msgid "To represent unrecognized exceptions, this is for testing purposes and should not be taken as a standard."
+msgstr ""
+
+#. settings.xml
+#: Settings uncaught exception stack size 0 selection
+msgctxt "#30052"
+msgid "Off"
+msgstr ""
+
+# empty strings
 
 msgctxt "#30080"
 msgid "Chromium web browser"

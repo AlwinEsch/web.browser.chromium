@@ -186,6 +186,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/gui/GUIManager.cpp
                                  src/addon/interface/Handler.cpp
                                  src/addon/interface/JSDialogHandler.cpp
+                                 src/addon/interface/JSException.cpp
                                  src/addon/interface/v8/v8-kodi.cpp
                                  src/addon/renderer/IRenderer.cpp
                                  src/addon/renderer/Renderer.cpp
@@ -216,6 +217,7 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/gui/GUIManager.h
                                  src/addon/interface/Handler.h
                                  src/addon/interface/JSDialogHandler.h
+                                 src/addon/interface/JSException.h
                                  src/addon/interface/v8/v8-kodi.h
                                  src/addon/renderer/IRenderer.h
                                  src/addon/renderer/Renderer.h
