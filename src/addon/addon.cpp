@@ -300,7 +300,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
     CefString(&settings.accept_language_list)   = "";
 
     CefRefPtr<CefRequestContext> request_context = CefRequestContext::CreateContext(CefRequestContext::GetGlobalContext(),
-                                                                                    new CRequestContextHandler);
+                                                                                    new CRequestContextHandler(pBrowserClient));
     if (!CefBrowserHost::CreateBrowser(info, pBrowserClient, "", settings, request_context))
     {
       kodi::Log(ADDON_LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);

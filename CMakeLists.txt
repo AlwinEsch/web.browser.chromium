@@ -171,7 +171,9 @@ endif()
 
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/AppBrowser.cpp
+                                 src/addon/ExtensionUtils.cpp
                                  src/addon/RequestContextHandler.cpp
+                                 src/addon/ResourceManager.cpp
                                  src/addon/SandboxControl.cpp
                                  src/addon/SchemeKodi.cpp
                                  src/addon/URICheckHandler.cpp
@@ -190,6 +192,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/interface/v8/v8-kodi.cpp
                                  src/addon/renderer/IRenderer.cpp
                                  src/addon/renderer/Renderer.cpp
+                                 src/addon/utils/FileUtils.cpp
                                  src/addon/utils/StringUtils.cpp
                                  src/addon/utils/SystemTranslator.cpp
                                  src/addon/utils/Utils.cpp
@@ -202,7 +205,9 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
 
 list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/AppBrowser.h
+                                 src/addon/ExtensionUtils.h
                                  src/addon/RequestContextHandler.h
+                                 src/addon/ResourceManager.h
                                  src/addon/SandboxControl.h
                                  src/addon/SchemeKodi.h
                                  src/addon/URICheckHandler.h
@@ -221,6 +226,7 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/interface/v8/v8-kodi.h
                                  src/addon/renderer/IRenderer.h
                                  src/addon/renderer/Renderer.h
+                                 src/addon/utils/FileUtils.h
                                  src/addon/utils/StringUtils.h
                                  src/addon/utils/SystemTranslator.h
                                  src/addon/utils/Thread.h

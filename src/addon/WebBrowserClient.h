@@ -185,6 +185,8 @@ public:
 
   CWebBrowser& GetMain() { return *m_mainBrowserHandler; }
 
+  void AddExtension(CefRefPtr<CefExtension> extension);
+
 private:
   IMPLEMENT_REFCOUNTING(CWebBrowserClient);
   DISALLOW_COPY_AND_ASSIGN(CWebBrowserClient);
@@ -237,4 +239,7 @@ private:
   CefRefPtr<CJSDialogHandler> m_jsDialogHandler;
   CefRefPtr<CRendererClient> m_renderer;
   CV8Kodi m_v8Kodi;
+
+  // Loaded extensions. Only accessed on the main thread.
+  std::set<CefRefPtr<CefExtension>> m_extensions;
 };

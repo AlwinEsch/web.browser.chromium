@@ -50,6 +50,8 @@ public:
 
   CBrowserGUIManager& GetGUIManager() { return m_guiManager; }
 
+  const std::string& ResourcesPath() const { return m_strResourcesPath; }
+
 private:
   void ClearClosedBrowsers();
 

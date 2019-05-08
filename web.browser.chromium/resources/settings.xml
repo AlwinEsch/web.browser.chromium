@@ -14,6 +14,10 @@
           <default>true</default>
           <control type="toggle" />
         </setting>
+        <setting id="main.enable_extensions" type="boolean" label="30053" help="30054">
+          <default>true</default>
+          <control type="toggle" />
+        </setting>
       </group>
       <group id="3" label="30007">
         <setting id="main.zoomlevel" type="integer" label="30004" help="-1">

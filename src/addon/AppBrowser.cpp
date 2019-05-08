@@ -63,12 +63,6 @@ void CClientAppBrowser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> re
   registrar->AddCustomScheme("kodi", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_CORS_ENABLED);
 }
 
-void CClientAppBrowser::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line)
-{
-  std::string commandLine = command_line->GetCommandLineString();
-  fprintf(stderr, "--> %s '%s'\n", __FUNCTION__, commandLine.c_str());
-}
-
 void CClientAppBrowser::OnRenderProcessThreadCreated(CefRefPtr<CefListValue> extra_info)
 {
   // Give needed Kodi settings to render process application

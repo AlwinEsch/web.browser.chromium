@@ -260,6 +260,18 @@ msgctxt "#30052"
 msgid "Off"
 msgstr ""
 
+#. settings.xml
+#: Boolean to enable browser extensions
+msgctxt "#30053"
+msgid "Enable browser extensions"
+msgstr ""
+
+#. settings.xml
+#: Help for boolean to enable browser extensions
+msgctxt "#30054"
+msgid "This enables the use of Chromium browser extensions"
+msgstr ""
+
 # empty strings
 
 msgctxt "#30080"

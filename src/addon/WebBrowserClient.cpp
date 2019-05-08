@@ -9,7 +9,9 @@
 #include "WebBrowserClient.h"
 
 #include "addon.h"
+#include "ExtensionUtils.h"
 #include "MessageIds.h"
+#include "ResourceManager.h"
 #include "URICheckHandler.h"
 #include "gui/DialogBrowserContextMenu.h"
 #include "interface/Handler.h"
@@ -78,6 +80,7 @@ CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int uniqueClientId, con
 
   // CEF related sub classes to manage web parts
   m_resourceManager = new CefResourceManager();
+  ResourceManager::SetupResourceManager(m_resourceManager);
 
   // Create the browser-side router for query handling.
   m_jsDialogHandler = new CJSDialogHandler(this);
@@ -558,10 +561,9 @@ CefRefPtr<CefResourceRequestHandler> CWebBrowserClient::GetResourceRequestHandle
                                                                                   bool& disable_default_handling)
 {
   CEF_REQUIRE_IO_THREAD();
+
   return this;
 }
-
-
 
 
 /// CefClient methods
@@ -765,6 +767,19 @@ void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
   // Disable mouse cursor change if requested via the settings
   if (kodi::GetSettingBoolean("system.mouse_cursor_change_disabled"))
     browser->GetHost()->SetMouseCursorChangeDisabled(true);
+
+  if (browser->GetHost()->GetExtension())
+  {
+    // Browsers hosting extension apps should auto-resize.
+    browser->GetHost()->SetAutoResizeEnabled(true, CefSize(20, 20), CefSize(1000, 1000));
+
+    CefRefPtr<CefExtension> extension = browser->GetHost()->GetExtension();
+    if (ExtensionUtils::IsInternalExtension(extension->GetPath()))
+    {
+      // Register the internal handler for extension resources.
+      ExtensionUtils::AddInternalExtensionToResourceManager(extension, m_resourceManager);
+    }
+  }
 
   if (!m_browser.get())
   {
@@ -1084,4 +1099,20 @@ double CWebBrowserClient::PercentageToZoomLevel(int percent)
 void CWebBrowserClient::CreateMessageHandlers(MessageHandlerSet& handlers)
 {
   handlers.insert(new CJSHandler(this));
+}
+
+void CWebBrowserClient::AddExtension(CefRefPtr<CefExtension> extension)
+{
+  // Don't track extensions that can't be loaded directly.
+  if (ExtensionUtils::GetExtensionURL(extension).empty())
+    return;
+
+  // Don't add the same extension multiple times.
+  for (const auto& it : m_extensions)
+  {
+    if (it->GetIdentifier() == extension->GetIdentifier())
+      return;
+  }
+
+  m_extensions.insert(extension);
 }
