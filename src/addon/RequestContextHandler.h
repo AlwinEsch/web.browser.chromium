@@ -18,7 +18,7 @@ class CRequestContextHandler
     public CefExtensionHandler
 {
 public:
-  CRequestContextHandler(CWebBrowserClient* browserClient) : m_browserClient(browserClient) { }
+  CRequestContextHandler(CefRefPtr<CWebBrowserClient> browserClient) : m_browserClient(browserClient) { }
 
   // CefRequestContextHandler
   //@{
@@ -51,5 +51,5 @@ public:
 private:
   IMPLEMENT_REFCOUNTING(CRequestContextHandler);
 
-  CWebBrowserClient* m_browserClient;
+  CefRefPtr<CWebBrowserClient> m_browserClient;
 };

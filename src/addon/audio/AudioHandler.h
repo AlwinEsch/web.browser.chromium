@@ -13,10 +13,12 @@
 
 #include <kodi/AudioEngine.h>
 
-class CAudioHandler : public CefAudioHandler
+class CWebBrowser;
+
+class ATTRIBUTE_HIDDEN CAudioHandler : public CefAudioHandler
 {
 public:
-  CAudioHandler() = default;
+  CAudioHandler(CWebBrowser* addonMain, bool mute) : m_addonMain(addonMain), m_mute(mute) { }
 
   /// CefAudioHandler methods
   //@{
@@ -26,8 +28,12 @@ public:
   void OnAudioStreamStopped(CefRefPtr<CefBrowser> browser, int audio_stream_id) override;
   //@}
 
+  void SetMute(bool mute) { m_mute = mute; }
+
 private:
   IMPLEMENT_REFCOUNTING(CAudioHandler);
 
+  CWebBrowser* m_addonMain;
   std::map<int, kodi::audioengine::CAddonAEStream*> m_audioStreams;
+  bool m_mute;
 };

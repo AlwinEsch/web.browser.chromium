@@ -134,6 +134,8 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
 
   kodi::Log(ADDON_LOG_DEBUG, "%s - Started web browser add-on process", __FUNCTION__);
 
+  m_app = new CClientAppBrowser(this);
+  m_audioHandler = new CAudioHandler(this, IsMuted());
   return WEB_ADDON_ERROR_NO_ERROR;
 }
 
@@ -142,6 +144,10 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
  */
 void CWebBrowser::StopInstance()
 {
+  m_audioHandler = nullptr;
+  m_app = nullptr;
+
+
   // deleted the created settings class
   m_cefSettings->Reset();
   delete m_cefSettings;
@@ -180,7 +186,6 @@ bool CWebBrowser::MainInitialize()
 #else
   CefMainArgs args;
 #endif
-  m_app = new CClientAppBrowser(this);
   if (!CefInitialize(args, *m_cefSettings, m_app, nullptr))
   {
     kodi::Log(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
@@ -204,8 +209,7 @@ void CWebBrowser::MainShutdown()
 {
   ClearClosedBrowsers();
 
-  // Clear app browser and shutdown CEF
-  m_app = nullptr;
+  // shutdown CEF
   CefShutdown();
 }
 
@@ -222,6 +226,12 @@ void CWebBrowser::ClearClosedBrowsers()
   m_browserClientsToDelete.clear();
 }
 
+void CWebBrowser::SetMute(bool mute)
+{
+  if (m_audioHandler)
+    m_audioHandler->SetMute(mute);
+}
+
 bool CWebBrowser::SetLanguage(const char *language)
 {
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser language set to '%s'", __FUNCTION__, language);
@@ -234,7 +244,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
 
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
 
-  CWebBrowserClient *pBrowserClient = nullptr;
+  CefRefPtr<CWebBrowserClient> pBrowserClient;
 
   std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -313,7 +323,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
   }
 
   int uniqueId = pBrowserClient->GetUniqueId();
-  m_browserClients.emplace(std::pair<int, CWebBrowserClient*>(uniqueId, pBrowserClient));
+  m_browserClients.emplace(std::pair<int, CefRefPtr<CWebBrowserClient>>(uniqueId, pBrowserClient));
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control created", __FUNCTION__);
   return pBrowserClient;
 }

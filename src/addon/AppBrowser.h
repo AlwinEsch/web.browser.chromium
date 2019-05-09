@@ -23,10 +23,13 @@ class ATTRIBUTE_HIDDEN CClientAppBrowser
 public:
   CClientAppBrowser(CWebBrowser* addonMain);
 
+  /// CefApp
+  //@{
   void OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line) override;
   void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
   CefRefPtr<CefResourceBundleHandler> GetResourceBundleHandler() override { return this; }
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override { return this; }
+  //@}
 
   /// CefResourceBundleHandler
   //@{

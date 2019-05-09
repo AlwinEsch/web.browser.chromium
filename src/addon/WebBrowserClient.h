@@ -10,7 +10,6 @@
 
 #define NDEBUG 1
 
-#include "audio/AudioHandler.h"
 #include "interface/v8/v8-kodi.h"
 #include "renderer/Renderer.h"
 
@@ -234,7 +233,6 @@ private:
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
   CefRefPtr<CefResourceManager> m_resourceManager;        // Manages the registration and delivery of resources.
 
-  CefRefPtr<CAudioHandler> m_audioHandler;
   CefRefPtr<CBrowerDialogContextMenu> m_dialogContextMenu;
   CefRefPtr<CJSDialogHandler> m_jsDialogHandler;
   CefRefPtr<CRendererClient> m_renderer;

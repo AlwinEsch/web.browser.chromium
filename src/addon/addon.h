@@ -9,6 +9,7 @@
 #pragma once
 
 #include "WebBrowserClient.h"
+#include "audio/AudioHandler.h"
 #include "gui/GUIManager.h"
 
 #include "include/cef_app.h"
@@ -41,6 +42,7 @@ public:
   void MainShutdown() override;
   void MainLoop() override;
 
+  void SetMute(bool mute) override;
   bool SetLanguage(const char *language) override;
   kodi::addon::CWebControl* CreateControl(const std::string& sourceName, const std::string& startURL, KODI_HANDLE handle) override;
   bool DestroyControl(kodi::addon::CWebControl* control, bool complete) override;
@@ -49,6 +51,8 @@ public:
   // Internal interface parts
 
   CBrowserGUIManager& GetGUIManager() { return m_guiManager; }
+  CefRefPtr<CefApp> GetApp() { return m_app; }
+  CefRefPtr<CAudioHandler> GetAudioHandler() { return m_audioHandler; }
 
   const std::string& ResourcesPath() const { return m_strResourcesPath; }
 
@@ -59,6 +63,7 @@ private:
 
   CBrowserGUIManager m_guiManager;
   CefRefPtr<CefApp> m_app;
+  CefRefPtr<CAudioHandler> m_audioHandler;
 
   std::mutex m_mutex;
 
@@ -69,8 +74,8 @@ private:
   std::string m_strLocalesPath;
   std::string m_strLibPath;
 
-  std::unordered_map<int, CWebBrowserClient*> m_browserClients;
-  std::unordered_map<std::string, CWebBrowserClient*> m_browserClientsInactive;
-  std::vector<CWebBrowserClient*> m_browserClientsToDelete;
+  std::unordered_map<int, CefRefPtr<CWebBrowserClient>> m_browserClients;
+  std::unordered_map<std::string, CefRefPtr<CWebBrowserClient>> m_browserClientsInactive;
+  std::vector<CefRefPtr<CWebBrowserClient>> m_browserClientsToDelete;
   bool m_started = false;
 };

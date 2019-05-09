@@ -297,6 +297,8 @@ void CAudioHandler::OnAudioStreamPacket(CefRefPtr<CefBrowser> browser,
                                         const float** data,
                                         int frames, int64_t pts)
 {
+  if (m_mute)
+    return;
 
   const auto& handler = m_audioStreams.find(audio_stream_id);
   if (handler != m_audioStreams.end())

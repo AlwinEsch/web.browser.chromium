@@ -85,7 +85,6 @@ CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int uniqueClientId, con
   // Create the browser-side router for query handling.
   m_jsDialogHandler = new CJSDialogHandler(this);
   m_renderer = new CRendererClient(this);
-  m_audioHandler = new CAudioHandler();
   m_dialogContextMenu = new CBrowerDialogContextMenu(this);
 }
 
@@ -527,7 +526,7 @@ float CWebBrowserClient::GetHeight() const
 
 CefRefPtr<CefAudioHandler> CWebBrowserClient::GetAudioHandler()
 {
-  return m_audioHandler;
+  return GetMain().GetAudioHandler();
 }
 
 CefRefPtr<CefContextMenuHandler> CWebBrowserClient::GetContextMenuHandler()

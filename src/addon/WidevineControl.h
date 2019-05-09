@@ -13,6 +13,6 @@
 namespace WidevineControl
 {
 
-  bool InitializeWidevine();
+bool InitializeWidevine();
 
 }
