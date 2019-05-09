@@ -18,8 +18,10 @@ class IRenderer;
 class CRendererClient : public CefRenderHandler
 {
 public:
-  CRendererClient(CWebBrowserClient* client);
+  CRendererClient(CefRefPtr<CWebBrowserClient> client);
   ~CRendererClient() override;
+
+  void ClearClient();
   
   bool SetActive();
   void SetInactive();
@@ -52,6 +54,6 @@ private:
   
   double m_scrollOffsetX = 0.0;
   double m_scrollOffsetY = 0.0;
-  CWebBrowserClient* m_client;
+  CefRefPtr<CWebBrowserClient> m_client;
   IRenderer* m_renderer;
 };

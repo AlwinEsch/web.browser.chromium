@@ -50,7 +50,7 @@
 
 // #define SHOW_UPDATE_RECT 1
 
-CRendererClientOpenGL::CRendererClientOpenGL(CWebBrowserClient const* client)
+CRendererClientOpenGL::CRendererClientOpenGL(CefRefPtr<CWebBrowserClient> client)
   : IRenderer(client),
     m_textureId(0)
 {

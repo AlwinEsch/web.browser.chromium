@@ -22,8 +22,8 @@ class ATTRIBUTE_HIDDEN CRendererClientOpenGL
     public kodi::gui::gl::CShaderProgram
 {
 public:
-  CRendererClientOpenGL(CWebBrowserClient const* client);
-  virtual ~CRendererClientOpenGL();
+  CRendererClientOpenGL(CefRefPtr<CWebBrowserClient> client);
+  ~CRendererClientOpenGL() override;
 
   bool Initialize() override;
   void Deinitialize() override;

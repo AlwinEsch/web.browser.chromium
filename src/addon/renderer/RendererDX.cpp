@@ -83,7 +83,7 @@ void PopupLayer::set_bounds(const CefRect& bounds)
   move(x, y, w, h);
 }
 
-CRendererClientDirectX::CRendererClientDirectX(CWebBrowserClient const* client)
+CRendererClientDirectX::CRendererClientDirectX(CefRefPtr<CWebBrowserClient> client)
   : IRenderer(client)
 {
 }

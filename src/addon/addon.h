@@ -56,6 +56,8 @@ public:
 
   const std::string& ResourcesPath() const { return m_strResourcesPath; }
 
+  void InformDestroyed(int uniqueClientId);
+
 private:
   void ClearClosedBrowsers();
 
@@ -77,5 +79,6 @@ private:
   std::unordered_map<int, CefRefPtr<CWebBrowserClient>> m_browserClients;
   std::unordered_map<std::string, CefRefPtr<CWebBrowserClient>> m_browserClientsInactive;
   std::vector<CefRefPtr<CWebBrowserClient>> m_browserClientsToDelete;
+  std::set<int> m_browserClientsInDelete;
   bool m_started = false;
 };

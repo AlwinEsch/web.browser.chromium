@@ -18,7 +18,7 @@ class CWebBrowserClient;
 class CBrowerDialogContextMenu : public CefContextMenuHandler
 {
 public:
-  CBrowerDialogContextMenu(CWebBrowserClient* client);
+  CBrowerDialogContextMenu(CefRefPtr<CWebBrowserClient> client);
 
   void OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
                            CefRefPtr<CefFrame> frame,
@@ -39,12 +39,12 @@ public:
 
 
 private:
-  static void RunContextMenuProcess(CWebBrowserClient* client,
+  static void RunContextMenuProcess(CefRefPtr<CWebBrowserClient> client,
                                     std::vector<std::pair<int, std::string>> entries,
                                     CefRefPtr<CefRunContextMenuCallback> callback);
 
   IMPLEMENT_REFCOUNTING(CBrowerDialogContextMenu);
   DISALLOW_COPY_AND_ASSIGN(CBrowerDialogContextMenu);
 
-  CWebBrowserClient* m_client;
+  CefRefPtr<CWebBrowserClient> m_client;
 };

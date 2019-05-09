@@ -15,7 +15,7 @@ class CWebBrowserClient;
 class CJSDialogHandler : public CefJSDialogHandler
 {
 public:
-  CJSDialogHandler(CWebBrowserClient* client) : m_client(client) { }
+  CJSDialogHandler(CefRefPtr<CWebBrowserClient> client) : m_client(client) { }
 
   bool OnJSDialog(CefRefPtr<CefBrowser> browser,
                   const CefString& origin_url,
@@ -31,6 +31,7 @@ public:
 
 private:
   IMPLEMENT_REFCOUNTING(CJSDialogHandler);
+  DISALLOW_COPY_AND_ASSIGN(CJSDialogHandler);
 
   static void OnJSDialogProcess(std::string origin_url,
                                 JSDialogType dialog_type,
@@ -38,5 +39,5 @@ private:
                                 std::string default_prompt_text,
                                 CefRefPtr<CefJSDialogCallback> callback);
 
-  CWebBrowserClient* m_client;
+  CefRefPtr<CWebBrowserClient> m_client;
 };

@@ -12,15 +12,17 @@
 
 class CWebBrowserClient;
 
-class CV8Kodi
+class CV8Kodi : public virtual CefBaseRefCounted
 {
 public:
-  CV8Kodi(CWebBrowserClient* client);
+  CV8Kodi(CefRefPtr<CWebBrowserClient> client);
 
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message);
 
 private:
+  IMPLEMENT_REFCOUNTING(CV8Kodi);
+  DISALLOW_COPY_AND_ASSIGN(CV8Kodi);
 
-  CWebBrowserClient* m_client;
+  CefRefPtr<CWebBrowserClient> m_client;
 };

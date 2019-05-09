@@ -12,7 +12,7 @@
 
 #include <kodi/General.h>
 
-IRenderer::IRenderer(CWebBrowserClient const* client)
+IRenderer::IRenderer(CefRefPtr<CWebBrowserClient> client)
   : m_client(client),
     m_viewWidth(0),
     m_viewHeight(0)
@@ -23,6 +23,11 @@ IRenderer::IRenderer(CWebBrowserClient const* client)
   m_backgroundColor[1] = float(CefColorGetG(color)) / 255.0f;
   m_backgroundColor[0] = float(CefColorGetB(color)) / 255.0f;
   m_useTransparentBackground = m_client->UseTransparentBackground();
+}
+
+void IRenderer::ClearClient()
+{
+  m_client = nullptr;
 }
 
 void IRenderer::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show)

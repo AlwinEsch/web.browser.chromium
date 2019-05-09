@@ -14,6 +14,17 @@
 #include <kodi/General.h>
 #include <kodi/Filesystem.h>
 
+/**
+ * WARNING Currently a memleak!!!
+ *
+ * This class becomes created but never destroyed.
+ * Problem already known by CEF:
+ * - https://bitbucket.org/chromiumembedded/cef/issues/2505/cefrequestcontext-inherited-from-global
+ * - https://bitbucket.org/chromiumembedded/cef/issues/2622/implement-support-for-networkservice
+ *
+ * TODO after CEF is fixed, fix it here!!!
+ */
+
 void CRequestContextHandler::OnRequestContextInitialized(CefRefPtr<CefRequestContext> request_context)
 {
   CEF_REQUIRE_UI_THREAD();

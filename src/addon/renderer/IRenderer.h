@@ -15,8 +15,10 @@ class CWebBrowserClient;
 class IRenderer
 {
 public:
-  IRenderer(CWebBrowserClient const* client);
+  IRenderer(CefRefPtr<CWebBrowserClient> client);
   virtual ~IRenderer() = default;
+
+  void ClearClient();
 
   virtual void OnPaint(CefBrowserHost::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, const void* buffer, int width, int height) { }
   virtual void OnAcceleratedPaint(CefBrowserHost::PaintElementType type, const CefRenderHandler::RectList& dirtyRects, void* shared_handle) { }
@@ -45,7 +47,7 @@ protected:
   CefRect m_originalPopupRect;
 
 private:
-  CWebBrowserClient const* m_client;
+  CefRefPtr<CWebBrowserClient> m_client;
 
   CefRect GetPopupRectInWebView(const CefRect& original_rect);
   void ClearPopupRects();

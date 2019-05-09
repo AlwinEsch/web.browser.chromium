@@ -36,7 +36,7 @@ enum client_menu_ids {
   CLIENT_ID_OPEN_KEYBOARD,
 };
 
-CBrowerDialogContextMenu::CBrowerDialogContextMenu(CWebBrowserClient* client) : m_client(client)
+CBrowerDialogContextMenu::CBrowerDialogContextMenu(CefRefPtr<CWebBrowserClient> client) : m_client(client)
 {
 
 }
@@ -143,7 +143,7 @@ bool CBrowerDialogContextMenu::RunContextMenu(CefRefPtr<CefBrowser> browser,
   return true;
 }
 
-void CBrowerDialogContextMenu::RunContextMenuProcess(CWebBrowserClient* client,
+void CBrowerDialogContextMenu::RunContextMenuProcess(CefRefPtr<CWebBrowserClient> client,
                                                      std::vector<std::pair<int, std::string>> entries,
                                                      CefRefPtr<CefRunContextMenuCallback> callback)
 {

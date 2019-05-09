@@ -22,7 +22,7 @@ const std::string& msg_get_addon_info = "kodi.GetAddonInfo";
 const std::string& msg_kodi_gui_dialogs_OK_ShowAndGetInput = "kodi.gui.dialog.OK.ShowAndGetInput";
 const std::string& msg_kodi_gui_dialogs_YesNo_ShowAndGetInput = "kodi.gui.dialog.YesNo.ShowAndGetInput";
 
-CJSHandler::CJSHandler(CWebBrowserClient* client)
+CJSHandler::CJSHandler(CefRefPtr<CWebBrowserClient> client)
   : m_client(client)
 {
 

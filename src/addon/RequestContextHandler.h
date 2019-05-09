@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "include/cef_request_context_handler.h"
 #include "include/cef_extension_handler.h"
+#include "include/cef_request_context_handler.h"
 
 class CWebBrowserClient;
 
@@ -18,7 +18,7 @@ class CRequestContextHandler
     public CefExtensionHandler
 {
 public:
-  CRequestContextHandler(CefRefPtr<CWebBrowserClient> browserClient) : m_browserClient(browserClient) { }
+  CRequestContextHandler() = default;
 
   // CefRequestContextHandler
   //@{
@@ -48,8 +48,12 @@ public:
                             const CefString& file, CefRefPtr<CefGetExtensionResourceCallback> callback) override;
   //@}
 
+  void Init(CefRefPtr<CWebBrowserClient> browserClient) { m_browserClient = browserClient; }
+  void Clear() { m_browserClient = nullptr; }
+
 private:
   IMPLEMENT_REFCOUNTING(CRequestContextHandler);
+  DISALLOW_COPY_AND_ASSIGN(CRequestContextHandler);
 
   CefRefPtr<CWebBrowserClient> m_browserClient;
 };

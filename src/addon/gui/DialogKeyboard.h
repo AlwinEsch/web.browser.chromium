@@ -8,20 +8,18 @@
 
 #pragma once
 
-#include "include/cef_base.h"
+#include "WebBrowserClient.h"
 
 #include <kodi/gui/Window.h>
 
 enum KEYBOARD {CAPS, LOWER, SYMBOLS};
-
-class CWebBrowserClient;
 
 class CBrowserDialogKeyboard : public kodi::gui::CWindow
 {
 public:
   CBrowserDialogKeyboard();
 
-  void Show(CWebBrowserClient* client, cef_text_input_mode_t input_mode);
+  void Show(CefRefPtr<CWebBrowserClient> client, cef_text_input_mode_t input_mode);
 
   bool OnInit() override;
   bool OnAction(int actionId, uint32_t buttoncode, wchar_t unicode) override;
@@ -38,7 +36,7 @@ private:
   void OnLayout();
   void MoveCursor(int amount);
 
-  CWebBrowserClient* m_client = nullptr;
+  CefRefPtr<CWebBrowserClient> m_client;
   cef_text_input_mode_t m_input_mode = CEF_TEXT_INPUT_MODE_DEFAULT;
   int m_keyboardPos = 0;
   std::string m_currentLayoutName;

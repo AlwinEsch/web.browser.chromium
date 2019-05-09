@@ -136,6 +136,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
 
   m_app = new CClientAppBrowser(this);
   m_audioHandler = new CAudioHandler(this, IsMuted());
+  m_started = true;
   return WEB_ADDON_ERROR_NO_ERROR;
 }
 
@@ -144,9 +145,12 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
  */
 void CWebBrowser::StopInstance()
 {
+  if (!m_started)
+    return;
+
+  m_started = false;
   m_audioHandler = nullptr;
   m_app = nullptr;
-
 
   // deleted the created settings class
   m_cefSettings->Reset();
@@ -177,6 +181,9 @@ void CWebBrowser::StopInstance()
 
 bool CWebBrowser::MainInitialize()
 {
+  if (!m_started)
+    return false;
+
 #ifndef WIN32
   const char* cmdLine[3];
   cmdLine[0] = "";
@@ -197,6 +204,9 @@ bool CWebBrowser::MainInitialize()
 
 void CWebBrowser::MainLoop()
 {
+  if (!m_started)
+    return;
+
   // Do CEF's message loop work
   CefDoMessageLoopWork();
 
@@ -207,10 +217,30 @@ void CWebBrowser::MainLoop()
 
 void CWebBrowser::MainShutdown()
 {
+  if (!m_started)
+    return;
+
   ClearClosedBrowsers();
 
+  // Wait until all clients are deleted otherwise can CefShutdown() not work right!
+  int tries = 1000;
+  while (!m_browserClientsInDelete.empty() && tries-- > 0)
+  {
+    CefDoMessageLoopWork();
+    usleep(100);
+  }
+
   // shutdown CEF
-  CefShutdown();
+  size_t size = m_browserClientsInDelete.size();
+  if (size == 0)
+    CefShutdown();
+  else
+    kodi::Log(ADDON_LOG_FATAL, "Still %li browsers not deleted! CefShutdown() becomes not called", size);
+}
+
+void CWebBrowser::InformDestroyed(int uniqueClientId)
+{
+  m_browserClientsInDelete.erase(uniqueClientId);
 }
 
 void CWebBrowser::ClearClosedBrowsers()
@@ -218,22 +248,26 @@ void CWebBrowser::ClearClosedBrowsers()
   std::lock_guard<std::mutex> lock(m_mutex);
 
   /* delete all clients outside of CefDoMessageLoopWork */
-  for (const auto& entry : m_browserClientsToDelete)
+  for (auto& entry : m_browserClientsToDelete)
   {
-    if (entry->CloseComplete())
-      CefDoMessageLoopWork();
+    m_browserClientsInDelete.insert(entry->GetUniqueId());
+    entry->CloseComplete();
+    CefDoMessageLoopWork();
   }
   m_browserClientsToDelete.clear();
 }
 
 void CWebBrowser::SetMute(bool mute)
 {
-  if (m_audioHandler)
+  if (m_audioHandler && m_started)
     m_audioHandler->SetMute(mute);
 }
 
 bool CWebBrowser::SetLanguage(const char *language)
 {
+  if (!m_started)
+    return false;
+
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser language set to '%s'", __FUNCTION__, language);
   return true;
 }
@@ -242,9 +276,12 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
 {
   CEF_REQUIRE_UI_THREAD();
 
+  if (!m_started)
+    return nullptr;
+
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
 
-  CefRefPtr<CWebBrowserClient> pBrowserClient;
+  CefRefPtr<CWebBrowserClient> browserClient;
 
   std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -252,8 +289,8 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
   if (itr != m_browserClientsInactive.end())
   {
     LOG_INTERNAL_MESSAGE(ADDON_LOG_INFO, "%s - Found control in inactive mode and setting active", __FUNCTION__);
-    pBrowserClient = itr->second;
-    pBrowserClient->SetActive();
+    browserClient = itr->second;
+    browserClient->SetActive();
     m_browserClientsInactive.erase(itr);
   }
   else
@@ -266,7 +303,9 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
       }
     }
 
-    pBrowserClient = new CWebBrowserClient(handle, m_iUniqueClientId++, startURL, this);
+    CefRefPtr<CRequestContextHandler> contextHandler = new CRequestContextHandler;
+    browserClient = new CWebBrowserClient(handle, m_iUniqueClientId++, startURL, this, contextHandler);
+    contextHandler->Init(browserClient);
 
     CefWindowInfo info;
     info.SetAsWindowless(kNullWindowHandle);
@@ -277,7 +316,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
 
     CefBrowserSettings settings;
     //TODO Check CefBrowserHost::SetWindowlessFrameRate(...) usable for streams?
-    settings.windowless_frame_rate              = static_cast<int>(pBrowserClient->GetFPS());
+    settings.windowless_frame_rate              = static_cast<int>(browserClient->GetFPS());
     CefString(&settings.standard_font_family)   = "";
     CefString(&settings.fixed_font_family)      = "";
     CefString(&settings.serif_font_family)      = "";
@@ -310,28 +349,32 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
     CefString(&settings.accept_language_list)   = "";
 
     CefRefPtr<CefRequestContext> request_context = CefRequestContext::CreateContext(CefRequestContext::GetGlobalContext(),
-                                                                                    new CRequestContextHandler(pBrowserClient));
-    if (!CefBrowserHost::CreateBrowser(info, pBrowserClient, "", settings, request_context))
+                                                                                    contextHandler);
+    if (!CefBrowserHost::CreateBrowser(info, browserClient, "", settings, request_context))
     {
       kodi::Log(ADDON_LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);
-      if (pBrowserClient)
+      if (browserClient)
       {
-        delete pBrowserClient;
+        contextHandler->Clear();
+        browserClient = nullptr;
       }
       return nullptr;
     }
   }
 
-  int uniqueId = pBrowserClient->GetUniqueId();
-  m_browserClients.emplace(std::pair<int, CefRefPtr<CWebBrowserClient>>(uniqueId, pBrowserClient));
+  int uniqueId = browserClient->GetUniqueId();
+  m_browserClients.emplace(std::pair<int, CefRefPtr<CWebBrowserClient>>(uniqueId, browserClient));
   LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control created", __FUNCTION__);
-  return pBrowserClient;
+  return browserClient.get();
 }
 
 bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complete)
 {
+  if (!m_started)
+    return false;
+
   //! Check for wrongly passed empty handle.
-  CWebBrowserClient* browserClient = static_cast<CWebBrowserClient*>(control);
+  CefRefPtr<CWebBrowserClient> browserClient = static_cast<CWebBrowserClient*>(control);
   if (browserClient == nullptr)
   {
     kodi::Log(ADDON_LOG_ERROR, "%s - Web browser control destroy called without handle!", __FUNCTION__);
@@ -352,7 +395,6 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
     if (inactiveClient != m_browserClientsInactive.end())
       m_browserClientsInactive.erase(inactiveClient);
     m_browserClientsToDelete.push_back(browserClient);
-    browserClient->DestroyRenderer();
   }
   else
   {

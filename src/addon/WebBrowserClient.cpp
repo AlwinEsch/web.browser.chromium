@@ -11,6 +11,7 @@
 #include "addon.h"
 #include "ExtensionUtils.h"
 #include "MessageIds.h"
+#include "RequestContextHandler.h"
 #include "ResourceManager.h"
 #include "URICheckHandler.h"
 #include "gui/DialogBrowserContextMenu.h"
@@ -49,7 +50,8 @@
 
 #define ZOOM_MULTIPLY 25.0
 
-CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int uniqueClientId, const std::string& startURL, CWebBrowser* instance)
+CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int uniqueClientId, const std::string& startURL,
+                                     CWebBrowser* instance, CefRefPtr<CRequestContextHandler> handler)
   : CWebControl(handle, uniqueClientId),
     m_mainBrowserHandler{instance},
     m_renderViewReady{false},
@@ -61,7 +63,7 @@ CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int uniqueClientId, con
     m_browserCount{0},
     m_isFullScreen{false},
     m_isLoading{false},
-    m_v8Kodi(this)
+    m_contextHandler(handler)
 {
   m_fMouseXScaleFactor = GetWidth() / GetSkinWidth();
   m_fMouseYScaleFactor = GetHeight() / GetSkinHeight();
@@ -86,10 +88,13 @@ CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle, int uniqueClientId, con
   m_jsDialogHandler = new CJSDialogHandler(this);
   m_renderer = new CRendererClient(this);
   m_dialogContextMenu = new CBrowerDialogContextMenu(this);
+  m_v8Kodi = new CV8Kodi(this);
 }
 
 CWebBrowserClient::~CWebBrowserClient()
 {
+  // Inform main addon class that's browser client is destroyed and to destroy CEF if needed
+  m_mainBrowserHandler->InformDestroyed(m_uniqueClientId);
 }
 
 bool CWebBrowserClient::SetActive()
@@ -120,21 +125,22 @@ bool CWebBrowserClient::SetInactive()
   return false;
 }
 
-bool CWebBrowserClient::CloseComplete()
+void CWebBrowserClient::CloseComplete()
 {
+  CEF_REQUIRE_UI_THREAD();
+
   if (m_browser.get())
   {
+    m_contextHandler->Clear();
+    m_contextHandler = nullptr;
     m_browser->GetHost()->CloseBrowser(true);
-    m_browser = nullptr;
-    return true;
   }
 
-  return false;
-}
-
-void CWebBrowserClient::DestroyRenderer()
-{
-  m_renderer = nullptr;
+  m_resourceManager = nullptr;
+  m_jsDialogHandler = nullptr;
+  m_dialogContextMenu = nullptr;
+  m_v8Kodi = nullptr;
+  m_renderer->ClearClient();
 }
 
 void CWebBrowserClient::SendKey(int key)
@@ -588,7 +594,7 @@ bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, 
   }
   else if (message_name == RendererMessage::V8AddonCall)
   {
-    m_v8Kodi.OnProcessMessageReceived(browser, source_process, message);
+    m_v8Kodi->OnProcessMessageReceived(browser, source_process, message);
     return true;
   }
   else if (message_name == RendererMessage::OnUncaughtException)
@@ -704,7 +710,6 @@ bool CWebBrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
                                       bool* no_javascript_access)
 {
 // #ifdef DEBUG_LOGS
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "--------------------------------------->%s - %s", __FUNCTION__, std::string(target_url).c_str());
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - target_url '%s'", std::string(target_url).c_str());
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - target_frame_name '%s'", std::string(target_frame_name).c_str());
   LOG_MESSAGE(ADDON_LOG_DEBUG, " - user_gesture '%i'", user_gesture);
@@ -792,24 +797,27 @@ void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 
 bool CWebBrowserClient::DoClose(CefRefPtr<CefBrowser> browser)
 {
-  fprintf(stderr, "--> %s\n", __FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
   return false; /* Allow the close. For windowed browsers this will result in the OS close event being sent */
 }
 
 void CWebBrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
-  fprintf(stderr, "--> %s\n", __FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
 
   m_messageRouter->OnBeforeClose(browser);
   if (--m_browserCount == 0)
   {
     for (const auto& entry : m_messageHandlers)
+    {
       m_messageRouter->RemoveHandler(entry);
+      delete entry;
+    }
     m_messageHandlers.clear();
     m_messageRouter = nullptr;
   }
+
+  m_browser = nullptr;
 }
 //@}
 
@@ -819,6 +827,9 @@ CefResourceRequestHandler::ReturnValue CWebBrowserClient::OnBeforeResourceLoad(C
                                                                                CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
 {
   CEF_REQUIRE_IO_THREAD();
+
+  if (!m_resourceManager)
+    return RV_CANCEL;
 
 #ifdef DEBUG_LOGS
   LOG_MESSAGE(ADDON_LOG_DEBUG, "OnBeforeResourceLoad:");
@@ -836,6 +847,9 @@ CefRefPtr<CefResourceHandler> CWebBrowserClient::GetResourceHandler(CefRefPtr<Ce
                                                                     CefRefPtr<CefRequest> request)
 {
   CEF_REQUIRE_IO_THREAD();
+
+  if (!m_resourceManager)
+    return nullptr;
 
   return m_resourceManager->GetResourceHandler(browser, frame, request);
 }
@@ -898,21 +912,18 @@ bool CWebBrowserClient::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<
 bool CWebBrowserClient::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url,
                                          CefRequestHandler::WindowOpenDisposition target_disposition, bool user_gesture)
 {
-  fprintf(stderr, "--> %s\n", __FUNCTION__);
   return false;
 }
 
 bool CWebBrowserClient::GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, bool isProxy, const CefString& host,
                                            int port, const CefString& realm, const CefString& scheme, CefRefPtr<CefAuthCallback> callback)
 {
-  fprintf(stderr, "--> %s\n", __FUNCTION__);
   ///TODO Useful and secure?
   return false;
 }
 
 bool CWebBrowserClient::OnQuotaRequest(CefRefPtr<CefBrowser> browser, const CefString& origin_url, int64 new_size, CefRefPtr<CefRequestCallback> callback)
 {
-  fprintf(stderr, "--> %s\n", __FUNCTION__);
   CEF_REQUIRE_IO_THREAD();
 
   static const int64 max_size = 1024 * 1024 * 20;  // 20mb.

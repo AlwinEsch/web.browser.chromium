@@ -25,7 +25,7 @@
 
 #include <kodi/gui/dialogs/Keyboard.h>
 
-CRendererClient::CRendererClient(CWebBrowserClient* client) : m_client(client)
+CRendererClient::CRendererClient(CefRefPtr<CWebBrowserClient> client) : m_client(client)
 {
 #if defined(HAS_GL) || defined(HAS_GLES)
   m_renderer = new CRendererClientOpenGL(m_client);
@@ -40,6 +40,12 @@ CRendererClient::CRendererClient(CWebBrowserClient* client) : m_client(client)
 CRendererClient::~CRendererClient()
 {
   delete m_renderer;
+}
+
+void CRendererClient::ClearClient()
+{
+  m_renderer->ClearClient();
+  m_client = nullptr;
 }
 
 void CRendererClient::Render()
@@ -64,6 +70,9 @@ void CRendererClient::ScreenSizeChange(float x, float y, float width, float heig
 void CRendererClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
   CEF_REQUIRE_UI_THREAD();
+
+  if (!m_client)
+    return;
 
   // The simulated screen and view rectangle are the same. This is necessary
   // for popup menus to be located and sized inside the view.
@@ -143,7 +152,7 @@ void CRendererClient::OnTextSelectionChanged(CefRefPtr<CefBrowser> browser, cons
 
 void CRendererClient::OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser, TextInputMode input_mode)
 {
-  if (!m_client->ContextMenuOpen())
+  if (m_client && !m_client->ContextMenuOpen())
   {
     if (input_mode != CEF_TEXT_INPUT_MODE_NONE)
       m_client->GetMain().GetGUIManager().GetKeyboard().Show(m_client, input_mode);

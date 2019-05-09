@@ -15,7 +15,8 @@ class CWebBrowserClient;
 class CJSHandler : public CefMessageRouterBrowserSide::Handler
 {
 public:
-  CJSHandler(CWebBrowserClient* client);
+  CJSHandler(CefRefPtr<CWebBrowserClient> client);
+  virtual ~CJSHandler() = default;
 
   bool OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int64 query_id, const CefString& request,
                bool persistent, CefRefPtr<Callback> callback) override;
@@ -27,5 +28,5 @@ private:
   static void OnQueryProcess(std::string url, int64 query_id,
                              std::string request, bool persistent, CefRefPtr<Callback> callback);
 
-  CWebBrowserClient* m_client;
+  CefRefPtr<CWebBrowserClient> m_client;
 };

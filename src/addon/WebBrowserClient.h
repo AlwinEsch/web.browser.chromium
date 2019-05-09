@@ -45,7 +45,8 @@ class CWebBrowserClient
     public CefResourceRequestHandler
 {
 public:
-  CWebBrowserClient(KODI_HANDLE handle, int iUniqueClientId, const std::string& startURL, CWebBrowser* instance);
+  CWebBrowserClient(KODI_HANDLE handle, int iUniqueClientId, const std::string& startURL,
+                    CWebBrowser* instance, CefRefPtr<CRequestContextHandler> handler);
   virtual ~CWebBrowserClient();
 
   CefRefPtr<CefAudioHandler> GetAudioHandler() override;
@@ -91,8 +92,7 @@ public:
   bool Initialize();
   bool SetInactive();
   bool SetActive();
-  bool CloseComplete();
-  void DestroyRenderer();
+  void CloseComplete();
 
   /// CefClient methods
   //@{
@@ -232,11 +232,11 @@ private:
   CefRefPtr<CefBrowser> m_browser;
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
   CefRefPtr<CefResourceManager> m_resourceManager;        // Manages the registration and delivery of resources.
-
   CefRefPtr<CBrowerDialogContextMenu> m_dialogContextMenu;
   CefRefPtr<CJSDialogHandler> m_jsDialogHandler;
   CefRefPtr<CRendererClient> m_renderer;
-  CV8Kodi m_v8Kodi;
+  CefRefPtr<CV8Kodi> m_v8Kodi;
+  CefRefPtr<CRequestContextHandler> m_contextHandler;
 
   // Loaded extensions. Only accessed on the main thread.
   std::set<CefRefPtr<CefExtension>> m_extensions;

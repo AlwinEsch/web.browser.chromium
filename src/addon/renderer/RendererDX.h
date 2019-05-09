@@ -56,7 +56,7 @@ private:
 class ATTRIBUTE_HIDDEN CRendererClientDirectX : public IRenderer
 {
 public:
-  CRendererClientDirectX(CWebBrowserClient const* client);
+  CRendererClientDirectX(CefRefPtr<CWebBrowserClient> client);
   ~CRendererClientDirectX() = default;
 
   bool Initialize() override;

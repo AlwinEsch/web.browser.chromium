@@ -7,10 +7,11 @@
  */
 
 #include "v8-kodi.h"
+#include "WebBrowserClient.h"
 
 #include <kodi/General.h>
 
-CV8Kodi::CV8Kodi(CWebBrowserClient* client) : m_client(client)
+CV8Kodi::CV8Kodi(CefRefPtr<CWebBrowserClient> client) : m_client(client)
 {
 
 }

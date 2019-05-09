@@ -8,7 +8,6 @@
 
 #include "DialogKeyboard.h"
 #include "utils/SystemTranslator.h"
-#include "WebBrowserClient.h"
 
 #include <kodi/General.h>
 #include <kodi/XBMC_vkeys.h>
@@ -54,7 +53,7 @@ CBrowserDialogKeyboard::CBrowserDialogKeyboard()
 {
 }
 
-void CBrowserDialogKeyboard::Show(CWebBrowserClient* client, cef_text_input_mode_t input_mode)
+void CBrowserDialogKeyboard::Show(CefRefPtr<CWebBrowserClient> client, cef_text_input_mode_t input_mode)
 {
   m_client = client;
   m_input_mode = input_mode;
