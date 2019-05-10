@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+  <defaultcontrol always="false">5</defaultcontrol>
+  <backgroundcolor>background</backgroundcolor>
+  <allowoverlay>no</allowoverlay>
+  <controls>
+    <include>DefaultBackground</include>
+    <control type="group">
+      <control type="webaddon" id="2">
+        <description>web browser</description>
+        <left>0</left>
+        <top>90</top>
+        <bottom>0</bottom>
+        <transparent>true</transparent>
+        <url>special://home/addons/script.hello.web.world/addon.html</url>
+      </control>
+    </control>
+    <include content="TopBar">
+      <param name="breadcrumbs_label" value="Minimal webbrowser example" />
+    </include>
+    <include>BottomBar</include>
+  </controls>
+</window>
