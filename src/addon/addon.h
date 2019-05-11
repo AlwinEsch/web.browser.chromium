@@ -59,8 +59,6 @@ public:
   void InformDestroyed(int uniqueClientId);
 
 private:
-  void ClearClosedBrowsers();
-
   static int m_iUniqueClientId;
 
   CBrowserGUIManager m_guiManager;
@@ -78,7 +76,6 @@ private:
 
   std::unordered_map<int, CefRefPtr<CWebBrowserClient>> m_browserClients;
   std::unordered_map<std::string, CefRefPtr<CWebBrowserClient>> m_browserClientsInactive;
-  std::vector<CefRefPtr<CWebBrowserClient>> m_browserClientsToDelete;
   std::set<int> m_browserClientsInDelete;
   bool m_started = false;
 };

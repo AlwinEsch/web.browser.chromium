@@ -53,7 +53,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   std::string cefLib = kodi::GetAddonPath(LIBRARY_PREFIX "cef" LIBRARY_SUFFIX);
   if (!cef_load_library(cefLib.c_str()))
   {
-    kodi::Log(ADDON_LOG_ERROR, "%s -  Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
+    kodi::Log(ADDON_LOG_ERROR, "%s - Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
     return WEB_ADDON_ERROR_FAILED;
   }
 #endif
@@ -209,10 +209,6 @@ void CWebBrowser::MainLoop()
 
   // Do CEF's message loop work
   CefDoMessageLoopWork();
-
-  // Clear opened browser where not used anymore
-  if (!m_browserClientsToDelete.empty())
-    ClearClosedBrowsers();
 }
 
 void CWebBrowser::MainShutdown()
@@ -220,7 +216,13 @@ void CWebBrowser::MainShutdown()
   if (!m_started)
     return;
 
-  ClearClosedBrowsers();
+  kodi::Log(ADDON_LOG_DEBUG, "Active clients during shutdown %li\n", m_browserClients.size());
+  kodi::Log(ADDON_LOG_DEBUG, "Inactive clients during shutdown %li\n", m_browserClientsInactive.size());
+  kodi::Log(ADDON_LOG_DEBUG, "Clients in delete process during shutdown start %li\n", m_browserClientsInDelete.size());
+
+  if (!m_browserClients.empty() || !m_browserClientsInactive.empty())
+    kodi::Log(ADDON_LOG_FATAL, "Still browser clients in use during shutdown (active: %li, inactive: %li\n",
+                                  m_browserClients.size(), m_browserClientsInactive.size());
 
   // Wait until all clients are deleted otherwise can CefShutdown() not work right!
   int tries = 1000;
@@ -241,20 +243,6 @@ void CWebBrowser::MainShutdown()
 void CWebBrowser::InformDestroyed(int uniqueClientId)
 {
   m_browserClientsInDelete.erase(uniqueClientId);
-}
-
-void CWebBrowser::ClearClosedBrowsers()
-{
-  std::lock_guard<std::mutex> lock(m_mutex);
-
-  /* delete all clients outside of CefDoMessageLoopWork */
-  for (auto& entry : m_browserClientsToDelete)
-  {
-    m_browserClientsInDelete.insert(entry->GetUniqueId());
-    entry->CloseComplete();
-    CefDoMessageLoopWork();
-  }
-  m_browserClientsToDelete.clear();
 }
 
 void CWebBrowser::SetMute(bool mute)
@@ -394,7 +382,10 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
     const auto& inactiveClient = m_browserClientsInactive.find(browserClient->GetName());
     if (inactiveClient != m_browserClientsInactive.end())
       m_browserClientsInactive.erase(inactiveClient);
-    m_browserClientsToDelete.push_back(browserClient);
+
+    m_browserClientsInDelete.insert(browserClient->GetUniqueId());
+    browserClient->CloseComplete();
+    CefDoMessageLoopWork();
   }
   else
   {
