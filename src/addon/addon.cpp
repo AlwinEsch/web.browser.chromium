@@ -53,13 +53,14 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   std::string cefLib = kodi::GetAddonPath(LIBRARY_PREFIX "cef" LIBRARY_SUFFIX);
   if (!cef_load_library(cefLib.c_str()))
   {
-    kodi::Log(ADDON_LOG_ERROR, "%s - Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
+    kodi::Log(ADDON_LOG_ERROR, "%s -  Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
     return WEB_ADDON_ERROR_FAILED;
   }
 #endif
 
+  fprintf(stderr, "------CefSandboxNeedRoot() > %i\n", CefSandboxNeedRoot());
   // Check set of sandbox and if needed ask user about root password to set correct rights of them
-  if (!SandboxControl::SetSandbox())
+  if (CefSandboxNeedRoot() && !SandboxControl::SetSandbox())
     return WEB_ADDON_ERROR_FAILED;
 
   // Set download path if not available
