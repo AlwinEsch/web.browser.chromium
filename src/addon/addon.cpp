@@ -58,7 +58,6 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   }
 #endif
 
-  fprintf(stderr, "------CefSandboxNeedRoot() > %i\n", CefSandboxNeedRoot());
   // Check set of sandbox and if needed ask user about root password to set correct rights of them
   if (CefSandboxNeedRoot() && !SandboxControl::SetSandbox())
     return WEB_ADDON_ERROR_FAILED;
