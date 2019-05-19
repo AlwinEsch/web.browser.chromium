@@ -41,8 +41,8 @@ class CWebBrowserClient
     public CefFindHandler,
     public CefLifeSpanHandler,
     public CefLoadHandler,
-    public CefRequestHandler,
-    public CefResourceRequestHandler
+    public CefRequestHandler/*,
+    public CefResourceRequestHandler*/
 {
 public:
   CWebBrowserClient(KODI_HANDLE handle, int iUniqueClientId, const std::string& startURL,
@@ -55,9 +55,9 @@ public:
   CefRefPtr<CefDownloadHandler> GetDownloadHandler() override;
   CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
   CefRefPtr<CefRenderHandler> GetRenderHandler() override;
-  CefRefPtr<CefResourceRequestHandler> GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+  /*CefRefPtr<CefResourceRequestHandler> GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                                  CefRefPtr<CefRequest> request, bool is_navigation, bool is_download,
-                                                                 const CefString& request_initiator, bool& disable_default_handling) override;
+                                                                 const CefString& request_initiator, bool& disable_default_handling) override;*/
 
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
@@ -122,6 +122,7 @@ public:
                      CefWindowInfo& windowInfo,
                      CefRefPtr<CefClient>& client,
                      CefBrowserSettings& settings,
+                     /*CefRefPtr<CefDictionaryValue>& extra_info,*/
                      bool* no_javascript_access) override;
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
   bool DoClose(CefRefPtr<CefBrowser> browser) override;
@@ -136,7 +137,7 @@ public:
 
   /// CefResourceRequestHandler methods
   //@{
-  CefRefPtr<CefCookieAccessFilter> GetCookieAccessFilter(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+  /*CefRefPtr<CefCookieAccessFilter> GetCookieAccessFilter(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                          CefRefPtr<CefRequest> request) override { return nullptr; }
   CefResourceRequestHandler::ReturnValue OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                               CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback) override;
@@ -151,7 +152,7 @@ public:
   void OnResourceLoadComplete(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request,
                               CefRefPtr<CefResponse> response, URLRequestStatus status, int64 received_content_length) override {}
   void OnProtocolExecution(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request,
-                           bool& allow_os_execution) override;
+                           bool& allow_os_execution) override;*/
   //@}
 
   /// CefRequestHandler methods

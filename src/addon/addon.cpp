@@ -1,10 +1,10 @@
 /*
- *  Copyright (C) 2015-2019 Alwin Esch (Team Kodi)
- *  This file is part of Kodi - https://kodi.tv
- *
- *  SPDX-License-Identifier: GPL-3.0-or-later
- *  See LICENSES/README.md for more information.
- */
+*  Copyright (C) 2015-2019 Alwin Esch (Team Kodi)
+*  This file is part of Kodi - https://kodi.tv
+*
+*  SPDX-License-Identifier: GPL-3.0-or-later
+*  See LICENSES/README.md for more information.
+*/
 
 #include "addon.h"
 
@@ -30,6 +30,8 @@
 #include <kodi/Filesystem.h>
 #include <kodi/gui/dialogs/OK.h>
 #include <kodi/gui/dialogs/FileBrowser.h>
+#include <chrono>
+#include <thread>
 
 int CWebBrowser::m_iUniqueClientId = 0;
 
@@ -193,7 +195,7 @@ bool CWebBrowser::MainInitialize()
 #else
   CefMainArgs args;
 #endif
-  if (!CefInitialize(args, *m_cefSettings, m_app, nullptr))
+  if (!CefInitialize(args, *m_cefSettings, m_app.get(), nullptr))
   {
     kodi::Log(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
     return false;
@@ -229,7 +231,7 @@ void CWebBrowser::MainShutdown()
   while (!m_browserClientsInDelete.empty() && tries-- > 0)
   {
     CefDoMessageLoopWork();
-    usleep(100);
+    std::this_thread::sleep_for(std::chrono::microseconds(100));
   }
 
   // shutdown CEF
@@ -336,9 +338,10 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
     settings.background_color                   = 0x00; // fully transparent
     CefString(&settings.accept_language_list)   = "";
 
+    CefRefPtr<CefDictionaryValue> extra_info;
     CefRefPtr<CefRequestContext> request_context = CefRequestContext::CreateContext(CefRequestContext::GetGlobalContext(),
                                                                                     contextHandler);
-    if (!CefBrowserHost::CreateBrowser(info, browserClient, "", settings, request_context))
+    if (!CefBrowserHost::CreateBrowser(info, browserClient, "", settings/*, extra_info*/, request_context))
     {
       kodi::Log(ADDON_LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);
       if (browserClient)

@@ -89,7 +89,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 
 # Chromium/CEF source code URL's
 set(USED_CEF_REPO https://github.com/kodi-web/cef.git)
-set(USED_CEF_BRANCH kodi)
+set(USED_CEF_BRANCH 3729-ForKodi)
 set(USED_CHROMIUM_REPO https://chromium.googlesource.com/chromium/src.git)
 
 include(ExternalProject)
@@ -482,7 +482,7 @@ ExternalProject_Add_Step(
   COMMAND             ${PYTHON} make_distrib.py --ninja-build
                                                 --output-dir ${THIRD_PARTY_PATH}/chromium_package
                                                 --allow-partial
-                                                --package $<$<BOOL:${CEF_NO_ARCHIVE}>:--no-archive>
+                                                $<$<BOOL:${CEF_NO_ARCHIVE}>:--no-archive>
                                                 ${CEF_BUILD_TYPE}
   COMMAND             ${PYTHON} cef_version.py current > ${THIRD_PARTY_PATH}/cef_version.txt
   COMMENT             "Creating CEF chromium package"

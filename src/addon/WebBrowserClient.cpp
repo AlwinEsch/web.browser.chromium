@@ -559,7 +559,7 @@ CefRefPtr<CefRenderHandler> CWebBrowserClient::GetRenderHandler()
 {
   return m_renderer;
 }
-
+/*
 CefRefPtr<CefResourceRequestHandler> CWebBrowserClient::GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                                                   CefRefPtr<CefRequest> request, bool is_navigation,
                                                                                   bool is_download, const CefString& request_initiator,
@@ -568,7 +568,7 @@ CefRefPtr<CefResourceRequestHandler> CWebBrowserClient::GetResourceRequestHandle
   CEF_REQUIRE_IO_THREAD();
 
   return this;
-}
+}*/
 
 
 /// CefClient methods
@@ -707,6 +707,7 @@ bool CWebBrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
                                       CefWindowInfo& windowInfo,
                                       CefRefPtr<CefClient>& client,
                                       CefBrowserSettings& settings,
+                                      /*CefRefPtr<CefDictionaryValue>& extra_info,*/
                                       bool* no_javascript_access)
 {
 // #ifdef DEBUG_LOGS
@@ -823,6 +824,7 @@ void CWebBrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 
 /// CefResourceRequestHandler methods
 //@{
+/*
 CefResourceRequestHandler::ReturnValue CWebBrowserClient::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                                                CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
 {
@@ -897,6 +899,7 @@ void CWebBrowserClient::OnProtocolExecution(CefRefPtr<CefBrowser> browser, CefRe
   if (urlStr.find("spotify:") == 0)
     allow_os_execution = true;
 }
+*/
 //@}
 
 /// CefRequestHandler methods

@@ -64,7 +64,7 @@ bool CRequestContextHandler::OnBeforePluginLoad(const CefString& mime_type, cons
   return false;
 }
 
-CefRefPtr<CefResourceRequestHandler> CRequestContextHandler::GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+/*CefRefPtr<CefResourceRequestHandler> CRequestContextHandler::GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                                                        CefRefPtr<CefRequest> request, bool is_navigation,
                                                                                        bool is_download, const CefString& request_initiator,
                                                                                        bool& disable_default_handling)
@@ -72,7 +72,7 @@ CefRefPtr<CefResourceRequestHandler> CRequestContextHandler::GetResourceRequestH
   CEF_REQUIRE_IO_THREAD();
 
   return m_browserClient;
-}
+}*/
 
 void CRequestContextHandler::OnExtensionLoaded(CefRefPtr<CefExtension> extension)
 {

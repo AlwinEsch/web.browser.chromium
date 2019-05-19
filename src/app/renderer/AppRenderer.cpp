@@ -119,15 +119,15 @@ void CWebAppRenderer::OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefP
   auto frames = CefListValue::Create();
   for (auto i = 0; i < stackTrace->GetFrameCount(); i++)
   {
-    auto frame = CefListValue::Create();
+    auto frameValues = CefListValue::Create();
     auto frameArg = stackTrace->GetFrame(i);
 
-    frame->SetString(0, frameArg->GetFunctionName());
-    frame->SetInt(1, frameArg->GetLineNumber());
-    frame->SetInt(2, frameArg->GetColumn());
-    frame->SetString(3, frameArg->GetScriptNameOrSourceURL());
+    frameValues->SetString(0, frameArg->GetFunctionName());
+    frameValues->SetInt(1, frameArg->GetLineNumber());
+    frameValues->SetInt(2, frameArg->GetColumn());
+    frameValues->SetString(3, frameArg->GetScriptNameOrSourceURL());
 
-    frames->SetList(i, frame);
+    frames->SetList(i, frameValues);
   }
 
   list->SetList(4, frames);
