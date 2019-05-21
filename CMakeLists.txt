@@ -23,6 +23,10 @@ project(web.browser.chromium)
 
 cmake_policy(SET CMP0074 NEW)
 
+if(CORE_SYSTEM_NAME STREQUAL osx)
+  set(PROJECT_ARCH "x86_64")
+endif()
+
 # Search on addon depends generated CEF dev kit and set CEF_ROOT
 find_path(CEF_PROJECT_DIR NAMES src/cef/CMakeLists.txt)
 if(NOT CEF_PROJECT_DIR)
@@ -59,7 +63,7 @@ PRINT_CEF_CONFIG()
 # Logical target used to link the libcef library.
 ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_RELEASE}" "${CEF_LIB_RELEASE}")
 
-if(${CORE_SYSTEM_NAME} STREQUAL windows)
+if(CORE_SYSTEM_NAME STREQUAL windows)
   add_definitions(-DHAS_DX)
 else()
   if(APP_RENDER_SYSTEM STREQUAL "gl" OR NOT APP_RENDER_SYSTEM)
@@ -116,9 +120,9 @@ set(KODICHROMIUM_BIN_SOURCES src/app/AppOther.cpp
                              src/MessageIds.cpp)
 
 if(CORE_SYSTEM_NAME STREQUAL windows)
-  set(DEPLIBS libcef_lib
-              libcef_dll_wrapper
-              ${CEF_STANDARD_LIBS})
+  list(APPEND DEPLIBS libcef_lib
+                      libcef_dll_wrapper
+                      ${CEF_STANDARD_LIBS})
 
   list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main_win.cpp)
 
@@ -136,9 +140,9 @@ if(CORE_SYSTEM_NAME STREQUAL windows)
    # The by addon dll needed additional Sandbox binary application
   list(APPEND KODICHROMIUM_ADDITIONAL_BINARY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/kodichromium${CMAKE_EXECUTABLE_SUFFIX})
 else()
-  set(DEPLIBS libcef_dll_wrapper
-              dl
-              ${CEF_STANDARD_LIBS})
+  list(APPEND DEPLIBS libcef_dll_wrapper
+                      dl
+                      ${CEF_STANDARD_LIBS})
 
   list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main.cpp)
 
@@ -146,16 +150,26 @@ else()
   add_dependencies(kodichromium libcef_dll_wrapper)
 
   target_link_libraries(kodichromium ${DEPLIBS})
-  
+  if(CORE_SYSTEM_NAME STREQUAL osx)
+    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_RELEASE}" "${CEF_SANDBOX_LIB_RELEASE}")
+    target_link_libraries(kodichromium cef_sandbox_lib)
+  endif()
+
    # The by addon dll needed additional Sandbox binary application
   list(APPEND KODICHROMIUM_ADDITIONAL_BINARY ${CMAKE_CURRENT_BINARY_DIR}/kodichromium${CMAKE_EXECUTABLE_SUFFIX})
-endif()
+  endif()
 
 #-------------------------------------------------------------------------------
 
-set(KODICHROMIUM_CUSTOM_DATA ${CEF_ROOT}/Resources/) # TODO: icudtl.dat defined there but currently needed by dll folder
-set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS ${CEF_ROOT}/Resources/icudtl.dat) # icudtl.dat also required on addon binary folder
-set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS ${CEF_ROOT}/Release/) # To have all Chromium lib parts on addon binary folder
+if(NOT CORE_SYSTEM_NAME STREQUAL osx)
+  set(KODICHROMIUM_CUSTOM_DATA ${CEF_ROOT}/Resources/) # TODO: icudtl.dat defined there but currently needed by dll folder
+  set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS ${CEF_ROOT}/Resources/icudtl.dat) # icudtl.dat also required on addon binary folder
+  set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS ${CEF_ROOT}/Release/) # To have all Chromium lib parts on addon binary folder
+else()
+  set(KODICHROMIUM_CUSTOM_DATA "${CEF_ROOT}/Release/Chromium Embedded Framework.framework/Resources/") # TODO: icudtl.dat defined there but currently needed by dll folder
+  set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS "${CEF_ROOT}/Release/Chromium Embedded Framework.framework/Resources/icudtl.dat") # icudtl.dat also required on addon binary folder
+  set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS "${CEF_ROOT}/Release/") # To have all Chromium lib parts on addon binary folder
+endif()
 
 if(${CORE_SYSTEM_NAME} STREQUAL windows)
   set(KODICHROMIUM_SOURCES src/addon/renderer/RendererDX.cpp
