@@ -166,7 +166,6 @@ endif()
 
 # Setup OS independent ninja GN defines
 set(GN_DEFINES               "use_jumbo_build=true")
-#set(GN_DEFINES "${GN_DEFINES} use_cups=false")
 #set(GN_DEFINES "${GN_DEFINES} treat_warnings_as_errors=false")
 #set(GN_DEFINES "${GN_DEFINES} enable_widevine=true")
 #set(GN_DEFINES "${GN_DEFINES} use_alsa=false")
@@ -185,10 +184,8 @@ endif()
 
 # Set chromium OS dependent ninja GN defines
 if(CORE_SYSTEM_NAME STREQUAL android)
-  set(GN_DEFINES "${GN_DEFINES} use_libpci=true") # TODO: Check supported!
   set(GN_DEFINES "${GN_DEFINES} target_os=android")
 elseif(CORE_SYSTEM_NAME STREQUAL freebsd)
-  set(GN_DEFINES "${GN_DEFINES} use_libpci=true") # TODO: Check supported!
 elseif(CORE_SYSTEM_NAME STREQUAL ios)
   set(GN_DEFINES "${GN_DEFINES} target_os=ios")
 elseif(CORE_SYSTEM_NAME STREQUAL osx)
@@ -197,6 +194,7 @@ elseif(CORE_SYSTEM_NAME STREQUAL windows)
   set(GN_DEFINES "${GN_DEFINES} target_os=win")
 elseif(CORE_SYSTEM_NAME STREQUAL linux)
   set(GN_DEFINES "${GN_DEFINES} use_libpci=true")
+  set(GN_DEFINES "${GN_DEFINES} use_cups=false") # To prevent "error: 'ppdFindChoice' is deprecated"
   set(GN_DEFINES "${GN_DEFINES} target_os=linux")
 endif()
 
@@ -514,6 +512,3 @@ ExternalProject_Add_Step(
 
 #                                                                              |
 #------------------------------------------------------------------------------*
-
-# Install the CEF to addon's depends install folder
-#install(DIRECTORY ${PROJECT_BINARY_DIR}/cef DESTINATION src)
