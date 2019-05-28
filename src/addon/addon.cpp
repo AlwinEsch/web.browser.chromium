@@ -50,7 +50,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
 {
   kodi::Log(ADDON_LOG_INFO, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
 
-#ifndef WIN32
+#if defined(TARGET_LINUX)
   // Load CEF library by self
   std::string cefLib = kodi::GetAddonPath(LIBRARY_PREFIX "cef" LIBRARY_SUFFIX);
   if (!cef_load_library(cefLib.c_str()))
@@ -58,11 +58,19 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
     kodi::Log(ADDON_LOG_ERROR, "%s - Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
     return WEB_ADDON_ERROR_FAILED;
   }
+#elif defined(TARGET_DARWIN)
+  if (!m_cefLibraryLoader.LoadInMain(kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework")))
+  {
+    fprintf(stderr, "FATAL: kodichromium cef library load failed!)");
+    return WEB_ADDON_ERROR_FAILED;
+  }
 #endif
 
+#if defined(CEF_USE_SANDBOX)
   // Check set of sandbox and if needed ask user about root password to set correct rights of them
   if (CefSandboxNeedRoot() && !SandboxControl::SetSandbox())
     return WEB_ADDON_ERROR_FAILED;
+#endif
 
   // Set download path if not available
   if (kodi::GetSettingString("downloads.path").empty())
@@ -79,42 +87,35 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   // Initialize DRM widevine
   WidevineControl::InitializeWidevine();
 
-  // Set below the for CEF required paths
-  std::string path;
-
-  path = kodi::GetBaseUserPath();
-  m_strHTMLCachePath = path + "pchHTMLCache";
-  m_strCookiePath = path + "pchCookies";
-
-  path = kodi::GetAddonPath();
-  m_strLibPath = path + "kodichromium";
-
-  path = AddonSharePath();
-  m_strLocalesPath = path + "resources/locales";
-  m_strResourcesPath = path + "resources/";
-
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strHTMLCacheDir  %s", m_strHTMLCachePath.c_str());
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strCookiePath    %s", m_strCookiePath.c_str());
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strLocalesPath   %s", m_strLocalesPath.c_str());
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strResourcesPath %s", m_strResourcesPath.c_str());
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - m_strLibPath       %s", m_strLibPath.c_str());
-
   std::string language = kodi::GetLanguage(LANG_FMT_ISO_639_1, true);
 
   // Create and delete CefSettings itself, otherwise comes seqfault during
   // "CefSettingsTraits::clear" call on destruction of CWebBrowser
   m_cefSettings = new CefSettings;
-  m_cefSettings->no_sandbox                          = 0;
-  CefString(&m_cefSettings->browser_subprocess_path) = m_strLibPath;
-  CefString(&m_cefSettings->framework_dir_path)      = "";
-  m_cefSettings->multi_threaded_message_loop         = 0;
-  m_cefSettings->external_message_pump               = 1;
-  m_cefSettings->windowless_rendering_enabled        = 1;
-  m_cefSettings->command_line_args_disabled          = 0;
-  CefString(&m_cefSettings->cache_path)              = m_strHTMLCachePath;
-  CefString(&m_cefSettings->user_data_path)          = "";
-  m_cefSettings->persist_session_cookies             = 0;
-  m_cefSettings->persist_user_preferences            = 0;
+  m_cefSettings->no_sandbox                          = true;
+#if defined(TARGET_DARWIN)
+  CefString(&m_cefSettings->browser_subprocess_path) = kodi::GetAddonPath("Contents/Frameworks/kodichromium Helper.app/Contents/MacOS/kodichromium Helper");
+  CefString(&m_cefSettings->framework_dir_path)      = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/");
+  CefString(&m_cefSettings->resources_dir_path)      = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Resources/");
+  CefString(&m_cefSettings->locales_dir_path)        = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Resources/");
+#else
+  std::string path = AddonSharePath();
+  m_strLocalesPath = path + "Resources/locales/";
+  m_strResourcesPath = path + "Resources/";
+
+  CefString(&m_cefSettings->browser_subprocess_path) = kodi::GetAddonPath("Contents/Frameworks/kodichromium Helper.app/Contents/MacOS/kodichromium Helper");
+  CefString(&m_cefSettings->framework_dir_path)      = kodi::GetAddonPath("kodichromium");
+  CefString(&m_cefSettings->resources_dir_path)      = m_strResourcesPath;
+  CefString(&m_cefSettings->locales_dir_path)        = m_strLocalesPath;
+#endif
+  m_cefSettings->multi_threaded_message_loop         = false;
+  m_cefSettings->external_message_pump               = true;
+  m_cefSettings->windowless_rendering_enabled        = true;
+  m_cefSettings->command_line_args_disabled          = false;
+  CefString(&m_cefSettings->cache_path)              = kodi::GetBaseUserPath("pchHTMLCache");
+  CefString(&m_cefSettings->user_data_path)          = kodi::GetBaseUserPath();
+  m_cefSettings->persist_session_cookies             = false;
+  m_cefSettings->persist_user_preferences            = false;
   CefString(&m_cefSettings->user_agent)              = StringUtils::Format("Chrome/%d.%d.%d.%d",
                                                                           CHROME_VERSION_MAJOR, CHROME_VERSION_MINOR,
                                                                           CHROME_VERSION_BUILD, CHROME_VERSION_PATCH);
@@ -123,13 +124,11 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   CefString(&m_cefSettings->log_file)                = "";
   m_cefSettings->log_severity                        = static_cast<cef_log_severity_t>(kodi::GetSettingInt("system.loglevelcef"));
   CefString(&m_cefSettings->javascript_flags)        = "";
-  CefString(&m_cefSettings->resources_dir_path)      = m_strResourcesPath;
-  CefString(&m_cefSettings->locales_dir_path)        = m_strLocalesPath;
-  m_cefSettings->pack_loading_disabled               = 0;
+  m_cefSettings->pack_loading_disabled               = false;
   m_cefSettings->remote_debugging_port               = 8457;
   m_cefSettings->uncaught_exception_stack_size       = kodi::GetSettingInt("system.uncaught_exception_stack_size");
-  m_cefSettings->ignore_certificate_errors           = 0;
-  m_cefSettings->enable_net_security_expiration      = 0;
+  m_cefSettings->ignore_certificate_errors           = false;
+  m_cefSettings->enable_net_security_expiration      = false;
   m_cefSettings->background_color                    = 0;
   CefString(&m_cefSettings->accept_language_list)    = language;
   CefString(&m_cefSettings->kodi_addon_dir_path)     = kodi::GetAddonPath();
@@ -159,7 +158,7 @@ void CWebBrowser::StopInstance()
   delete m_cefSettings;
   m_cefSettings = nullptr;
 
-#ifndef WIN32
+#if defined(TARGET_LINUX)
   // unload cef library
   if (!cef_unload_library())
   {

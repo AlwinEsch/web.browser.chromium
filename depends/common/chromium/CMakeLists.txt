@@ -32,7 +32,7 @@
 # more control over steps. With add_custom_target is the complete call done
 # all the time, with ExternalProject is it done only one time unless,
 # --clean-first is used to force.
-# 
+#
 #-------------------------------------------------------------------------------
 #
 # Example:
@@ -55,7 +55,7 @@
 # |           |                      | PATH.                                   |
 # |___________|______________________|_________________________________________|
 # |     2     | load_chromium        | Project to make download of Chromium    |
-# |           |                      | source code                             | 
+# |           |                      | source code                             |
 # |___________|______________________|_________________________________________|
 # |     3     | configure_chromium   | To configure chromium by call of Python |
 # |           |                      | gclient_hook.py script inside CEF       |
@@ -74,7 +74,7 @@
 # 40 GByte free space, otherwise define with "-DTHIRD_PARTY_PATH=YOUR_PATH"
 # place to somewhere else.
 #
-# Windows is limited to a path length of 256 characters what makes it 
+# Windows is limited to a path length of 256 characters what makes it
 # impossible to build over Kodi's addon build folder and define separate to
 # C:/chromium where it becomes created!
 #
@@ -174,7 +174,7 @@ set(GN_DEFINES               "use_jumbo_build=true")
 #set(GN_DEFINES "${GN_DEFINES} rtc_use_h264=true")
 #set(GN_DEFINES "${GN_DEFINES} is_official_build=true")
 #set(GN_DEFINES "${GN_DEFINES} use_allocator=none")
-set(GN_DEFINES "${GN_DEFINES} proprietary_codecs=true")
+#set(GN_DEFINES "${GN_DEFINES} proprietary_codecs=true")
 set(GN_DEFINES "${GN_DEFINES} ffmpeg_branding=Chrome")
 set(GN_DEFINES "${GN_DEFINES} fatal_linker_warnings=false")
 if(CMAKE_BUILD_TYPE STREQUAL Release)
@@ -243,7 +243,7 @@ ExternalProject_Add(
   CONFIGURE_COMMAND   ""
   PATCH_COMMAND       ""
   SOURCE_DIR          "${DEPOT_TOOLS_DIR}"
-  
+
   TEST_COMMAND        ""
   BUILD_COMMAND       ""
   INSTALL_COMMAND     ""
@@ -252,7 +252,7 @@ ExternalProject_Add(
 # For Windows call the update to have Python, Git and SVN
 if(CORE_SYSTEM_NAME STREQUAL windows)
   ExternalProject_Add_Step(
-    depot_tools 
+    depot_tools
     update_depot_tools
 
     COMMAND ${DEPOT_TOOLS_DIR}/update_depot_tools.bat
@@ -302,10 +302,10 @@ ExternalProject_Add(
 )
 
 ExternalProject_Add_Step(
-  load_chromium 
+  load_chromium
   download_chromium
 
-  # Start automate-git.py to download chromium from web and add CEF changes on end 
+  # Start automate-git.py to download chromium from web and add CEF changes on end
   COMMAND             ${PYTHON} ${PROJECT_BINARY_DIR}/automate-git.py
                               --url=${USED_CEF_REPO}
                               --checkout=${USED_CEF_BRANCH}
@@ -351,7 +351,7 @@ ExternalProject_Add(
 
 # Step to configure chromium for build
 if(CORE_SYSTEM_NAME STREQUAL windows)
-  # Windows need different way as other OS, PATH is set there by 
+  # Windows need different way as other OS, PATH is set there by
   # CMAKE_MSVCIDE_RUN_PATH and need also GN_ARGUMENTS
   ExternalProject_Add_Step(
     configure_chromium
@@ -476,7 +476,7 @@ ExternalProject_Add(
 
 # Step to create the CEF package folder
 ExternalProject_Add_Step(
-  cef_package 
+  cef_package
   create_package
 
   COMMAND             ${PYTHON} make_distrib.py --ninja-build
@@ -492,18 +492,18 @@ ExternalProject_Add_Step(
 
 # Step to copy for addon needed CEF package to right place
 #
-# CEF create a folder with a bigger name e.g. 
+# CEF create a folder with a bigger name e.g.
 # "cef_binary_74.0.0-kodi.1973+ga51c714+chromium-74.0.3729.0_windows32_package"
 # where it becomes harder for a Kodi addon to find it before it is created.
 # With this becomes it copied by separated CMake script to:
 # ${PROJECT_BINARY_DIR}/cef where it is easier found.
 #
 ExternalProject_Add_Step(
-  cef_package 
+  cef_package
   install_build_package
 
   COMMAND             ${CMAKE_COMMAND} -DPROJECT_BINARY_DIR=${THIRD_PARTY_PATH}
-                                       -DSOURCE_DIR=${PROJECT_BINARY_DIR}/cef
+                                       -DSOURCE_DIR=${CMAKE_INSTALL_PREFIX}/src/cef
                                        -DCORE_SYSTEM_NAME=${CORE_SYSTEM_NAME}
                                        -DCEF_BIT_STR=${CEF_BIT_STR}
                                        -P ${CMAKE_SOURCE_DIR}/CMake/copy-cef.cmake
@@ -516,4 +516,4 @@ ExternalProject_Add_Step(
 #------------------------------------------------------------------------------*
 
 # Install the CEF to addon's depends install folder
-install(DIRECTORY ${PROJECT_BINARY_DIR}/cef DESTINATION src)
+#install(DIRECTORY ${PROJECT_BINARY_DIR}/cef DESTINATION src)

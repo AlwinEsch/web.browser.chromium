@@ -27,6 +27,8 @@ if(CORE_SYSTEM_NAME STREQUAL osx)
   set(PROJECT_ARCH "x86_64")
 endif()
 
+set(USE_SANDBOX 1)
+
 # Search on addon depends generated CEF dev kit and set CEF_ROOT
 find_path(CEF_PROJECT_DIR NAMES src/cef/CMakeLists.txt)
 if(NOT CEF_PROJECT_DIR)
@@ -139,36 +141,92 @@ if(CORE_SYSTEM_NAME STREQUAL windows)
 
    # The by addon dll needed additional Sandbox binary application
   list(APPEND KODICHROMIUM_ADDITIONAL_BINARY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/kodichromium${CMAKE_EXECUTABLE_SUFFIX})
+elseif(CORE_SYSTEM_NAME STREQUAL osx)
+  set(CEF_HELPER_TARGET "kodichromium_Helper")
+  set(CEF_HELPER_OUTPUT_NAME "kodichromium Helper")
+
+  # Variable referenced from Info.plist files.
+  set(PRODUCT_NAME "kodichromium")
+
+  list(APPEND DEPLIBS libcef_dll_wrapper
+                      ${CEF_STANDARD_LIBS})
+
+  list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main_mac.cpp)
+
+  add_executable(${CEF_HELPER_TARGET} MACOSX_BUNDLE ${KODICHROMIUM_BIN_SOURCES})
+  # Set Xcode target properties.
+  set_target_properties(${CEF_HELPER_TARGET} PROPERTIES
+    XCODE_ATTRIBUTE_ALWAYS_SEARCH_USER_PATHS                    NO
+    XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD                 "gnu++11"   # -std=gnu++11
+    XCODE_ATTRIBUTE_CLANG_LINK_OBJC_RUNTIME                     NO          # -fno-objc-link-runtime
+    XCODE_ATTRIBUTE_CLANG_WARN_OBJC_MISSING_PROPERTY_SYNTHESIS  YES         # -Wobjc-missing-property-synthesis
+    XCODE_ATTRIBUTE_COPY_PHASE_STRIP                            NO
+    XCODE_ATTRIBUTE_DEAD_CODE_STRIPPING[variant=Release]        YES         # -Wl,-dead_strip
+    XCODE_ATTRIBUTE_GCC_C_LANGUAGE_STANDARD                     "c99"       # -std=c99
+    XCODE_ATTRIBUTE_GCC_CW_ASM_SYNTAX                           NO          # No -fasm-blocks
+    XCODE_ATTRIBUTE_GCC_DYNAMIC_NO_PIC                          NO
+    XCODE_ATTRIBUTE_GCC_ENABLE_CPP_EXCEPTIONS                   YES          # -fno-exceptions
+    XCODE_ATTRIBUTE_GCC_ENABLE_CPP_RTTI                         NO          # -fno-rtti
+    XCODE_ATTRIBUTE_GCC_ENABLE_PASCAL_STRINGS                   NO          # No -mpascal-strings
+    XCODE_ATTRIBUTE_GCC_INLINES_ARE_PRIVATE_EXTERN              YES         # -fvisibility-inlines-hidden
+    XCODE_ATTRIBUTE_GCC_OBJC_CALL_CXX_CDTORS                    YES         # -fobjc-call-cxx-cdtors
+    XCODE_ATTRIBUTE_GCC_SYMBOLS_PRIVATE_EXTERN                  YES         # -fvisibility=hidden
+    XCODE_ATTRIBUTE_GCC_THREADSAFE_STATICS                      NO          # -fno-threadsafe-statics
+    XCODE_ATTRIBUTE_GCC_TREAT_WARNINGS_AS_ERRORS                YES         # -Werror
+    XCODE_ATTRIBUTE_GCC_VERSION                                 "com.apple.compilers.llvm.clang.1_0"
+    XCODE_ATTRIBUTE_GCC_WARN_ABOUT_MISSING_NEWLINE              YES         # -Wnewline-eof
+    XCODE_ATTRIBUTE_USE_HEADERMAP                               NO
+    OSX_ARCHITECTURES_DEBUG                                     "${CMAKE_OSX_ARCHITECTURES}"
+    OSX_ARCHITECTURES_RELEASE                                   "${CMAKE_OSX_ARCHITECTURES}")
+  add_dependencies(${CEF_HELPER_TARGET} libcef_dll_wrapper)
+  target_link_libraries(${CEF_HELPER_TARGET} ${DEPLIBS})
+  set_target_properties(${CEF_HELPER_TARGET} PROPERTIES
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/app/mac/helper-Info.plist
+    OUTPUT_NAME ${CEF_HELPER_OUTPUT_NAME})
+
+  if(USE_SANDBOX)
+    # Logical target used to link the cef_sandbox library.
+    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_RELEASE}" "${CEF_SANDBOX_LIB_RELEASE}")
+    target_link_libraries(${CEF_HELPER_TARGET} cef_sandbox_lib)
+  endif()
+
+  # Copy files into the main app bundle.
+  add_custom_command(
+    TARGET ${CEF_HELPER_TARGET}
+    POST_BUILD
+    # Copy the helper app bundle into the Frameworks directory.
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_BINARY_DIR}/${CEF_HELPER_OUTPUT_NAME}.app"
+            "${CMAKE_CURRENT_BINARY_DIR}/Contents/Frameworks/${CEF_HELPER_OUTPUT_NAME}.app"
+    # Copy the CEF framework into the Frameworks directory.
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CEF_BINARY_DIR}/Chromium Embedded Framework.framework"
+            "${CMAKE_CURRENT_BINARY_DIR}/Contents/Frameworks/Chromium Embedded Framework.framework"
+    VERBATIM)
 else()
   list(APPEND DEPLIBS libcef_dll_wrapper
                       dl
                       ${CEF_STANDARD_LIBS})
 
-  list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main.cpp)
+  list(APPEND KODICHROMIUM_BIN_SOURCES src/app/main_linux.cpp)
 
   add_executable(kodichromium ${KODICHROMIUM_BIN_SOURCES})
   add_dependencies(kodichromium libcef_dll_wrapper)
 
   target_link_libraries(kodichromium ${DEPLIBS})
-  if(CORE_SYSTEM_NAME STREQUAL osx)
-    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_RELEASE}" "${CEF_SANDBOX_LIB_RELEASE}")
-    target_link_libraries(kodichromium cef_sandbox_lib)
-  endif()
 
    # The by addon dll needed additional Sandbox binary application
   list(APPEND KODICHROMIUM_ADDITIONAL_BINARY ${CMAKE_CURRENT_BINARY_DIR}/kodichromium${CMAKE_EXECUTABLE_SUFFIX})
-  endif()
+endif()
 
 #-------------------------------------------------------------------------------
 
-if(NOT CORE_SYSTEM_NAME STREQUAL osx)
+if(CORE_SYSTEM_NAME STREQUAL osx)
+  set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/Contents") # To have all Chromium lib parts on addon binary folder
+else()
   set(KODICHROMIUM_CUSTOM_DATA ${CEF_ROOT}/Resources/) # TODO: icudtl.dat defined there but currently needed by dll folder
   set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS ${CEF_ROOT}/Resources/icudtl.dat) # icudtl.dat also required on addon binary folder
   set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS ${CEF_ROOT}/Release/) # To have all Chromium lib parts on addon binary folder
-else()
-  set(KODICHROMIUM_CUSTOM_DATA "${CEF_ROOT}/Release/Chromium Embedded Framework.framework/Resources/") # TODO: icudtl.dat defined there but currently needed by dll folder
-  set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS "${CEF_ROOT}/Release/Chromium Embedded Framework.framework/Resources/icudtl.dat") # icudtl.dat also required on addon binary folder
-  set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS "${CEF_ROOT}/Release/") # To have all Chromium lib parts on addon binary folder
 endif()
 
 if(${CORE_SYSTEM_NAME} STREQUAL windows)
@@ -255,6 +313,7 @@ build_addon(web.browser.chromium KODICHROMIUM DEPLIBS)
 if(${CORE_SYSTEM_NAME} STREQUAL windows)
   SET_LIBRARY_TARGET_PROPERTIES(web.browser.chromium)
 endif()
+
 add_dependencies(web.browser.chromium libcef_dll_wrapper)
 add_definitions(-DKODICHROMIUM_VERSION="${KODICHROMIUM_VERSION}"
                 -DLIBRARY_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}"

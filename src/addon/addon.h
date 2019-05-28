@@ -15,6 +15,9 @@
 #include "include/cef_app.h"
 #include "include/cef_client.h"
 #include "include/base/cef_thread_checker.h"
+#if defined(TARGET_DARWIN)
+#include "include/wrapper/cef_library_loader.h"
+#endif
 #include "include/wrapper/cef_message_router.h"
 
 #include <kodi/addon-instance/Web.h>
@@ -68,11 +71,12 @@ private:
   std::mutex m_mutex;
 
   CefSettings* m_cefSettings;
-  std::string m_strHTMLCachePath;
-  std::string m_strCookiePath;
   std::string m_strResourcesPath;
   std::string m_strLocalesPath;
-  std::string m_strLibPath;
+
+#if defined(TARGET_DARWIN)
+  CefScopedLibraryLoader m_cefLibraryLoader;
+#endif
 
   std::unordered_map<int, CefRefPtr<CWebBrowserClient>> m_browserClients;
   std::unordered_map<std::string, CefRefPtr<CWebBrowserClient>> m_browserClientsInactive;

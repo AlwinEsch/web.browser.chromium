@@ -1,3 +1,8 @@
+# This file becomes used from CMakeLists.txt by ExternalProject
+# cmake -P copy-cef.cmake call.
+
+# Read in generated file the current version to find previous generated package
+# folder.
 file(STRINGS ${PROJECT_BINARY_DIR}/cef_version.txt CEF_VERSION)
 
 if(CORE_SYSTEM_NAME STREQUAL osx)
@@ -9,4 +14,5 @@ endif()
 message(STATUS "Used package: ${PACKAGE_PLACE}")
 message(STATUS "   copied to: ${SOURCE_DIR}")
 
+# Copy the by Chromium CEF generated package to Kodi's addon build depends folder.
 file(COPY ${PACKAGE_PLACE}/ DESTINATION ${SOURCE_DIR})
