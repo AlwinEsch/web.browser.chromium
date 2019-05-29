@@ -93,8 +93,8 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   // Create and delete CefSettings itself, otherwise comes seqfault during
   // "CefSettingsTraits::clear" call on destruction of CWebBrowser
   m_cefSettings = new CefSettings;
-  m_cefSettings->no_sandbox                          = true;
 #if defined(TARGET_DARWIN)
+  m_cefSettings->no_sandbox                          = true; // Currently not work on Mac
   CefString(&m_cefSettings->browser_subprocess_path) = kodi::GetAddonPath("Contents/Frameworks/kodichromium Helper.app/Contents/MacOS/kodichromium Helper");
   CefString(&m_cefSettings->framework_dir_path)      = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/");
   CefString(&m_cefSettings->resources_dir_path)      = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Resources/");
@@ -104,6 +104,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   m_strLocalesPath = path + "resources/locales/";
   m_strResourcesPath = path + "resources/";
 
+  m_cefSettings->no_sandbox                          = false;
   CefString(&m_cefSettings->browser_subprocess_path) = kodi::GetAddonPath("kodichromium");
   CefString(&m_cefSettings->framework_dir_path)      = kodi::GetAddonPath();
   CefString(&m_cefSettings->resources_dir_path)      = m_strResourcesPath;
