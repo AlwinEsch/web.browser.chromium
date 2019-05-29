@@ -63,7 +63,7 @@ add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 PRINT_CEF_CONFIG()
 
 # Logical target used to link the libcef library.
-ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_RELEASE}" "${CEF_LIB_RELEASE}")
+ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 
 if(CORE_SYSTEM_NAME STREQUAL windows)
   add_definitions(-DHAS_DX)
@@ -186,7 +186,7 @@ elseif(CORE_SYSTEM_NAME STREQUAL osx)
 
   if(USE_SANDBOX)
     # Logical target used to link the cef_sandbox library.
-    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_RELEASE}" "${CEF_SANDBOX_LIB_RELEASE}")
+    ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
     target_link_libraries(${CEF_HELPER_TARGET} cef_sandbox_lib)
   endif()
 

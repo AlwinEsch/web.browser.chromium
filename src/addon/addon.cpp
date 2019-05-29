@@ -59,9 +59,10 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
     return WEB_ADDON_ERROR_FAILED;
   }
 #elif defined(TARGET_DARWIN)
-  if (!m_cefLibraryLoader.LoadInMain(kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework")))
+  std::string cefLib = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework");
+  if (!m_cefLibraryLoader.LoadInMain(cefLib))
   {
-    fprintf(stderr, "FATAL: kodichromium cef library load failed!)");
+    kodi::Log(ADDON_LOG_ERROR, "%s - Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
     return WEB_ADDON_ERROR_FAILED;
   }
 #endif
@@ -100,11 +101,11 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   CefString(&m_cefSettings->locales_dir_path)        = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Resources/");
 #else
   std::string path = AddonSharePath();
-  m_strLocalesPath = path + "Resources/locales/";
-  m_strResourcesPath = path + "Resources/";
+  m_strLocalesPath = path + "resources/locales/";
+  m_strResourcesPath = path + "resources/";
 
-  CefString(&m_cefSettings->browser_subprocess_path) = kodi::GetAddonPath("Contents/Frameworks/kodichromium Helper.app/Contents/MacOS/kodichromium Helper");
-  CefString(&m_cefSettings->framework_dir_path)      = kodi::GetAddonPath("kodichromium");
+  CefString(&m_cefSettings->browser_subprocess_path) = kodi::GetAddonPath("kodichromium");
+  CefString(&m_cefSettings->framework_dir_path)      = kodi::GetAddonPath();
   CefString(&m_cefSettings->resources_dir_path)      = m_strResourcesPath;
   CefString(&m_cefSettings->locales_dir_path)        = m_strLocalesPath;
 #endif

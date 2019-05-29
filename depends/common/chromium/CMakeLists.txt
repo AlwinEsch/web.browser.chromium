@@ -166,20 +166,27 @@ endif()
 
 # Setup OS independent ninja GN defines
 set(GN_DEFINES               "use_jumbo_build=true")
-#set(GN_DEFINES "${GN_DEFINES} treat_warnings_as_errors=false")
-#set(GN_DEFINES "${GN_DEFINES} enable_widevine=true")
-#set(GN_DEFINES "${GN_DEFINES} use_alsa=false")
-#set(GN_DEFINES "${GN_DEFINES} use_pulseaudio=false")
-#set(GN_DEFINES "${GN_DEFINES} rtc_use_h264=true")
-#set(GN_DEFINES "${GN_DEFINES} is_official_build=true")
-#set(GN_DEFINES "${GN_DEFINES} use_allocator=none")
-#set(GN_DEFINES "${GN_DEFINES} proprietary_codecs=true")
+set(GN_DEFINES "${GN_DEFINES} treat_warnings_as_errors=false")  # To prevent build stop by possible present warnings
+set(GN_DEFINES "${GN_DEFINES} enable_widevine=true")            # To allow DRM media streams
+set(GN_DEFINES "${GN_DEFINES} rtc_use_h264=true")
+set(GN_DEFINES "${GN_DEFINES} is_official_build=true")
+set(GN_DEFINES "${GN_DEFINES} proprietary_codecs=true")
 set(GN_DEFINES "${GN_DEFINES} ffmpeg_branding=Chrome")
-set(GN_DEFINES "${GN_DEFINES} fatal_linker_warnings=false")
+set(GN_DEFINES "${GN_DEFINES} fatal_linker_warnings=false")     # To prevent build stop by possible present warnings
+set(GN_DEFINES "${GN_DEFINES} enable_ac3_eac3_audio_demuxing=true")
+set(GN_DEFINES "${GN_DEFINES} enable_basic_print_dialog=false")
+set(GN_DEFINES "${GN_DEFINES} enable_desktop_in_product_help=false")
+set(GN_DEFINES "${GN_DEFINES} enable_dolby_vision_demuxing=true")
+set(GN_DEFINES "${GN_DEFINES} enable_hevc_demuxing=true")
+set(GN_DEFINES "${GN_DEFINES} enable_hls_sample_aes=true")
+set(GN_DEFINES "${GN_DEFINES} enable_libaom_decoder=true")
+set(GN_DEFINES "${GN_DEFINES} enable_mpeg_h_audio_demuxing=true")
+set(GN_DEFINES "${GN_DEFINES} enable_mse_mpeg2ts_stream_parser=true")
+set(GN_DEFINES "${GN_DEFINES} rtc_build_examples=false")
 if(CMAKE_BUILD_TYPE STREQUAL Release)
   set(GN_DEFINES "${GN_DEFINES} is_debug=false")
   set(GN_DEFINES "${GN_DEFINES} remove_webcore_debug_symbols=true")
-  set(GN_DEFINES "${GN_DEFINES} symbol_level=1")
+  set(GN_DEFINES "${GN_DEFINES} symbol_level=0")
 endif()
 
 # Set chromium OS dependent ninja GN defines
@@ -193,8 +200,11 @@ elseif(CORE_SYSTEM_NAME STREQUAL osx)
 elseif(CORE_SYSTEM_NAME STREQUAL windows)
   set(GN_DEFINES "${GN_DEFINES} target_os=win")
 elseif(CORE_SYSTEM_NAME STREQUAL linux)
-  set(GN_DEFINES "${GN_DEFINES} use_libpci=true")
-  set(GN_DEFINES "${GN_DEFINES} use_cups=false") # To prevent "error: 'ppdFindChoice' is deprecated"
+  set(GN_DEFINES "${GN_DEFINES} use_cups=false")                # To prevent: "error: 'ppdFindChoice' is deprecated"
+  set(GN_DEFINES "${GN_DEFINES} use_allocator=none")            # To prevent: "Check failed: base::allocator::IsAllocatorInitialized()."
+  set(GN_DEFINES "${GN_DEFINES} use_alsa=false")                # To prevent not wanted audio, becomes done by Kodi itself
+  set(GN_DEFINES "${GN_DEFINES} use_pulseaudio=false")          # To prevent not wanted audio, becomes done by Kodi itself
+  set(GN_DEFINES "${GN_DEFINES} use_gnome_keyring=false")
   set(GN_DEFINES "${GN_DEFINES} target_os=linux")
 endif()
 
@@ -394,7 +404,7 @@ endif()
 #                                                                              |
 
 # Build libcef as mandatory part
-set(NINJA_BUILD_TYPE Release_GN_${CEF_BUILD_CPU})
+set(NINJA_BUILD_TYPE ${CMAKE_BUILD_TYPE}_GN_${CEF_BUILD_CPU})
 set(NINJA_BUILD_PARTS "cef")
 
 # If linux add also sandbox build
