@@ -89,7 +89,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 
 # Chromium/CEF source code URL's
 set(USED_CEF_REPO https://github.com/kodi-web/cef.git)
-set(USED_CEF_BRANCH 3729-ForKodi)
+set(USED_CEF_BRANCH 3729-kodi)
 set(USED_CHROMIUM_REPO https://chromium.googlesource.com/chromium/src.git)
 
 include(ExternalProject)
