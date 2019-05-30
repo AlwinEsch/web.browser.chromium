@@ -14,6 +14,10 @@ The for Kodi used CEF is deposited here https://github.com/kodi-web/cef and cont
 
 If you haven't done so, we encourage you to read our **[contributing guide](https://github.com/xbmc/xbmc/blob/master/docs/CONTRIBUTING.md)** first. It contains pertinent information about our development model.
 
+<p align="center">
+  <img src="docs/resources/kodi-browser.gif" alt="Kodi Browser">
+</p>
+
 ## Building Addon
 This uses CMake as its building system but instructions are highly dependent on your operating system and target platform. Choose your platform below and read the guide carefully before proceeding.
 
