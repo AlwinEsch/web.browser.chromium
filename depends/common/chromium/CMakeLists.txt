@@ -130,7 +130,7 @@ if(NOT CORE_SYSTEM_NAME STREQUAL windows)
   find_program(PYTHON "python")
 else()
   set(PYTHON "${DEPOT_TOOLS_DIR}/python.bat")
-    endif()
+ endif()
 
 if(ARCH STREQUAL x86_64)
   set(CEF_BUILD_TYPE "--x64-build")
@@ -186,7 +186,7 @@ set(GN_DEFINES "${GN_DEFINES} rtc_build_examples=false")
 if(CMAKE_BUILD_TYPE STREQUAL Release)
   set(GN_DEFINES "${GN_DEFINES} is_debug=false")
   set(GN_DEFINES "${GN_DEFINES} remove_webcore_debug_symbols=true")
-  set(GN_DEFINES "${GN_DEFINES} symbol_level=0")
+  set(GN_DEFINES "${GN_DEFINES} symbol_level=1")
 endif()
 
 # Set chromium OS dependent ninja GN defines
@@ -263,7 +263,7 @@ if(CORE_SYSTEM_NAME STREQUAL windows)
     depot_tools
     update_depot_tools
 
-    COMMAND ${DEPOT_TOOLS_DIR}/update_depot_tools.bat
+    COMMAND ${CMAKE_COMMAND} -E env ${DEPOT_TOOLS_DIR}/update_depot_tools.bat
     DEPENDEES update
   )
 endif()
@@ -426,7 +426,6 @@ ExternalProject_Add(
   INSTALL_COMMAND     ""
   BUILD_IN_SOURCE     TRUE
   UPDATE_DISCONNECTED TRUE
-  #BUILD_ALWAYS        1
   DEPENDS             configure_chromium
 )
 
@@ -435,7 +434,7 @@ if(CORE_SYSTEM_NAME STREQUAL windows)
     build_chromium
     builder
 
-    COMMAND             ninja -C out/${NINJA_BUILD_TYPE} ${NINJA_BUILD_PARTS}
+    COMMAND             ${CMAKE_COMMAND} -E env ninja -C out/${NINJA_BUILD_TYPE} ${NINJA_BUILD_PARTS}
     COMMENT             "Run GN ninja build process"
     WORKING_DIRECTORY   ${THIRD_PARTY_PATH}/chromium_git/chromium/src
     DEPENDEES           build
@@ -487,7 +486,7 @@ ExternalProject_Add_Step(
   cef_package
   create_package
 
-  COMMAND             ${PYTHON} make_distrib.py --ninja-build
+  COMMAND             ${CMAKE_COMMAND} -E env ${PYTHON} make_distrib.py --ninja-build
                                                 --output-dir ${THIRD_PARTY_PATH}/chromium_package
                                                 --allow-partial
                                                 $<$<BOOL:${CEF_NO_ARCHIVE}>:--no-archive>

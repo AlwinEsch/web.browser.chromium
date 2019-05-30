@@ -226,7 +226,7 @@ if(CORE_SYSTEM_NAME STREQUAL osx)
 else()
   set(KODICHROMIUM_CUSTOM_DATA ${CEF_ROOT}/Resources/) # TODO: icudtl.dat defined there but currently needed by dll folder
   set(KODICHROMIUM_ADDITIONAL_BINARY_PARTS ${CEF_ROOT}/Resources/icudtl.dat) # icudtl.dat also required on addon binary folder
-  set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS ${CEF_ROOT}/Release/) # To have all Chromium lib parts on addon binary folder
+  set(KODICHROMIUM_ADDITIONAL_BINARY_DIRS ${CEF_ROOT}/${CMAKE_BUILD_TYPE}/) # To have all Chromium lib parts on addon binary folder
 endif()
 
 if(${CORE_SYSTEM_NAME} STREQUAL windows)
