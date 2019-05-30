@@ -57,8 +57,6 @@ public:
   CefRefPtr<CefApp> GetApp() { return m_app; }
   CefRefPtr<CAudioHandler> GetAudioHandler() { return m_audioHandler; }
 
-  const std::string& ResourcesPath() const { return m_strResourcesPath; }
-
   void InformDestroyed(int uniqueClientId);
 
 private:
@@ -71,8 +69,10 @@ private:
   std::mutex m_mutex;
 
   CefSettings* m_cefSettings;
-  std::string m_strResourcesPath;
-  std::string m_strLocalesPath;
+  std::string m_browserSubprocessPath;
+  std::string m_frameworkDirPath;
+  std::string m_localesPath;
+  std::string m_resourcesPath;
 
 #if defined(TARGET_DARWIN)
   CefScopedLibraryLoader m_cefLibraryLoader;

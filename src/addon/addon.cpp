@@ -94,22 +94,24 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   // "CefSettingsTraits::clear" call on destruction of CWebBrowser
   m_cefSettings = new CefSettings;
 #if defined(TARGET_DARWIN)
-  m_cefSettings->no_sandbox                          = true; // Currently not work on Mac
-  CefString(&m_cefSettings->browser_subprocess_path) = kodi::GetAddonPath("Contents/Frameworks/kodichromium Helper.app/Contents/MacOS/kodichromium Helper");
-  CefString(&m_cefSettings->framework_dir_path)      = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/");
-  CefString(&m_cefSettings->resources_dir_path)      = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Resources/");
-  CefString(&m_cefSettings->locales_dir_path)        = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Resources/");
-#else
-  std::string path = AddonSharePath();
-  m_strLocalesPath = path + "resources/locales/";
-  m_strResourcesPath = path + "resources/";
+  m_browserSubprocessPath = kodi::GetAddonPath("Contents/Frameworks/kodichromium Helper.app/Contents/MacOS/kodichromium Helper");
+  m_frameworkDirPath = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/");
+  m_resourcesPath = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Resources/");
+  m_localesPath = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Resources/");
 
-  m_cefSettings->no_sandbox                          = false;
-  CefString(&m_cefSettings->browser_subprocess_path) = kodi::GetAddonPath("kodichromium");
-  CefString(&m_cefSettings->framework_dir_path)      = kodi::GetAddonPath();
-  CefString(&m_cefSettings->resources_dir_path)      = m_strResourcesPath;
-  CefString(&m_cefSettings->locales_dir_path)        = m_strLocalesPath;
+  m_cefSettings->no_sandbox = true; // Currently not work on Mac
+#else
+  m_browserSubprocessPath = CInstanceWeb::AddonLibPath("kodichromium");
+  m_frameworkDirPath = CInstanceWeb::AddonLibPath();
+  m_resourcesPath = CInstanceWeb::AddonSharePath("resources/");
+  m_localesPath = CInstanceWeb::AddonSharePath("resources/locales/");
+
+  m_cefSettings->no_sandbox = false;
 #endif
+  CefString(&m_cefSettings->browser_subprocess_path) = m_browserSubprocessPath;
+  CefString(&m_cefSettings->framework_dir_path)      = m_frameworkDirPath;
+  CefString(&m_cefSettings->resources_dir_path)      = m_resourcesPath;
+  CefString(&m_cefSettings->locales_dir_path)        = m_localesPath;
   m_cefSettings->multi_threaded_message_loop         = false;
   m_cefSettings->external_message_pump               = true;
   m_cefSettings->windowless_rendering_enabled        = true;
@@ -118,10 +120,10 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   CefString(&m_cefSettings->user_data_path)          = kodi::GetBaseUserPath();
   m_cefSettings->persist_session_cookies             = false;
   m_cefSettings->persist_user_preferences            = false;
-  CefString(&m_cefSettings->user_agent)              = StringUtils::Format("Chrome/%d.%d.%d.%d",
-                                                                          CHROME_VERSION_MAJOR, CHROME_VERSION_MINOR,
-                                                                          CHROME_VERSION_BUILD, CHROME_VERSION_PATCH);
-  CefString(&m_cefSettings->product_version)         = "KODI";
+  CefString(&m_cefSettings->product_version)         = StringUtils::Format("Kodi/%s Chrome/%d.%d.%d.%d",
+                                                                            KODICHROMIUM_VERSION,
+                                                                            CHROME_VERSION_MAJOR, CHROME_VERSION_MINOR,
+                                                                            CHROME_VERSION_BUILD, CHROME_VERSION_PATCH);
   CefString(&m_cefSettings->locale)                  = language;
   CefString(&m_cefSettings->log_file)                = "";
   m_cefSettings->log_severity                        = static_cast<cef_log_severity_t>(kodi::GetSettingInt("system.loglevelcef"));
