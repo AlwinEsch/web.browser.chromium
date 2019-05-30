@@ -27,7 +27,7 @@ suggested by the README.
 1. `git clone https://github.com/AlwinEsch/kodi.git`
 2. `git clone https://github.com/AlwinEsch/web.browser.chromium.git`
 3. `cd web.browser.chromium && mkdir build && cd build`
-4. `cmake -DADDONS_TO_BUILD=web.browser.chromium -DADDON_SRC_PREFIX=../.. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=$HOME/.kodi/addons -DPACKAGE_ZIP=1 -DTHIRD_PARTY_PATH=$HOME/chromium ../../kodi/cmake/addons`
+4. `cmake -DADDONS_TO_BUILD=web.browser.chromium -DADDON_SRC_PREFIX=../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$HOME/.kodi/addons -DPACKAGE_ZIP=1 -DTHIRD_PARTY_PATH=$HOME/chromium ../../kodi/cmake/addons`
 5. `make`
 
-**WARNING**:<br>The libcef.so (Chromium code and needed from addon) created in debug mode can be about 4 GB in size, so in this case the first Kodi start with this library can be extended a little bit (this is cached in the following starts and goes faster).
+**WARNING**:<br>The libcef.so (Chromium code and needed from addon) created in debug mode can be about 4 GB in size, so in this case the first Kodi start with this library can be extended a little bit (this is cached in the following starts and goes faster). Further is the debug build currently not stable enough and should be only used during development!
