@@ -133,7 +133,6 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   m_cefSettings->enable_net_security_expiration      = false;
   m_cefSettings->background_color                    = 0;
   CefString(&m_cefSettings->accept_language_list)    = language;
-  CefString(&m_cefSettings->kodi_addon_dir_path)     = kodi::GetAddonPath();
 
   kodi::Log(ADDON_LOG_DEBUG, "%s - Started web browser add-on process", __FUNCTION__);
 
@@ -339,10 +338,9 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
     settings.background_color                   = 0x00; // fully transparent
     CefString(&settings.accept_language_list)   = "";
 
-    CefRefPtr<CefDictionaryValue> extra_info;
     CefRefPtr<CefRequestContext> request_context = CefRequestContext::CreateContext(CefRequestContext::GetGlobalContext(),
                                                                                     contextHandler);
-    if (!CefBrowserHost::CreateBrowser(info, browserClient, "", settings/*, extra_info*/, request_context))
+    if (!CefBrowserHost::CreateBrowser(info, browserClient, "", settings, request_context))
     {
       kodi::Log(ADDON_LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);
       if (browserClient)
