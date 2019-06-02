@@ -127,7 +127,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   CefString(&m_cefSettings->locale)                  = language;
   CefString(&m_cefSettings->log_file)                = "";
   m_cefSettings->log_severity                        = static_cast<cef_log_severity_t>(kodi::GetSettingInt("system.loglevelcef"));
-  CefString(&m_cefSettings->javascript_flags)        = "";
+  CefString(&m_cefSettings->javascript_flags)        = kodi::GetTempAddonPath("chromium.log");
   m_cefSettings->pack_loading_disabled               = false;
   m_cefSettings->remote_debugging_port               = 8457;
   m_cefSettings->uncaught_exception_stack_size       = kodi::GetSettingInt("system.uncaught_exception_stack_size");
@@ -165,7 +165,7 @@ void CWebBrowser::StopInstance()
   // unload cef library
   if (!cef_unload_library())
   {
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Failed to unload CEF library", __FUNCTION__);
+    kodi::Log(ADDON_LOG_DEBUG, "%s - Failed to unload CEF library", __FUNCTION__);
     return;
   }
 #endif
@@ -260,7 +260,7 @@ bool CWebBrowser::SetLanguage(const char *language)
   if (!m_started)
     return false;
 
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser language set to '%s'", __FUNCTION__, language);
+  kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser language set to '%s'", __FUNCTION__, language);
   return true;
 }
 
@@ -271,7 +271,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
   if (!m_started)
     return nullptr;
 
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
+  kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
 
   CefRefPtr<CWebBrowserClient> browserClient;
 
@@ -280,7 +280,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
   auto itr = m_browserClientsInactive.find(sourceName);
   if (itr != m_browserClientsInactive.end())
   {
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_INFO, "%s - Found control in inactive mode and setting active", __FUNCTION__);
+    kodi::Log(ADDON_LOG_INFO, "%s - Found control in inactive mode and setting active", __FUNCTION__);
     browserClient = itr->second;
     browserClient->SetActive();
     m_browserClientsInactive.erase(itr);
@@ -356,7 +356,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
 
   int uniqueId = browserClient->GetUniqueId();
   m_browserClients.emplace(std::pair<int, CefRefPtr<CWebBrowserClient>>(uniqueId, browserClient));
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control created", __FUNCTION__);
+  kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control created", __FUNCTION__);
   return browserClient.get();
 }
 
@@ -382,7 +382,7 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
 
   if (complete)
   {
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control destroy complete", __FUNCTION__);
+    kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control destroy complete", __FUNCTION__);
     const auto& inactiveClient = m_browserClientsInactive.find(browserClient->GetName());
     if (inactiveClient != m_browserClientsInactive.end())
       m_browserClientsInactive.erase(inactiveClient);
@@ -393,7 +393,7 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
   }
   else
   {
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control destroy to set inactive", __FUNCTION__);
+    kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control destroy to set inactive", __FUNCTION__);
     if (itr == m_browserClients.end())
     {
       kodi::Log(ADDON_LOG_ERROR, "%s - Web browser control destroy called for invalid id '%i'",
@@ -403,7 +403,7 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
     m_browserClientsInactive[browserClient->GetName()] = browserClient;
   }
 
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "%s - Web browser control destroy done", __FUNCTION__);
+  kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control destroy done", __FUNCTION__);
   return true;
 }
 

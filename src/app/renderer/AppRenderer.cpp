@@ -160,8 +160,8 @@ bool CWebAppRenderer::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, Ce
 void CWebAppRenderer::InitWebToKodiInterface()
 {
   CefMessageRouterConfig config;
-//   config.js_query_function = "kodiQuery";
-//   config.js_cancel_function = "kodiQueryCancel";
+  config.js_query_function = "kodiQuery";
+  config.js_cancel_function = "kodiQueryCancel";
   m_messageRouter = CefMessageRouterRendererSide::Create(config);
   CV8Handler::OnWebKitInitialized(this);
 }

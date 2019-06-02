@@ -27,7 +27,7 @@ bool CJSDialogHandler::OnJSDialog(CefRefPtr<CefBrowser> browser,
                                   CefRefPtr<CefJSDialogCallback> callback,
                                   bool& suppress_message)
 {
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "OnJSDialog (origin_url '%s', dialog_type %X message_text '%s', default_prompt_text '%s', suppress_message %s)",
+  kodi::Log(ADDON_LOG_DEBUG, "OnJSDialog (origin_url '%s', dialog_type %X message_text '%s', default_prompt_text '%s', suppress_message %s)",
                        origin_url.ToString().c_str(), dialog_type, message_text.ToString().c_str(), default_prompt_text.ToString().c_str(),
                        suppress_message ? "yes" : "no");
 
@@ -89,7 +89,7 @@ bool CJSDialogHandler::OnBeforeUnloadDialog(CefRefPtr<CefBrowser> browser,
                                                         kodi::GetLocalizedString(30036), canceled);
   callback->Continue(ret, "");
 
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "OnBeforeUnloadDialog (url '%s', message_text '%s', is_reload '%s')",
+  kodi::Log(ADDON_LOG_DEBUG, "OnBeforeUnloadDialog (url '%s', message_text '%s', is_reload '%s')",
                        CefFormatUrlForSecurityDisplay(browser->GetFocusedFrame()->GetURL()).ToString().c_str(),
                        message_text.ToString().c_str(), is_reload ? "yes" : "no");
   return true;

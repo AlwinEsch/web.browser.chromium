@@ -73,12 +73,10 @@ void CClientAppBrowser::OnRenderProcessThreadCreated(CefRefPtr<CefListValue> ext
 
 CefRefPtr<CefPrintHandler> CClientAppBrowser::GetPrintHandler()
 {
-  fprintf(stderr, "--> %s\n", __FUNCTION__);
-  return NULL;
+  return nullptr;
 }
 
 void CClientAppBrowser::OnScheduleMessagePumpWork(int64 delay_ms)
 {
-//   fprintf(stderr, "--> %s delay_ms %li\n", __FUNCTION__, delay_ms);
 }
 //@}
