@@ -811,6 +811,7 @@ void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 bool CWebBrowserClient::DoClose(CefRefPtr<CefBrowser> browser)
 {
   CEF_REQUIRE_UI_THREAD();
+  fprintf(stderr, "------------------------------        bool CWebBrowserClient::DoClose(CefRefPtr<CefBrowser> browser)\n");
   return false; /* Allow the close. For windowed browsers this will result in the OS close event being sent */
 }
 

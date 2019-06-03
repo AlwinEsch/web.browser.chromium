@@ -45,10 +45,16 @@ public:
   void OnRenderProcessThreadCreated(CefRefPtr<CefListValue> extra_info) override;
   CefRefPtr<CefPrintHandler> GetPrintHandler() override;
   void OnScheduleMessagePumpWork(int64 delay_ms) override;
-  //@}*/
+  //@}
+
+ protected:
+  // Schemes that will be registered with the global cookie manager.
+  std::vector<CefString> m_cookieableSchemes;
 
 private:
   CWebBrowser* m_addonMain;
+
+  CefRefPtr<CefPrintHandler> m_printHandler;
 
   IMPLEMENT_REFCOUNTING(CClientAppBrowser);
   DISALLOW_COPY_AND_ASSIGN(CClientAppBrowser);
