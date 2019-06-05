@@ -719,7 +719,6 @@ bool CWebBrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
                                       CefWindowInfo& windowInfo,
                                       CefRefPtr<CefClient>& client,
                                       CefBrowserSettings& settings,
-                                      /*CefRefPtr<CefDictionaryValue>& extra_info,*/
                                       bool* no_javascript_access)
 {
 // #ifdef DEBUG_LOGS
@@ -811,7 +810,6 @@ void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 bool CWebBrowserClient::DoClose(CefRefPtr<CefBrowser> browser)
 {
   CEF_REQUIRE_UI_THREAD();
-  fprintf(stderr, "------------------------------        bool CWebBrowserClient::DoClose(CefRefPtr<CefBrowser> browser)\n");
   return false; /* Allow the close. For windowed browsers this will result in the OS close event being sent */
 }
 
@@ -835,6 +833,8 @@ void CWebBrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 }
 //@}
 
+/// CefDragHandler methods
+//@{
 bool CWebBrowserClient::OnDragEnter(CefRefPtr<CefBrowser> browser,
                                     CefRefPtr<CefDragData> dragData,
                                     CefDragHandler::DragOperationsMask mask)
@@ -848,7 +848,7 @@ void CWebBrowserClient::OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser,
 {
   CEF_REQUIRE_UI_THREAD();
 }
-
+//@}
 
 /// CefRequestHandler methods
 //@{

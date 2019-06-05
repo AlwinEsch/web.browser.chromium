@@ -115,7 +115,6 @@ public:
   void OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser, const std::vector<CefDraggableRegion>& regions) override;
   //@}
 
-
   /// CefLifeSpanHandler methods
   //@{
   bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
@@ -128,7 +127,6 @@ public:
                      CefWindowInfo& windowInfo,
                      CefRefPtr<CefClient>& client,
                      CefBrowserSettings& settings,
-                     /*CefRefPtr<CefDictionaryValue>& extra_info,*/
                      bool* no_javascript_access) override;
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
   bool DoClose(CefRefPtr<CefBrowser> browser) override;
