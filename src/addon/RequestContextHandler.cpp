@@ -64,7 +64,7 @@ bool CRequestContextHandler::OnBeforePluginLoad(const CefString& mime_type, cons
   return false;
 }
 
-/*CefRefPtr<CefResourceRequestHandler> CRequestContextHandler::GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+CefRefPtr<CefResourceRequestHandler> CRequestContextHandler::GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                                                        CefRefPtr<CefRequest> request, bool is_navigation,
                                                                                        bool is_download, const CefString& request_initiator,
                                                                                        bool& disable_default_handling)
@@ -72,7 +72,7 @@ bool CRequestContextHandler::OnBeforePluginLoad(const CefString& mime_type, cons
   CEF_REQUIRE_IO_THREAD();
 
   return m_browserClient;
-}*/
+}
 
 void CRequestContextHandler::OnExtensionLoaded(CefRefPtr<CefExtension> extension)
 {
@@ -130,9 +130,9 @@ CefRefPtr<CefBrowser> CRequestContextHandler::GetActiveBrowser(
 }
 
 bool CRequestContextHandler::CanAccessBrowser(CefRefPtr<CefExtension> extension,
-                              CefRefPtr<CefBrowser> browser,
-                              bool include_incognito,
-                              CefRefPtr<CefBrowser> target_browser)
+                                              CefRefPtr<CefBrowser> browser,
+                                              bool include_incognito,
+                                              CefRefPtr<CefBrowser> target_browser)
 {
   return true;
 }

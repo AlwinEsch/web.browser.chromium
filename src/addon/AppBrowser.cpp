@@ -7,7 +7,9 @@
  */
 
 #include "AppBrowser.h"
+#include "PrintHandler.h"
 #include "SchemeKodi.h"
+#include "addon.h"
 
 #include "MessageIds.h"
 
@@ -56,6 +58,15 @@ void CClientAppBrowser::OnContextInitialized()
 {
   // Register kodi:// scheme's
   CefRegisterSchemeHandlerFactory("kodi", "home", new CSchemeKodiFactory());
+
+  // Register cookieable schemes with the global cookie manager.
+  CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(nullptr);
+  if (manager.get())
+    manager->SetSupportedSchemes(m_cookieableSchemes, true, nullptr);
+  else
+    kodi::Log(ADDON_LOG_ERROR, "Failed to get cookie manager");
+
+  m_printHandler = CPrintHandler::CreatePrintHandler();
 }
 
 void CClientAppBrowser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
@@ -73,12 +84,10 @@ void CClientAppBrowser::OnRenderProcessThreadCreated(CefRefPtr<CefListValue> ext
 
 CefRefPtr<CefPrintHandler> CClientAppBrowser::GetPrintHandler()
 {
-  fprintf(stderr, "--> %s\n", __FUNCTION__);
-  return NULL;
+  return m_printHandler;
 }
 
 void CClientAppBrowser::OnScheduleMessagePumpWork(int64 delay_ms)
 {
-//   fprintf(stderr, "--> %s delay_ms %li\n", __FUNCTION__, delay_ms);
 }
 //@}

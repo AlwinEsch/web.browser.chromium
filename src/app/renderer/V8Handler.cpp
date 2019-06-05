@@ -17,12 +17,12 @@
  *
  * Create Sandbox interface between here and Kodi to allow correct interact with V8 JavaScripts.
  *
- * With use of SendProcessMessage(...) or with script `window.cefQuery()` goes on Kodi's
+ * With use of SendProcessMessage(...) or with script `window.kodiQuery()` goes on Kodi's
  * side over main loop and blocks the flow.
  * Basically does it work and if on Kodi is not a website open with stream does it mostly work,
  * but unsafe.
  *
- * With `window.cefQuery` are currently the most working where the call on Kodi main thread
+ * With `window.kodiQuery` are currently the most working where the call on Kodi main thread
  * becomes separated to new Thread and this then do the callback for here.
  *
  * Also becomes it a bit muddled up if all Kodi addon interface functions are added by hand.
@@ -98,7 +98,7 @@ bool CV8Handler::Execute(const CefString& name,
     browserMessage->GetArgumentList()->SetInt(5, displayTime);
     browserMessage->GetArgumentList()->SetBool(6, withSound);
     browserMessage->GetArgumentList()->SetInt(7, messageTime);
-    m_renderer->GetBrowser()->SendProcessMessage(PID_BROWSER, browserMessage);
+    m_renderer->GetBrowser()->GetMainFrame()->SendProcessMessage(PID_BROWSER, browserMessage);
     return true;
   }
 
@@ -140,7 +140,7 @@ void CV8Handler::OnWebKitInitialized(CWebAppRenderer* renderer)
     ""
     "(function() {"
     "  kodi.Log = function(level, text) {"
-    "    window.cefQuery({"
+    "    window.kodiQuery({"
     "      request: 'kodi.Log '+level+':'+text ,"
     "      onSuccess: function(response) {},"
     "      onFailure: function(error_code, error_message) {}"
@@ -151,7 +151,7 @@ void CV8Handler::OnWebKitInitialized(CWebAppRenderer* renderer)
     "    return QueueNotification(options);"
     "  };"
     "  kodi.GetAddonInfo = function(id, cb) {"
-    "    window.cefQuery({"
+    "    window.kodiQuery({"
     "      request: 'kodi.GetAddonInfo '+id ,"
     "      onSuccess: function(response) {"
     "        cb(response);"
@@ -162,7 +162,7 @@ void CV8Handler::OnWebKitInitialized(CWebAppRenderer* renderer)
     "    });"
     "  };"
     "  kodi.gui.dialogs.OK.ShowAndGetInput = function(heading, text, cb) {"
-    "    window.cefQuery({"
+    "    window.kodiQuery({"
     "      request: 'kodi.gui.dialog.OK.ShowAndGetInput '+heading+':'+text ,"
     "      onSuccess: function(response) {"
     "        if (cb)"
@@ -174,7 +174,7 @@ void CV8Handler::OnWebKitInitialized(CWebAppRenderer* renderer)
     "    });"
     "  };"
     "  kodi.gui.dialogs.YesNo.ShowAndGetInput = function(heading, text, cb) {"
-    "    window.cefQuery({"
+    "    window.kodiQuery({"
     "      request: 'kodi.gui.dialog.YesNo.ShowAndGetInput '+heading+':'+text ,"
     "      onSuccess: function(response) {"
     "        if (cb)"

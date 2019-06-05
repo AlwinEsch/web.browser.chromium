@@ -38,11 +38,12 @@ class CWebBrowserClient
   : public kodi::addon::CWebControl,
     public CefClient,
     public CefDisplayHandler,
+    public CefDragHandler,
     public CefFindHandler,
     public CefLifeSpanHandler,
     public CefLoadHandler,
-    public CefRequestHandler/*,
-    public CefResourceRequestHandler*/
+    public CefRequestHandler,
+    public CefResourceRequestHandler
 {
 public:
   CWebBrowserClient(KODI_HANDLE handle, int iUniqueClientId, const std::string& startURL,
@@ -53,11 +54,12 @@ public:
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
   CefRefPtr<CefDialogHandler> GetDialogHandler() override;
   CefRefPtr<CefDownloadHandler> GetDownloadHandler() override;
+  CefRefPtr<CefDragHandler> GetDragHandler() override { return this; }
   CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
   CefRefPtr<CefRenderHandler> GetRenderHandler() override;
-  /*CefRefPtr<CefResourceRequestHandler> GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+  CefRefPtr<CefResourceRequestHandler> GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                                  CefRefPtr<CefRequest> request, bool is_navigation, bool is_download,
-                                                                 const CefString& request_initiator, bool& disable_default_handling) override;*/
+                                                                 const CefString& request_initiator, bool& disable_default_handling) override;
 
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
@@ -96,7 +98,8 @@ public:
 
   /// CefClient methods
   //@{
-  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;
+  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;
   //@}
 
   /// CefDisplayHandler methods
@@ -108,6 +111,15 @@ public:
   bool OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text) override;
   void OnStatusMessage(CefRefPtr<CefBrowser> browser, const CefString& value) override;
   bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString&  message, const CefString& source, int line) override;
+  //@}
+
+  // CefDragHandler methods
+  //@{
+  bool OnDragEnter(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefDragData> dragData,
+                   CefDragHandler::DragOperationsMask mask) override;
+  void OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                 const std::vector<CefDraggableRegion>& regions) override;
   //@}
 
   /// CefLifeSpanHandler methods
@@ -122,7 +134,7 @@ public:
                      CefWindowInfo& windowInfo,
                      CefRefPtr<CefClient>& client,
                      CefBrowserSettings& settings,
-                     /*CefRefPtr<CefDictionaryValue>& extra_info,*/
+                     CefRefPtr<CefDictionaryValue>& extra_info,
                      bool* no_javascript_access) override;
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
   bool DoClose(CefRefPtr<CefBrowser> browser) override;
@@ -137,7 +149,7 @@ public:
 
   /// CefResourceRequestHandler methods
   //@{
-  /*CefRefPtr<CefCookieAccessFilter> GetCookieAccessFilter(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+  CefRefPtr<CefCookieAccessFilter> GetCookieAccessFilter(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                          CefRefPtr<CefRequest> request) override { return nullptr; }
   CefResourceRequestHandler::ReturnValue OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                               CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback) override;
@@ -152,7 +164,7 @@ public:
   void OnResourceLoadComplete(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request,
                               CefRefPtr<CefResponse> response, URLRequestStatus status, int64 received_content_length) override {}
   void OnProtocolExecution(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request,
-                           bool& allow_os_execution) override;*/
+                           bool& allow_os_execution) override;
   //@}
 
   /// CefRequestHandler methods
@@ -210,6 +222,7 @@ private:
 
   bool m_contextMenuOpenClosed = false; // To know for Keyboard that a context menu is opened
   bool m_focusOnEditableField = false;
+  bool m_dragActive = false;
 
   bool m_renderViewReady;
   std::string m_strStartupURL;

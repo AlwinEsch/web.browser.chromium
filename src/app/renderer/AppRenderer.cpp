@@ -36,7 +36,7 @@ void CWebAppRenderer::OnWebKitInitialized()
   InitWebToKodiInterface();
 }
 
-void CWebAppRenderer::OnBrowserCreated(CefRefPtr<CefBrowser> browser)
+void CWebAppRenderer::OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDictionaryValue> extra_info)
 {
   m_browser = browser;
 }
@@ -132,7 +132,7 @@ void CWebAppRenderer::OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefP
 
   list->SetList(4, frames);
 
-  browser->SendProcessMessage(CefProcessId::PID_BROWSER, message);
+  frame->SendProcessMessage(CefProcessId::PID_BROWSER, message);
 }
 
 void CWebAppRenderer::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefDOMNode> node)
@@ -144,14 +144,15 @@ void CWebAppRenderer::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRef
     m_lastNodeIsEditable = is_editable;
     auto message = CefProcessMessage::Create(RendererMessage::FocusedNodeChanged);
     message->GetArgumentList()->SetBool(0, is_editable);
-    browser->SendProcessMessage(CefProcessId::PID_BROWSER, message);
+    frame->SendProcessMessage(CefProcessId::PID_BROWSER, message);
   }
 
 }
 
-bool CWebAppRenderer::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
+bool CWebAppRenderer::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                               CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
 {
-  if (m_messageRouter->OnProcessMessageReceived(browser, source_process, message))
+  if (m_messageRouter->OnProcessMessageReceived(browser, frame, source_process, message))
     return true;
 
   return false;

@@ -25,7 +25,6 @@
 
 namespace FileUtils
 {
-
 namespace
 {
 
@@ -49,7 +48,8 @@ const char kPathSep = '/';
 
 bool ReadFileToString(const std::string& path,
                       std::string* contents,
-                      size_t max_size) {
+                      size_t max_size)
+{
   if (!AllowFileIO())
     return false;
 
@@ -86,7 +86,8 @@ bool ReadFileToString(const std::string& path,
   return read_status;
 }
 
-int WriteFile(const std::string& path, const char* data, int size) {
+int WriteFile(const std::string& path, const char* data, int size)
+{
   if (!AllowFileIO())
     return -1;
 
@@ -108,7 +109,8 @@ int WriteFile(const std::string& path, const char* data, int size) {
   return written;
 }
 
-std::string JoinPath(const std::string& path1, const std::string& path2) {
+std::string JoinPath(const std::string& path1, const std::string& path2)
+{
   if (path1.empty() && path2.empty())
     return std::string();
   if (path1.empty())
@@ -126,7 +128,8 @@ std::string JoinPath(const std::string& path1, const std::string& path2) {
   return result;
 }
 
-std::string GetFileExtension(const std::string& path) {
+std::string GetFileExtension(const std::string& path)
+{
   size_t sep = path.find_last_of(".");
   if (sep != std::string::npos)
     return path.substr(sep + 1);

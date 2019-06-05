@@ -244,6 +244,7 @@ endif()
 list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
                                  src/addon/AppBrowser.cpp
                                  src/addon/ExtensionUtils.cpp
+                                 src/addon/PrintHandler.cpp
                                  src/addon/RequestContextHandler.cpp
                                  src/addon/ResourceManager.cpp
                                  src/addon/SandboxControl.cpp
@@ -278,6 +279,7 @@ list(APPEND KODICHROMIUM_SOURCES src/addon/addon.cpp
 list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/AppBrowser.h
                                  src/addon/ExtensionUtils.h
+                                 src/addon/PrintHandler.h
                                  src/addon/RequestContextHandler.h
                                  src/addon/ResourceManager.h
                                  src/addon/SandboxControl.h

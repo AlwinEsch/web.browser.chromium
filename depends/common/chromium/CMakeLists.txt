@@ -89,7 +89,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 
 # Chromium/CEF source code URL's
 set(USED_CEF_REPO https://github.com/kodi-web/cef.git)
-set(USED_CEF_BRANCH 3729-kodi)
+set(USED_CEF_BRANCH kodi)
 set(USED_CHROMIUM_REPO https://chromium.googlesource.com/chromium/src.git)
 
 include(ExternalProject)
@@ -323,7 +323,7 @@ ExternalProject_Add_Step(
                               --no-build
                               --no-depot-tools-update
                               ${AUTOMATE_EXTRA_FLAGS}
-#                              --force-clean
+                              --force-clean
   COMMENT             "Performing download of Chromium from Web by automate-git.py from CEF"
   WORKING_DIRECTORY   ${THIRD_PARTY_PATH}/chromium_git
   DEPENDEES           download

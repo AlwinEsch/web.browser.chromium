@@ -299,7 +299,6 @@ bool CWebBrowserClient::OnMouseEvent(int id, double x, double y, double offsetX,
     return true;
 
   static const int scrollbarPixelsPerTick = 40;
-
   CefRefPtr<CefBrowserHost> host = m_browser->GetHost();
 
   CefMouseEvent mouse_event;
@@ -348,8 +347,31 @@ bool CWebBrowserClient::OnMouseEvent(int id, double x, double y, double offsetX,
       host->SendMouseWheelEvent(mouse_event, 0, -scrollbarPixelsPerTick);
       break;
     case ACTION_MOUSE_DRAG:
+    {
+      mouse_event.modifiers = 0;
+      mouse_event.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON;
+      if (!m_dragActive)
+      {
+        mouse_event.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON;
+        host->SendMouseClickEvent(mouse_event, MBT_LEFT, false, 1);
+        mouse_event.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON | EVENTFLAG_SHIFT_DOWN;
+        host->SendMouseClickEvent(mouse_event, MBT_LEFT, false, 1);
+        m_dragActive = true;
+      }
 
+      host->SendMouseMoveEvent(mouse_event, false);
       break;
+    }
+    case ACTION_MOUSE_DRAG_END:
+    {
+      if (m_dragActive)
+      {
+        host->SendMouseClickEvent(mouse_event, MBT_LEFT, true, 1);
+        host->SendMouseMoveEvent(mouse_event, true);
+        m_dragActive = false;
+      }
+      break;
+    }
     case ACTION_MOUSE_MOVE:
     {
       bool mouse_leave = state == 3 ? true : false;
@@ -559,7 +581,7 @@ CefRefPtr<CefRenderHandler> CWebBrowserClient::GetRenderHandler()
 {
   return m_renderer;
 }
-/*
+
 CefRefPtr<CefResourceRequestHandler> CWebBrowserClient::GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                                                   CefRefPtr<CefRequest> request, bool is_navigation,
                                                                                   bool is_download, const CefString& request_initiator,
@@ -568,17 +590,16 @@ CefRefPtr<CefResourceRequestHandler> CWebBrowserClient::GetResourceRequestHandle
   CEF_REQUIRE_IO_THREAD();
 
   return this;
-}*/
-
+}
 
 /// CefClient methods
 //@{
-bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process,
-                                                 CefRefPtr<CefProcessMessage> message)
+bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                                 CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
 {
   CEF_REQUIRE_UI_THREAD();
 
-  if (m_messageRouter->OnProcessMessageReceived(browser, source_process, message))
+  if (m_messageRouter->OnProcessMessageReceived(browser, frame, source_process, message))
     return true;
 
   std::string message_name = message->GetName();
@@ -637,9 +658,9 @@ void CWebBrowserClient::OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const 
 
   size_t listSize = icon_urls.size();
 #ifdef DEBUG_LOGS
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "From currently opened web site given icon urls (first one used)");
+  kodi::Log(ADDON_LOG_DEBUG, "From currently opened web site given icon urls (first one used)");
   for (unsigned int i = 0; i < listSize; ++i)
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, " - Icon %i - %s", i+1, icon_urls[i].ToString().c_str());
+    kodi::Log(ADDON_LOG_DEBUG, " - Icon %i - %s", i+1, icon_urls[i].ToString().c_str());
 #endif
 
   if (listSize > 0)
@@ -658,7 +679,7 @@ void CWebBrowserClient::OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bo
   {
     m_isFullScreen = fullscreen;
 
-    LOG_INTERNAL_MESSAGE(ADDON_LOG_DEBUG, "From currently opened web site becomes fullsreen requested as '%s'", m_isFullScreen ? "yes" : "no");
+    kodi::Log(ADDON_LOG_DEBUG, "From currently opened web site becomes fullsreen requested as '%s'", m_isFullScreen ? "yes" : "no");
     SetFullscreen(m_isFullScreen);
   }
 }
@@ -687,10 +708,9 @@ void CWebBrowserClient::OnStatusMessage(CefRefPtr<CefBrowser> browser, const Cef
   }
 }
 
-bool CWebBrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString& message, const CefString& source, int line)
+bool CWebBrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level,
+                                         const CefString& message, const CefString& source, int line)
 {
-  LOG_INTERNAL_MESSAGE(ADDON_LOG_ERROR, "%s - Message: %s - Source: %s - Line: %i", __FUNCTION__,
-                       message.ToString().c_str(), source.ToString().c_str(), line);
   return true;
 }
 //@}
@@ -707,7 +727,7 @@ bool CWebBrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
                                       CefWindowInfo& windowInfo,
                                       CefRefPtr<CefClient>& client,
                                       CefBrowserSettings& settings,
-                                      /*CefRefPtr<CefDictionaryValue>& extra_info,*/
+                                      CefRefPtr<CefDictionaryValue>& extra_info,
                                       bool* no_javascript_access)
 {
 // #ifdef DEBUG_LOGS
@@ -759,8 +779,8 @@ void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
   {
     // Create the browser-side router for query handling.
     CefMessageRouterConfig config;
-//     config.js_query_function = "kodiQuery";
-//     config.js_cancel_function = "kodiQueryCancel";
+    config.js_query_function = "kodiQuery";
+    config.js_cancel_function = "kodiQueryCancel";
     m_messageRouter = CefMessageRouterBrowserSide::Create(config);
 
     // Register handlers with the router.
@@ -822,9 +842,27 @@ void CWebBrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 }
 //@}
 
+/// CefDragHandler methods
+//@{
+bool CWebBrowserClient::OnDragEnter(CefRefPtr<CefBrowser> browser,
+                                    CefRefPtr<CefDragData> dragData,
+                                    CefDragHandler::DragOperationsMask mask)
+{
+  CEF_REQUIRE_UI_THREAD();
+
+  return false;
+}
+
+void CWebBrowserClient::OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                                  const std::vector<CefDraggableRegion>& regions)
+{
+  CEF_REQUIRE_UI_THREAD();
+}
+//@}
+
 /// CefResourceRequestHandler methods
 //@{
-/*
+
 CefResourceRequestHandler::ReturnValue CWebBrowserClient::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                                                CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
 {
@@ -899,12 +937,13 @@ void CWebBrowserClient::OnProtocolExecution(CefRefPtr<CefBrowser> browser, CefRe
   if (urlStr.find("spotify:") == 0)
     allow_os_execution = true;
 }
-*/
+
 //@}
 
 /// CefRequestHandler methods
 //@{
-bool CWebBrowserClient::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect)
+bool CWebBrowserClient::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                       CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect)
 {
   CEF_REQUIRE_UI_THREAD();
 
@@ -938,7 +977,6 @@ bool CWebBrowserClient::OnQuotaRequest(CefRefPtr<CefBrowser> browser, const CefS
   callback->Continue(new_size <= max_size);
   return true;
 }
-
 
 bool CWebBrowserClient::OnCertificateError(CefRefPtr<CefBrowser> browser, ErrorCode cert_error,
                                            const CefString& request_url, CefRefPtr<CefSSLInfo> ssl_info,
@@ -983,7 +1021,6 @@ void CWebBrowserClient::OnRenderViewReady(CefRefPtr<CefBrowser> browser)
 
 void CWebBrowserClient::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status)
 {
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s", __FUNCTION__);
   CEF_REQUIRE_UI_THREAD();
 
   m_messageRouter->OnRenderProcessTerminated(browser);
@@ -1022,12 +1059,10 @@ void CWebBrowserClient::OnFindResult(CefRefPtr<CefBrowser> browser, int identifi
     std::string text = StringUtils::Format(kodi::GetLocalizedString(30038).c_str(), count, m_currentSearchText.c_str());
     kodi::QueueNotification(QUEUE_INFO, kodi::GetLocalizedString(30037), text);
   }
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s -identifier %i, count %i finalUpdate %i activeMatchOrdinal %i", __FUNCTION__, identifier, count, finalUpdate, activeMatchOrdinal);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s -identifier %i, count %i finalUpdate %i activeMatchOrdinal %i",
+                  __FUNCTION__, identifier, count, finalUpdate, activeMatchOrdinal);
 }
 //@}
-
-
-
 
 /// CefLoadHandler methods
 //@{
@@ -1037,7 +1072,6 @@ void CWebBrowserClient::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool
 
   SetLoadingState(isLoading, canGoBack, canGoForward);
 }
-
 
 void CWebBrowserClient::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type)
 {
@@ -1101,12 +1135,12 @@ void CWebBrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
 
 int CWebBrowserClient::ZoomLevelToPercentage(double zoomlevel)
 {
-  return static_cast<int>((zoomlevel*ZOOM_MULTIPLY)+100.0);
+  return static_cast<int>((zoomlevel * ZOOM_MULTIPLY) + 100.0);
 }
 
 double CWebBrowserClient::PercentageToZoomLevel(int percent)
 {
-  return (static_cast<double>(percent-100))/ZOOM_MULTIPLY;
+  return (static_cast<double>(percent - 100)) / ZOOM_MULTIPLY;
 }
 
 void CWebBrowserClient::CreateMessageHandlers(MessageHandlerSet& handlers)
