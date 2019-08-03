@@ -404,7 +404,7 @@ endif()
 #                                                                              |
 
 # Build libcef as mandatory part
-set(NINJA_BUILD_TYPE ${CMAKE_BUILD_TYPE}_GN_${CEF_BUILD_CPU})
+set(NINJA_BUILD_TYPE Release_GN_${CEF_BUILD_CPU})
 set(NINJA_BUILD_PARTS "cef")
 
 # If linux add also sandbox build
