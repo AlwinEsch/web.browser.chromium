@@ -31,12 +31,8 @@ endif()
 
 set(USE_SANDBOX 1)
 
-# Search on addon depends generated CEF dev kit and set CEF_ROOT
-find_path(CEF_PROJECT_DIR NAMES src/cef/CMakeLists.txt)
-if(NOT CEF_PROJECT_DIR)
-  message(FATAL_ERROR "Required CEF dev kit not found!")
-endif()
-set(CEF_ROOT "${CEF_PROJECT_DIR}/src/cef")
+# Use on addon depends generated CEF dev kit and set CEF_ROOT
+set(CEF_ROOT "${ADDON_DEPENDS_PATH}/src/cef")
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake
                       ${PROJECT_SOURCE_DIR}
