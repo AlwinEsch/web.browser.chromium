@@ -246,7 +246,7 @@ ExternalProject_Add(
   depot_tools
 
   GIT_REPOSITORY      https://chromium.googlesource.com/chromium/tools/depot_tools.git
-  GIT_TAG             "master"
+  GIT_TAG             "25eb8e4"
 
   CONFIGURE_COMMAND   ""
   PATCH_COMMAND       ""
