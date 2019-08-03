@@ -109,7 +109,7 @@ endif()
 # Include addon depended folders to find files
 include_directories(${INCLUDES}
                     ${CEF_INCLUDE_PATH}
-                    ${GLM_INCLUDE_DIR}
+                    ${GLM_INCLUDE_DIRS}
                     ${KODI_INCLUDE_DIR}/..
                     ${PROJECT_BINARY_DIR}/cef
                     ${PROJECT_SOURCE_DIR}/src/
