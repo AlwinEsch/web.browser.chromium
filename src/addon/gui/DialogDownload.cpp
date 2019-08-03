@@ -8,6 +8,7 @@
 
 #include "DialogDownload.h"
 #include "utils/StringUtils.h"
+#include "utils/XMLUtils.h"
 #include "utils/Utils.h"
 
 #include <kodi/General.h>
@@ -15,7 +16,6 @@
 #include <kodi/gui/dialogs/FileBrowser.h>
 #include <kodi/gui/dialogs/OK.h>
 #include <kodi/gui/dialogs/YesNo.h>
-#include <kodi/util/XMLUtils.h>
 #include <iomanip>
 #include <thread>
 
