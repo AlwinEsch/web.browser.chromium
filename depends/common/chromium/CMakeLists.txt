@@ -183,7 +183,7 @@ set(GN_DEFINES "${GN_DEFINES} enable_libaom_decoder=true")
 set(GN_DEFINES "${GN_DEFINES} enable_mpeg_h_audio_demuxing=true")
 set(GN_DEFINES "${GN_DEFINES} enable_mse_mpeg2ts_stream_parser=true")
 set(GN_DEFINES "${GN_DEFINES} rtc_build_examples=false")
-if(CMAKE_BUILD_TYPE STREQUAL Release)
+if(CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
   set(GN_DEFINES "${GN_DEFINES} is_debug=false")
   set(GN_DEFINES "${GN_DEFINES} remove_webcore_debug_symbols=true")
   set(GN_DEFINES "${GN_DEFINES} symbol_level=1")
@@ -205,6 +205,7 @@ elseif(CORE_SYSTEM_NAME STREQUAL linux)
   set(GN_DEFINES "${GN_DEFINES} use_alsa=false")                # To prevent not wanted audio, becomes done by Kodi itself
   set(GN_DEFINES "${GN_DEFINES} use_pulseaudio=false")          # To prevent not wanted audio, becomes done by Kodi itself
   set(GN_DEFINES "${GN_DEFINES} use_gnome_keyring=false")
+  set(GN_DEFINES "${GN_DEFINES} use_x11=false")
   set(GN_DEFINES "${GN_DEFINES} target_os=linux")
 endif()
 
