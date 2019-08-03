@@ -188,15 +188,15 @@ bool CWebBrowser::MainInitialize()
   if (!m_started)
     return false;
 
-#ifndef WIN32
-  const char* cmdLine[3];
-  cmdLine[0] = "";
-  cmdLine[1] = "--disable-gpu";
-  cmdLine[2] = "--disable-software-rasterizer";
-  CefMainArgs args(3, (char**)cmdLine);
-#else
+// #ifndef WIN32
+//   const char* cmdLine[3];
+//   cmdLine[0] = "";
+//   cmdLine[1] = "--disable-gpu";
+//   cmdLine[2] = "--disable-software-rasterizer";
+//   CefMainArgs args(3, (char**)cmdLine);
+// #else
   CefMainArgs args;
-#endif
+// #endif
   if (!CefInitialize(args, *m_cefSettings, m_app.get(), nullptr))
   {
     kodi::Log(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
