@@ -132,7 +132,6 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   m_cefSettings->remote_debugging_port               = 8457;
   m_cefSettings->uncaught_exception_stack_size       = kodi::GetSettingInt("system.uncaught_exception_stack_size");
   m_cefSettings->ignore_certificate_errors           = false;
-  m_cefSettings->enable_net_security_expiration      = false;
   m_cefSettings->background_color                    = 0;
   CefString(&m_cefSettings->accept_language_list)    = language;
 
@@ -342,7 +341,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
 
     CefRefPtr<CefRequestContext> request_context = CefRequestContext::CreateContext(CefRequestContext::GetGlobalContext(),
                                                                                     contextHandler);
-    if (!CefBrowserHost::CreateBrowser(info, browserClient, "", settings, request_context))
+    if (!CefBrowserHost::CreateBrowser(info, browserClient, "", settings, nullptr, request_context))
     {
       kodi::Log(ADDON_LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);
       if (browserClient)

@@ -89,7 +89,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 
 # Chromium/CEF source code URL's
 set(USED_CEF_REPO https://github.com/kodi-web/cef.git)
-set(USED_CEF_BRANCH 3729-kodi)
+set(USED_CEF_BRANCH 3987-kodi)
 set(USED_CHROMIUM_REPO https://chromium.googlesource.com/chromium/src.git)
 
 include(ExternalProject)
@@ -179,7 +179,7 @@ set(GN_DEFINES "${GN_DEFINES} enable_desktop_in_product_help=false")
 set(GN_DEFINES "${GN_DEFINES} enable_dolby_vision_demuxing=true")
 set(GN_DEFINES "${GN_DEFINES} enable_hevc_demuxing=true")
 set(GN_DEFINES "${GN_DEFINES} enable_hls_sample_aes=true")
-set(GN_DEFINES "${GN_DEFINES} enable_libaom_decoder=true")
+set(GN_DEFINES "${GN_DEFINES} enable_libaom_decoder=false") # !!!!!!!!!!!!!
 set(GN_DEFINES "${GN_DEFINES} enable_mpeg_h_audio_demuxing=true")
 set(GN_DEFINES "${GN_DEFINES} enable_mse_mpeg2ts_stream_parser=true")
 set(GN_DEFINES "${GN_DEFINES} rtc_build_examples=false")
@@ -247,7 +247,7 @@ ExternalProject_Add(
   depot_tools
 
   GIT_REPOSITORY      https://chromium.googlesource.com/chromium/tools/depot_tools.git
-  GIT_TAG             "25eb8e4"
+  GIT_TAG             "master"
 
   CONFIGURE_COMMAND   ""
   PATCH_COMMAND       ""
@@ -293,7 +293,7 @@ ExternalProject_Add(
   load_chromium
 
   # Load required automate-git.py
-  DOWNLOAD_COMMAND    ${CMAKE_COMMAND} -DAUTOMATE_GIT_BRANCH=${USED_CEF_BRANCH}
+  DOWNLOAD_COMMAND    ${CMAKE_COMMAND} -DAUTOMATE_GIT_BRANCH=master
                                        -DAUTOMATE_GIT_DEST=${PROJECT_BINARY_DIR}
                                        -P ${CMAKE_SOURCE_DIR}/CMake/LoadAutomateGit.cmake
 

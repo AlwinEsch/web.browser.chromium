@@ -586,12 +586,12 @@ CefRefPtr<CefRenderHandler> CWebBrowserClient::GetRenderHandler()
 
 /// CefClient methods
 //@{
-bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process,
-                                                 CefRefPtr<CefProcessMessage> message)
+bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                                 CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
 {
   CEF_REQUIRE_UI_THREAD();
 
-  if (m_messageRouter->OnProcessMessageReceived(browser, source_process, message))
+  if (m_messageRouter->OnProcessMessageReceived(browser, frame, source_process, message))
     return true;
 
   std::string message_name = message->GetName();
@@ -719,6 +719,7 @@ bool CWebBrowserClient::OnBeforePopup(CefRefPtr<CefBrowser> browser,
                                       CefWindowInfo& windowInfo,
                                       CefRefPtr<CefClient>& client,
                                       CefBrowserSettings& settings,
+                                      CefRefPtr<CefDictionaryValue>& extra_info,
                                       bool* no_javascript_access)
 {
 // #ifdef DEBUG_LOGS
@@ -844,7 +845,7 @@ bool CWebBrowserClient::OnDragEnter(CefRefPtr<CefBrowser> browser,
   return false;
 }
 
-void CWebBrowserClient::OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser, const std::vector<CefDraggableRegion>& regions)
+void CWebBrowserClient::OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const std::vector<CefDraggableRegion>& regions)
 {
   CEF_REQUIRE_UI_THREAD();
 }
@@ -867,7 +868,7 @@ bool CWebBrowserClient::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPt
   return false;
 }
 
-bool CWebBrowserClient::GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, bool isProxy, const CefString& host,
+bool CWebBrowserClient::GetAuthCredentials(CefRefPtr<CefBrowser> browser, const CefString& origin_url, bool isProxy, const CefString& host,
                                            int port, const CefString& realm, const CefString& scheme, CefRefPtr<CefAuthCallback> callback)
 {
   ///TODO Useful and secure?

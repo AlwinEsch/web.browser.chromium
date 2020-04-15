@@ -62,7 +62,7 @@ void CClientAppBrowser::OnContextInitialized()
   // Register cookieable schemes with the global cookie manager.
   CefRefPtr<CefCookieManager> manager = CefCookieManager::GetGlobalManager(nullptr);
   if (manager.get())
-    manager->SetSupportedSchemes(m_cookieableSchemes, nullptr);
+    manager->SetSupportedSchemes(m_cookieableSchemes, true, nullptr);
   else
     kodi::Log(ADDON_LOG_ERROR, "Failed to get cookie manager");
 

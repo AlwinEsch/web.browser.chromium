@@ -21,7 +21,7 @@ public:
 
   void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info) override;
   void OnWebKitInitialized() override;
-  void OnBrowserCreated(CefRefPtr<CefBrowser> browser) override;
+  void OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDictionaryValue> extra_info) override;
   void OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) override;
   CefRefPtr<CefLoadHandler> GetLoadHandler() override;
   void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) override;
@@ -29,7 +29,7 @@ public:
   void OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,CefRefPtr<CefV8Context> context,
                            CefRefPtr<CefV8Exception> exception, CefRefPtr<CefV8StackTrace> stackTrace) override;
   void OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefDOMNode> node) override;
-  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;
+  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;
 
   CefRefPtr<CefBrowser> GetBrowser() { return m_browser; }
 

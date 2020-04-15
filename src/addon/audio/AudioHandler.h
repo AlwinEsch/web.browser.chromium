@@ -22,10 +22,12 @@ public:
 
   /// CefAudioHandler methods
   //@{
+  bool GetAudioParameters(CefRefPtr<CefBrowser> browser, int audio_stream_id, CefAudioParameters& params) override;
   void OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int audio_stream_id, int channels, ChannelLayout channel_layout,
                             int sample_rate, int frames_per_buffer) override;
   void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser, int audio_stream_id, const float** data, int frames, int64_t pts) override;
   void OnAudioStreamStopped(CefRefPtr<CefBrowser> browser, int audio_stream_id) override;
+  void OnAudioStreamError(CefRefPtr<CefBrowser> browser, int audio_stream_id, const CefString& message) override;
   //@}
 
   void SetMute(bool mute) { m_mute = mute; }
@@ -34,6 +36,6 @@ private:
   IMPLEMENT_REFCOUNTING(CAudioHandler);
 
   CWebBrowser* m_addonMain;
-  std::map<int, kodi::audioengine::CAddonAEStream*> m_audioStreams;
+  std::map<int, kodi::audioengine::CAEStream*> m_audioStreams;
   bool m_mute;
 };

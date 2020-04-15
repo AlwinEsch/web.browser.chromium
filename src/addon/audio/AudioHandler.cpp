@@ -8,266 +8,390 @@
 
 #include "AudioHandler.h"
 
+bool CAudioHandler::GetAudioParameters(CefRefPtr<CefBrowser> browser,
+                                       int audio_stream_id,
+                                       CefAudioParameters& params)
+{
+  kodi::audioengine::AudioEngineFormat format;
+  if (!kodi::audioengine::GetCurrentSinkFormat(format))
+    return false;
+
+  std::vector<AudioEngineChannel> layout = format.GetChannelLayout();
+
+  params.channel_layout = CEF_CHANNEL_LAYOUT_STEREO; // default
+  switch (layout.size())
+  {
+    case 1:
+    {
+      params.channel_layout = CEF_CHANNEL_LAYOUT_MONO;
+      break;
+    }
+    case 2:
+    {
+      params.channel_layout = CEF_CHANNEL_LAYOUT_STEREO;
+      break;
+    }
+    case 3:
+    {
+      if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_BC)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_2_1;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_SURROUND;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_LFE)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_2POINT1;
+
+      break;
+    }
+    case 4:
+    {
+      if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FC && layout[2] == AUDIOENGINE_CH_FR && layout[3] == AUDIOENGINE_CH_BC)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_4_0;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_SL && layout[3] == AUDIOENGINE_CH_SR)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_2_2;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_BL && layout[3] == AUDIOENGINE_CH_BR)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_QUAD;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_LFE)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_3_1;
+
+      break;
+    }
+    case 5:
+    {
+      if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_SL && layout[4] == AUDIOENGINE_CH_SR)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_5_0;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_BL && layout[4] == AUDIOENGINE_CH_BR)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_5_0_BACK;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_SL && layout[3] == AUDIOENGINE_CH_SR && layout[4] == AUDIOENGINE_CH_LFE)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_4_1_QUAD_SIDE;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_BC && layout[4] == AUDIOENGINE_CH_LFE)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_4_1;
+
+      break;
+    }
+    case 6:
+    {
+      if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_LFE &&
+          layout[4] == AUDIOENGINE_CH_SL && layout[5] == AUDIOENGINE_CH_SR)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_5_1;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_LFE &&
+               layout[4] == AUDIOENGINE_CH_BL && layout[5] == AUDIOENGINE_CH_BR)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_5_1_BACK;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_SL &&
+               layout[4] == AUDIOENGINE_CH_SR && layout[5] == AUDIOENGINE_CH_BC)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_6_0;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_SL && layout[3] == AUDIOENGINE_CH_SR &&
+               layout[4] == AUDIOENGINE_CH_FLOC && layout[5] == AUDIOENGINE_CH_FROC)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_6_0_FRONT;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_BL &&
+               layout[4] == AUDIOENGINE_CH_BR && layout[5] == AUDIOENGINE_CH_BC)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_HEXAGONAL;
+
+      break;
+    }
+    case 7:
+    {
+      if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_SL &&
+          layout[4] == AUDIOENGINE_CH_SR && layout[5] == AUDIOENGINE_CH_BL && layout[6] == AUDIOENGINE_CH_BR)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_7_0;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_LFE &&
+               layout[4] == AUDIOENGINE_CH_SL && layout[5] == AUDIOENGINE_CH_SR && layout[6] == AUDIOENGINE_CH_BC)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_6_1;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_LFE &&
+               layout[4] == AUDIOENGINE_CH_BL && layout[5] == AUDIOENGINE_CH_BR && layout[6] == AUDIOENGINE_CH_BC)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_6_1_BACK;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_SL && layout[3] == AUDIOENGINE_CH_SR &&
+               layout[4] == AUDIOENGINE_CH_FLOC && layout[5] == AUDIOENGINE_CH_FROC && layout[6] == AUDIOENGINE_CH_LFE)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_6_1_FRONT;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_SL &&
+               layout[4] == AUDIOENGINE_CH_SR && layout[5] == AUDIOENGINE_CH_FLOC && layout[6] == AUDIOENGINE_CH_FROC)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_7_0_FRONT;
+
+      break;
+    }
+    case 8:
+    {
+      if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_LFE &&
+          layout[4] == AUDIOENGINE_CH_SL && layout[5] == AUDIOENGINE_CH_SR && layout[6] == AUDIOENGINE_CH_BL && layout[7] == AUDIOENGINE_CH_BR)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_7_1;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_LFE &&
+               layout[4] == AUDIOENGINE_CH_SL && layout[5] == AUDIOENGINE_CH_SR && layout[6] == AUDIOENGINE_CH_FLOC && layout[7] == AUDIOENGINE_CH_FROC)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_7_1_WIDE;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_LFE &&
+               layout[4] == AUDIOENGINE_CH_BL && layout[5] == AUDIOENGINE_CH_BR && layout[6] == AUDIOENGINE_CH_FLOC && layout[7] == AUDIOENGINE_CH_FROC)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_7_1_WIDE_BACK;
+      else if (layout[0] == AUDIOENGINE_CH_FL && layout[1] == AUDIOENGINE_CH_FR && layout[2] == AUDIOENGINE_CH_FC && layout[3] == AUDIOENGINE_CH_SL &&
+               layout[4] == AUDIOENGINE_CH_SR && layout[5] == AUDIOENGINE_CH_BL && layout[6] == AUDIOENGINE_CH_BR && layout[7] == AUDIOENGINE_CH_BC)
+        params.channel_layout = CEF_CHANNEL_LAYOUT_OCTAGONAL;
+
+      break;
+    }
+    default:
+      break;
+  }
+
+  params.sample_rate = format.GetSampleRate();
+  params.frames_per_buffer = format.GetFramesAmount();
+  return true;
+}
+
+
 void CAudioHandler::OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int audio_stream_id, int channels, ChannelLayout channel_layout,
                                          int sample_rate, int frames_per_buffer)
 {
-  AudioEngineFormat format;
-  format.m_dataFormat = AE_FMT_FLOATP;
-  format.m_channelCount = channels;
-  int ptr = 0;
+  std::vector<AudioEngineChannel> layout;
   switch (channel_layout)
   {
     case CEF_CHANNEL_LAYOUT_MONO:
-      format.m_channels[ptr++] = AE_CH_FL;
+      layout.push_back(AUDIOENGINE_CH_FL);
       break;
 
     // Front L, Front R
     case CEF_CHANNEL_LAYOUT_STEREO:
     case CEF_CHANNEL_LAYOUT_STEREO_DOWNMIX:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
       break;
 
     // Front L, Front R, Back C
     case CEF_CHANNEL_LAYOUT_2_1:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_BC;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_BC);
       break;
 
     // Front L, Front R, Front C
     case CEF_CHANNEL_LAYOUT_SURROUND:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
       break;
 
     // Front L, Front R, Front C, Back C
     case CEF_CHANNEL_LAYOUT_4_0:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_BC;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_BC);
       break;
 
     // Front L, Front R, Side L, Side R
     case CEF_CHANNEL_LAYOUT_2_2:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
       break;
 
     // Front L, Front R, Back L, Back R
     case CEF_CHANNEL_LAYOUT_QUAD:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_BL;
-      format.m_channels[ptr++] = AE_CH_BR;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_BL);
+      layout.push_back(AUDIOENGINE_CH_BR);
       break;
 
     // Front L, Front R, Front C, Side L, Side R
     case CEF_CHANNEL_LAYOUT_5_0:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
       break;
 
     // Front L, Front R, Front C, LFE, Side L, Side R
     case CEF_CHANNEL_LAYOUT_5_1:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_LFE;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_LFE);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
       break;
 
     // Front L, Front R, Front C, Back L, Back R
     case CEF_CHANNEL_LAYOUT_5_0_BACK:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_BL;
-      format.m_channels[ptr++] = AE_CH_BR;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_BL);
+      layout.push_back(AUDIOENGINE_CH_BR);
       break;
 
     // Front L, Front R, Front C, LFE, Back L, Back R
     case CEF_CHANNEL_LAYOUT_5_1_BACK:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_LFE;
-      format.m_channels[ptr++] = AE_CH_BL;
-      format.m_channels[ptr++] = AE_CH_BR;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_LFE);
+      layout.push_back(AUDIOENGINE_CH_BL);
+      layout.push_back(AUDIOENGINE_CH_BR);
       break;
 
     // Front L, Front R, Front C, Side L, Side R, Back L, Back R
     case CEF_CHANNEL_LAYOUT_7_0:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
-      format.m_channels[ptr++] = AE_CH_BL;
-      format.m_channels[ptr++] = AE_CH_BR;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
+      layout.push_back(AUDIOENGINE_CH_BL);
+      layout.push_back(AUDIOENGINE_CH_BR);
       break;
 
     // Front L, Front R, Front C, LFE, Side L, Side R, Back L, Back R
     case CEF_CHANNEL_LAYOUT_7_1:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_LFE;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
-      format.m_channels[ptr++] = AE_CH_BL;
-      format.m_channels[ptr++] = AE_CH_BR;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_LFE);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
+      layout.push_back(AUDIOENGINE_CH_BL);
+      layout.push_back(AUDIOENGINE_CH_BR);
       break;
 
     // Front L, Front R, Front C, LFE, Side L, Side R, Front LofC, Front RofC
     case CEF_CHANNEL_LAYOUT_7_1_WIDE:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_LFE;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
-      format.m_channels[ptr++] = AE_CH_FLOC;
-      format.m_channels[ptr++] = AE_CH_FROC;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_LFE);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
+      layout.push_back(AUDIOENGINE_CH_FLOC);
+      layout.push_back(AUDIOENGINE_CH_FROC);
       break;
 
     // Stereo L, Stereo R, LFE
     case CEF_CHANNEL_LAYOUT_2POINT1:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_LFE;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_LFE);
       break;
 
     // Stereo L, Stereo R, Front C, LFE
     case CEF_CHANNEL_LAYOUT_3_1:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_LFE;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_LFE);
       break;
 
     // Stereo L, Stereo R, Front C, Rear C, LFE
     case CEF_CHANNEL_LAYOUT_4_1:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_BC;
-      format.m_channels[ptr++] = AE_CH_LFE;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_BC);
+      layout.push_back(AUDIOENGINE_CH_LFE);
       break;
 
     // Stereo L, Stereo R, Front C, Side L, Side R, Back C
     case CEF_CHANNEL_LAYOUT_6_0:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
-      format.m_channels[ptr++] = AE_CH_BC;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
+      layout.push_back(AUDIOENGINE_CH_BC);
       break;
 
     // Stereo L, Stereo R, Side L, Side R, Front LofC, Front RofC
     case CEF_CHANNEL_LAYOUT_6_0_FRONT:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
-      format.m_channels[ptr++] = AE_CH_FLOC;
-      format.m_channels[ptr++] = AE_CH_FROC;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
+      layout.push_back(AUDIOENGINE_CH_FLOC);
+      layout.push_back(AUDIOENGINE_CH_FROC);
       break;
 
     // Stereo L, Stereo R, Front C, Rear L, Rear R, Rear C
     case CEF_CHANNEL_LAYOUT_HEXAGONAL:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_BL;
-      format.m_channels[ptr++] = AE_CH_BR;
-      format.m_channels[ptr++] = AE_CH_BC;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_BL);
+      layout.push_back(AUDIOENGINE_CH_BR);
+      layout.push_back(AUDIOENGINE_CH_BC);
       break;
 
     // Stereo L, Stereo R, Front C, LFE, Side L, Side R, Rear Center
     case CEF_CHANNEL_LAYOUT_6_1:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_LFE;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
-      format.m_channels[ptr++] = AE_CH_BC;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_LFE);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
+      layout.push_back(AUDIOENGINE_CH_BC);
       break;
 
     // Stereo L, Stereo R, Front C, LFE, Back L, Back R, Rear Center
     case CEF_CHANNEL_LAYOUT_6_1_BACK:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_LFE;
-      format.m_channels[ptr++] = AE_CH_BL;
-      format.m_channels[ptr++] = AE_CH_BR;
-      format.m_channels[ptr++] = AE_CH_BC;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_LFE);
+      layout.push_back(AUDIOENGINE_CH_BL);
+      layout.push_back(AUDIOENGINE_CH_BR);
+      layout.push_back(AUDIOENGINE_CH_BC);
       break;
 
     // Stereo L, Stereo R, Side L, Side R, Front LofC, Front RofC, LFE
     case CEF_CHANNEL_LAYOUT_6_1_FRONT:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
-      format.m_channels[ptr++] = AE_CH_FLOC;
-      format.m_channels[ptr++] = AE_CH_FROC;
-      format.m_channels[ptr++] = AE_CH_LFE;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
+      layout.push_back(AUDIOENGINE_CH_FLOC);
+      layout.push_back(AUDIOENGINE_CH_FROC);
+      layout.push_back(AUDIOENGINE_CH_LFE);
       break;
 
     // Front L, Front R, Front C, Side L, Side R, Front LofC, Front RofC
     case CEF_CHANNEL_LAYOUT_7_0_FRONT:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
-      format.m_channels[ptr++] = AE_CH_FLOC;
-      format.m_channels[ptr++] = AE_CH_FROC;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
+      layout.push_back(AUDIOENGINE_CH_FLOC);
+      layout.push_back(AUDIOENGINE_CH_FROC);
       break;
 
     // Front L, Front R, Front C, LFE, Back L, Back R, Front LofC, Front RofC
     case CEF_CHANNEL_LAYOUT_7_1_WIDE_BACK:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_LFE;
-      format.m_channels[ptr++] = AE_CH_BL;
-      format.m_channels[ptr++] = AE_CH_BR;
-      format.m_channels[ptr++] = AE_CH_FLOC;
-      format.m_channels[ptr++] = AE_CH_FROC;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_LFE);
+      layout.push_back(AUDIOENGINE_CH_BL);
+      layout.push_back(AUDIOENGINE_CH_BR);
+      layout.push_back(AUDIOENGINE_CH_FLOC);
+      layout.push_back(AUDIOENGINE_CH_FROC);
       break;
 
     // Front L, Front R, Front C, Side L, Side R, Rear L, Back R, Back C.
     case CEF_CHANNEL_LAYOUT_OCTAGONAL:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_FC;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
-      format.m_channels[ptr++] = AE_CH_BL;
-      format.m_channels[ptr++] = AE_CH_BR;
-      format.m_channels[ptr++] = AE_CH_BC;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_FC);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
+      layout.push_back(AUDIOENGINE_CH_BL);
+      layout.push_back(AUDIOENGINE_CH_BR);
+      layout.push_back(AUDIOENGINE_CH_BC);
       break;
 
     // Front L, Front R, Side L, Side R, LFE
     case CEF_CHANNEL_LAYOUT_4_1_QUAD_SIDE:
-      format.m_channels[ptr++] = AE_CH_FL;
-      format.m_channels[ptr++] = AE_CH_FR;
-      format.m_channels[ptr++] = AE_CH_SL;
-      format.m_channels[ptr++] = AE_CH_SR;
-      format.m_channels[ptr++] = AE_CH_LFE;
+      layout.push_back(AUDIOENGINE_CH_FL);
+      layout.push_back(AUDIOENGINE_CH_FR);
+      layout.push_back(AUDIOENGINE_CH_SL);
+      layout.push_back(AUDIOENGINE_CH_SR);
+      layout.push_back(AUDIOENGINE_CH_LFE);
       break;
 
     // Channels are not explicitly mapped to speakers.
@@ -285,11 +409,14 @@ void CAudioHandler::OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int audi
     case CEF_CHANNEL_LAYOUT_UNSUPPORTED:
     default: ;
   }
-  format.m_channels[ptr++] = AE_CH_NULL;
-  format.m_sampleRate = sample_rate;
-  format.m_frameSize = sizeof(float)*channels;//bytes_per_frame;
-  format.m_frames = frames_per_buffer;
-  m_audioStreams[audio_stream_id] = new kodi::audioengine::CAddonAEStream(format);
+
+  kodi::audioengine::AudioEngineFormat format;
+  format.SetDataFormat(AUDIOENGINE_FMT_FLOATP);
+  format.SetChannelLayout(layout);
+  format.SetSampleRate(sample_rate);
+  format.SetFrameSize(sizeof(float)*channels);//bytes_per_frame;
+  format.SetFramesAmount(frames_per_buffer);
+  m_audioStreams[audio_stream_id] = new kodi::audioengine::CAEStream(format);
 }
 
 void CAudioHandler::OnAudioStreamPacket(CefRefPtr<CefBrowser> browser,
@@ -314,4 +441,8 @@ void CAudioHandler::OnAudioStreamStopped(CefRefPtr<CefBrowser> browser,
     delete handler->second;
     m_audioStreams.erase(audio_stream_id);
   }
+}
+
+void CAudioHandler::OnAudioStreamError(CefRefPtr<CefBrowser> browser, int audio_stream_id, const CefString& message)
+{
 }

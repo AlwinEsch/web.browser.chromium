@@ -98,7 +98,7 @@ bool CV8Handler::Execute(const CefString& name,
     browserMessage->GetArgumentList()->SetInt(5, displayTime);
     browserMessage->GetArgumentList()->SetBool(6, withSound);
     browserMessage->GetArgumentList()->SetInt(7, messageTime);
-    m_renderer->GetBrowser()->SendProcessMessage(PID_BROWSER, browserMessage);
+    m_renderer->GetBrowser()->GetMainFrame()->SendProcessMessage(PID_BROWSER, browserMessage);
     return true;
   }
 
