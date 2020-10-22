@@ -112,70 +112,70 @@ bool CBrowserDialogKeyboard::OnInit()
   return false;
 }
 
-bool CBrowserDialogKeyboard::OnAction(int actionId, uint32_t buttoncode, wchar_t unicode)
+bool CBrowserDialogKeyboard::OnAction(ADDON_ACTION actionId)
 {
   switch (actionId)
   {
-    case ACTION_PREVIOUS_MENU:
+    case ADDON_ACTION_PREVIOUS_MENU:
       Close();
       return true;
     case KEY_VKEY:
     case XBMCVK_BACK:
       Backspace();
       return true;
-    case ACTION_ENTER:
+    case ADDON_ACTION_ENTER:
       if (GetFocusId() != CTL_BUTTON_DUMMY)
       {
         OnOK();
         return true;
       }
       break;
-    case ACTION_SHIFT:
+    case ADDON_ACTION_SHIFT:
       OnShift();
       return true;
-    case ACTION_MOVE_LEFT:
-    case ACTION_MOVE_RIGHT:
-    case ACTION_SELECT_ITEM:
+    case ADDON_ACTION_MOVE_LEFT:
+    case ADDON_ACTION_MOVE_RIGHT:
+    case ADDON_ACTION_SELECT_ITEM:
       return false;
-    case ACTION_SYMBOLS:
+    case ADDON_ACTION_SYMBOLS:
       OnSymbols();
       return true;
-    case ACTION_MOVE_UP:
-    case ACTION_MOVE_DOWN:
+    case ADDON_ACTION_MOVE_UP:
+    case ADDON_ACTION_MOVE_DOWN:
       if (GetFocusId() != CTL_BUTTON_DUMMY)
         return false;
     default:
       break;
   }
 
-  if (m_client && buttoncode & KEY_VKEY)
-  {
-    CefKeyEvent key_event;
-    key_event.modifiers = CSystemTranslator::ButtonCodeToModifier(buttoncode);
-    key_event.windows_key_code = CSystemTranslator::ButtonCodeToKeyboardCode(buttoncode);
-    key_event.native_key_code = 0;
-    key_event.is_system_key = false;
-    key_event.character = unicode;
-    key_event.unmodified_character = CSystemTranslator::ButtonCodeToUnmodifiedCharacter(buttoncode);
-    key_event.focus_on_editable_field = true;
-    if (key_event.windows_key_code == VKEY_RETURN)
-    {
-      // We need to treat the enter key as a key press of character \r.  This
-      // is apparently just how webkit handles it and what it expects.
-      key_event.unmodified_character = '\r';
-    }
+//   if (m_client && buttoncode & KEY_VKEY)
+//   {
+//     CefKeyEvent key_event;
+//     key_event.modifiers = CSystemTranslator::ButtonCodeToModifier(buttoncode);
+//     key_event.windows_key_code = CSystemTranslator::ButtonCodeToKeyboardCode(buttoncode);
+//     key_event.native_key_code = 0;
+//     key_event.is_system_key = false;
+//     key_event.character = unicode;
+//     key_event.unmodified_character = CSystemTranslator::ButtonCodeToUnmodifiedCharacter(buttoncode);
+//     key_event.focus_on_editable_field = true;
+//     if (key_event.windows_key_code == VKEY_RETURN)
+//     {
+//       // We need to treat the enter key as a key press of character \r.  This
+//       // is apparently just how webkit handles it and what it expects.
+//       key_event.unmodified_character = '\r';
+//     }
+//
+//     CefRefPtr<CefBrowserHost> host = m_client->GetBrowser()->GetHost();
+//     key_event.type = KEYEVENT_RAWKEYDOWN;
+//     host->SendKeyEvent(key_event);
+//     key_event.type = KEYEVENT_CHAR;
+//     host->SendKeyEvent(key_event);
+//     key_event.type = KEYEVENT_KEYUP;
+//     host->SendKeyEvent(key_event);
+//     return true;
+//   }
 
-    CefRefPtr<CefBrowserHost> host = m_client->GetBrowser()->GetHost();
-    key_event.type = KEYEVENT_RAWKEYDOWN;
-    host->SendKeyEvent(key_event);
-    key_event.type = KEYEVENT_CHAR;
-    host->SendKeyEvent(key_event);
-    key_event.type = KEYEVENT_KEYUP;
-    host->SendKeyEvent(key_event);
-    return true;
-  }
-
-  return CWindow::OnAction(actionId, buttoncode, unicode);
+  return CWindow::OnAction(actionId);
 }
 
 bool CBrowserDialogKeyboard::OnClick(int controlId)

@@ -14,7 +14,7 @@
 
 enum KEYBOARD {CAPS, LOWER, SYMBOLS};
 
-class CBrowserDialogKeyboard : public kodi::gui::CWindow
+class ATTRIBUTE_HIDDEN CBrowserDialogKeyboard : public kodi::gui::CWindow
 {
 public:
   CBrowserDialogKeyboard();
@@ -22,7 +22,7 @@ public:
   void Show(CefRefPtr<CWebBrowserClient> client, cef_text_input_mode_t input_mode);
 
   bool OnInit() override;
-  bool OnAction(int actionId, uint32_t buttoncode, wchar_t unicode) override;
+  bool OnAction(ADDON_ACTION actionId) override;
   bool OnClick(int controlId) override;
 
 private:

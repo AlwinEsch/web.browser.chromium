@@ -634,7 +634,17 @@ msgctxt "#30332"
 msgid "Search"
 msgstr ""
 
+#. Disable cookies use in settings
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#30333"
+msgid "Use cookies"
+msgstr ""
 
+#. Disable cookies use help text in settings
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#30334"
+msgid "Allow the storage and use of cookies."
+msgstr ""
 
 msgctxt "#31000"
 msgid "This is not a secure connection"

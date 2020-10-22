@@ -11,28 +11,26 @@
 #include "WebBrowserClient.h"
 #include "audio/AudioHandler.h"
 #include "gui/GUIManager.h"
-
+#include "include/base/cef_thread_checker.h"
 #include "include/cef_app.h"
 #include "include/cef_client.h"
-#include "include/base/cef_thread_checker.h"
 #if defined(TARGET_DARWIN)
 #include "include/wrapper/cef_library_loader.h"
 #endif
 #include "include/wrapper/cef_message_router.h"
 
 #include <kodi/addon-instance/Web.h>
+#include <mutex>
 #include <queue>
 #include <unordered_map>
-#include <mutex>
 
 class CWebBrowserClient;
 
-class ATTRIBUTE_HIDDEN CWebBrowser
-  : public kodi::addon::CAddonBase,
-    public kodi::addon::CInstanceWeb
+class ATTRIBUTE_HIDDEN CWebBrowser : public kodi::addon::CAddonBase,
+                                     public kodi::addon::CInstanceWeb
 {
 public:
-  CWebBrowser();
+  CWebBrowser() = default;
   ~CWebBrowser() override = default;
 
   // ---------------------------------------------------------------------------
@@ -46,8 +44,10 @@ public:
   void MainLoop() override;
 
   void SetMute(bool mute) override;
-  bool SetLanguage(const char *language) override;
-  kodi::addon::CWebControl* CreateControl(const std::string& sourceName, const std::string& startURL, KODI_HANDLE handle) override;
+  bool SetLanguage(const char* language) override;
+  kodi::addon::CWebControl* CreateControl(const std::string& sourceName,
+                                          const std::string& startURL,
+                                          KODI_HANDLE handle) override;
   bool DestroyControl(kodi::addon::CWebControl* control, bool complete) override;
 
   // ---------------------------------------------------------------------------
@@ -60,9 +60,9 @@ public:
   void InformDestroyed(int uniqueClientId);
 
 private:
-  static int m_iUniqueClientId;
+  static std::atomic_int m_iUniqueClientId;
 
-  CBrowserGUIManager m_guiManager;
+  CBrowserGUIManager m_guiManager{this};
   CefRefPtr<CefApp> m_app;
   CefRefPtr<CAudioHandler> m_audioHandler;
 
@@ -81,5 +81,5 @@ private:
   std::unordered_map<int, CefRefPtr<CWebBrowserClient>> m_browserClients;
   std::unordered_map<std::string, CefRefPtr<CWebBrowserClient>> m_browserClientsInactive;
   std::set<int> m_browserClientsInDelete;
-  bool m_started = false;
+  std::atomic_bool m_started{false};
 };

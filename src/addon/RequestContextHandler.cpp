@@ -7,12 +7,13 @@
  */
 
 #include "RequestContextHandler.h"
+
 #include "ExtensionUtils.h"
 #include "WebBrowserClient.h"
-
 #include "include/cef_command_line.h"
-#include <kodi/General.h>
+
 #include <kodi/Filesystem.h>
+#include <kodi/General.h>
 
 /**
  * WARNING Currently a memleak!!!
@@ -25,7 +26,8 @@
  * TODO after CEF is fixed, fix it here!!!
  */
 
-void CRequestContextHandler::OnRequestContextInitialized(CefRefPtr<CefRequestContext> request_context)
+void CRequestContextHandler::OnRequestContextInitialized(
+    CefRefPtr<CefRequestContext> request_context)
 {
   CEF_REQUIRE_UI_THREAD();
 
@@ -36,7 +38,8 @@ void CRequestContextHandler::OnRequestContextInitialized(CefRefPtr<CefRequestCon
     std::string extensionsPath = kodi::GetBaseUserPath("extensions");
     std::vector<kodi::vfs::CDirEntry> items;
     kodi::vfs::GetDirectory(extensionsPath, "", items);
-    kodi::Log(ADDON_LOG_DEBUG, "Scanning directory '%s' with %lu entries for browser extensions", extensionsPath.c_str(), items.size());
+    kodi::Log(ADDON_LOG_DEBUG, "Scanning directory '%s' with %lu entries for browser extensions",
+              extensionsPath.c_str(), items.size());
 
     for (const auto& item : items)
     {
@@ -49,13 +52,15 @@ void CRequestContextHandler::OnRequestContextInitialized(CefRefPtr<CefRequestCon
 }
 
 
-bool CRequestContextHandler::OnBeforePluginLoad(const CefString& mime_type, const CefString& plugin_url, bool is_main_frame,
-                                                const CefString& top_origin_url, CefRefPtr<CefWebPluginInfo> plugin_info,
+bool CRequestContextHandler::OnBeforePluginLoad(const CefString& mime_type,
+                                                const CefString& plugin_url,
+                                                bool is_main_frame,
+                                                const CefString& top_origin_url,
+                                                CefRefPtr<CefWebPluginInfo> plugin_info,
                                                 PluginPolicy* plugin_policy)
 {
   // Always allow the PDF plugin to load.
-  if (*plugin_policy != PLUGIN_POLICY_ALLOW &&
-      mime_type == "application/pdf")
+  if (*plugin_policy != PLUGIN_POLICY_ALLOW && mime_type == "application/pdf")
   {
     *plugin_policy = PLUGIN_POLICY_ALLOW;
     return true;
@@ -85,30 +90,30 @@ bool CRequestContextHandler::OnBeforeBackgroundBrowser(CefRefPtr<CefExtension> e
 }
 
 bool CRequestContextHandler::OnBeforeBrowser(CefRefPtr<CefExtension> extension,
-                                            CefRefPtr<CefBrowser> browser,
-                                            CefRefPtr<CefBrowser> active_browser,
-                                            int index,
-                                            const CefString& url,
-                                            bool active,
-                                            CefWindowInfo& windowInfo,
-                                            CefRefPtr<CefClient>& client,
-                                            CefBrowserSettings& settings)
+                                             CefRefPtr<CefBrowser> browser,
+                                             CefRefPtr<CefBrowser> active_browser,
+                                             int index,
+                                             const CefString& url,
+                                             bool active,
+                                             CefWindowInfo& windowInfo,
+                                             CefRefPtr<CefClient>& client,
+                                             CefBrowserSettings& settings)
 {
   client = m_browserClient;
   return false;
 }
 
-CefRefPtr<CefBrowser> CRequestContextHandler::GetActiveBrowser(
-    CefRefPtr<CefExtension> extension,
-    CefRefPtr<CefBrowser> browser,
-    bool include_incognito)
+CefRefPtr<CefBrowser> CRequestContextHandler::GetActiveBrowser(CefRefPtr<CefExtension> extension,
+                                                               CefRefPtr<CefBrowser> browser,
+                                                               bool include_incognito)
 {
   CEF_REQUIRE_UI_THREAD();
 
   CefRefPtr<CefBrowser> active_browser = m_browserClient->GetBrowser();
   if (!active_browser)
   {
-    kodi::Log(ADDON_LOG_WARNING, "No active browser available for extension %s", browser->GetHost()->GetExtension()->GetIdentifier().ToString().c_str());
+    kodi::Log(ADDON_LOG_WARNING, "No active browser available for extension %s",
+              browser->GetHost()->GetExtension()->GetIdentifier().ToString().c_str());
   }
   else
   {
@@ -127,8 +132,11 @@ bool CRequestContextHandler::CanAccessBrowser(CefRefPtr<CefExtension> extension,
   return true;
 }
 
-bool CRequestContextHandler::GetExtensionResource(CefRefPtr<CefExtension> extension, CefRefPtr<CefBrowser> browser,
-                                                  const CefString& file, CefRefPtr<CefGetExtensionResourceCallback> callback)
+bool CRequestContextHandler::GetExtensionResource(
+    CefRefPtr<CefExtension> extension,
+    CefRefPtr<CefBrowser> browser,
+    const CefString& file,
+    CefRefPtr<CefGetExtensionResourceCallback> callback)
 {
   return false;
 }

@@ -136,6 +136,7 @@ void CRendererClient::UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperat
 
 void CRendererClient::OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser, double x, double y)
 {
+fprintf(stderr, "----------------- %f %f\n",x, y);
   m_scrollOffsetX = x;
   m_scrollOffsetY = y;
 }

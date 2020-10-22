@@ -15,7 +15,7 @@
 
 class CWebBrowser;
 
-class CBrowserGUIManager
+class ATTRIBUTE_HIDDEN CBrowserGUIManager
 {
 public:
   CBrowserGUIManager(CWebBrowser* instance);

@@ -10,7 +10,7 @@
 
 namespace SandboxControl
 {
-  /*!
+/*!
    * @brief To Set access rights of "chrome_sandbox" binary
    *
    * This call open dialog where user becomes asked about root password.
@@ -24,5 +24,5 @@ namespace SandboxControl
    *
    * @return true if successfull done
    */
-  bool SetSandbox();
-}
+bool SetSandbox();
+} // namespace SandboxControl

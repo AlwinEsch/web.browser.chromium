@@ -13,7 +13,7 @@
 #include <kodi/gui/Window.h>
 #include <mutex>
 
-class CBrowserDialogCookie : public kodi::gui::CWindow
+class ATTRIBUTE_HIDDEN CBrowserDialogCookie : public kodi::gui::CWindow
 {
 public:
   CBrowserDialogCookie();

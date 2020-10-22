@@ -29,4 +29,4 @@ void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager)
   resource_manager->SetUrlFilter(base::Bind(KodiURLFilter));
 }
 
-} /* namespace UrlFilter */
+} // namespace ResourceManager

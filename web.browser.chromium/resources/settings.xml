@@ -48,7 +48,11 @@
       </group>
     </category>
     <category id="security" label="30008" help="-1">
-      <group id="1" label="-1">
+      <group id="1" label="30300">
+        <setting id="security.allow_cookies" type="boolean" label="30333" help="30334">
+          <default>true</default>
+          <control type="toggle" />
+        </setting>
       </group>
       <group id="2" label="30023">
         <setting id="security.webaddon.access" type="integer" label="30024" help="30025">

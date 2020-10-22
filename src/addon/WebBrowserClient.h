@@ -10,15 +10,14 @@
 
 #define NDEBUG 1
 
-#include "interface/v8/v8-kodi.h"
-#include "renderer/Renderer.h"
-
-#include "include/cef_audio_handler.h"
 #include "include/cef_app.h"
+#include "include/cef_audio_handler.h"
 #include "include/cef_client.h"
 #include "include/cef_render_handler.h"
 #include "include/wrapper/cef_message_router.h"
 #include "include/wrapper/cef_resource_manager.h"
+#include "interface/v8/v8-kodi.h"
+#include "renderer/Renderer.h"
 
 #include <kodi/AudioEngine.h>
 #include <kodi/addon-instance/Web.h>
@@ -34,19 +33,21 @@ class CV8Kodi;
 
 class CWebBrowser;
 
-class CWebBrowserClient
-  : public kodi::addon::CWebControl,
-    public CefClient,
-    public CefDisplayHandler,
-    public CefDragHandler,
-    public CefFindHandler,
-    public CefLifeSpanHandler,
-    public CefLoadHandler,
-    public CefRequestHandler
+class ATTRIBUTE_HIDDEN CWebBrowserClient : public kodi::addon::CWebControl,
+                                           public CefClient,
+                                           public CefDisplayHandler,
+                                           public CefDragHandler,
+                                           public CefFindHandler,
+                                           public CefLifeSpanHandler,
+                                           public CefLoadHandler,
+                                           public CefRequestHandler
 {
 public:
-  CWebBrowserClient(KODI_HANDLE handle, int iUniqueClientId, const std::string& startURL,
-                    CWebBrowser* instance, CefRefPtr<CRequestContextHandler> handler);
+  CWebBrowserClient(KODI_HANDLE handle,
+                    int iUniqueClientId,
+                    const std::string& startURL,
+                    CWebBrowser* instance,
+                    CefRefPtr<CRequestContextHandler> handler);
   virtual ~CWebBrowserClient();
 
   CefRefPtr<CefAudioHandler> GetAudioHandler() override;
@@ -62,9 +63,9 @@ public:
   CefRefPtr<CefFindHandler> GetFindHandler() override { return this; }
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
 
-  bool OnAction(int actionId, uint32_t buttoncode, wchar_t unicode, int &nextItem) override;
+  bool OnAction(int actionId, uint32_t buttoncode, wchar_t unicode, int& nextItem) override;
   bool OnMouseEvent(int id, double x, double y, double offsetX, double offsetY, int state) override;
-  bool OpenWebsite(const std::string& url)  override;
+  bool OpenWebsite(const std::string& url) override;
   void Render() override;
   bool Dirty() override;
   void Reload() override { m_browser->Reload(); }
@@ -93,19 +94,28 @@ public:
 
   /// CefClient methods
   //@{
-  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                                CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;
+  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                CefRefPtr<CefFrame> frame,
+                                CefProcessId source_process,
+                                CefRefPtr<CefProcessMessage> message) override;
   //@}
 
   /// CefDisplayHandler methods
   //@{
-  void OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& url) override;
+  void OnAddressChange(CefRefPtr<CefBrowser> browser,
+                       CefRefPtr<CefFrame> frame,
+                       const CefString& url) override;
   void OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title) override;
-  void OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const std::vector<CefString>& icon_urls) override;
+  void OnFaviconURLChange(CefRefPtr<CefBrowser> browser,
+                          const std::vector<CefString>& icon_urls) override;
   void OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bool fullscreen) override;
   bool OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text) override;
   void OnStatusMessage(CefRefPtr<CefBrowser> browser, const CefString& value) override;
-  bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString&  message, const CefString& source, int line) override;
+  bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
+                        cef_log_severity_t level,
+                        const CefString& message,
+                        const CefString& source,
+                        int line) override;
   //@}
 
   // CefDragHandler methods
@@ -113,7 +123,9 @@ public:
   bool OnDragEnter(CefRefPtr<CefBrowser> browser,
                    CefRefPtr<CefDragData> dragData,
                    CefDragHandler::DragOperationsMask mask) override;
-  void OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const std::vector<CefDraggableRegion>& regions) override;
+  void OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser,
+                                 CefRefPtr<CefFrame> frame,
+                                 const std::vector<CefDraggableRegion>& regions) override;
   //@}
 
   /// CefLifeSpanHandler methods
@@ -137,20 +149,43 @@ public:
 
   /// CefFindHandler methods
   //@{
-  void OnFindResult(CefRefPtr<CefBrowser> browser, int identifier, int count, const CefRect& selectionRect,
-                            int activeMatchOrdinal, bool finalUpdate) override;
+  void OnFindResult(CefRefPtr<CefBrowser> browser,
+                    int identifier,
+                    int count,
+                    const CefRect& selectionRect,
+                    int activeMatchOrdinal,
+                    bool finalUpdate) override;
   //@}
 
   /// CefRequestHandler methods
   //@{
-  bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect) override;
-  bool OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url,
-                        CefRequestHandler::WindowOpenDisposition target_disposition, bool user_gesture) override;
-  bool GetAuthCredentials(CefRefPtr<CefBrowser> browser, const CefString& origin_url, bool isProxy, const CefString& host,
-                          int port, const CefString& realm, const CefString& scheme, CefRefPtr<CefAuthCallback> callback) override;
-  bool OnQuotaRequest(CefRefPtr<CefBrowser> browser, const CefString& origin_url, int64 new_size, CefRefPtr<CefRequestCallback> callback) override;
-  bool OnCertificateError(CefRefPtr<CefBrowser> browser, ErrorCode cert_error, const CefString& request_url,
-                          CefRefPtr<CefSSLInfo> ssl_info, CefRefPtr<CefRequestCallback> callback) override;
+  bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
+                      CefRefPtr<CefFrame> frame,
+                      CefRefPtr<CefRequest> request,
+                      bool user_gesture,
+                      bool is_redirect) override;
+  bool OnOpenURLFromTab(CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefFrame> frame,
+                        const CefString& target_url,
+                        CefRequestHandler::WindowOpenDisposition target_disposition,
+                        bool user_gesture) override;
+  bool GetAuthCredentials(CefRefPtr<CefBrowser> browser,
+                          const CefString& origin_url,
+                          bool isProxy,
+                          const CefString& host,
+                          int port,
+                          const CefString& realm,
+                          const CefString& scheme,
+                          CefRefPtr<CefAuthCallback> callback) override;
+  bool OnQuotaRequest(CefRefPtr<CefBrowser> browser,
+                      const CefString& origin_url,
+                      int64 new_size,
+                      CefRefPtr<CefRequestCallback> callback) override;
+  bool OnCertificateError(CefRefPtr<CefBrowser> browser,
+                          ErrorCode cert_error,
+                          const CefString& request_url,
+                          CefRefPtr<CefSSLInfo> ssl_info,
+                          CefRefPtr<CefRequestCallback> callback) override;
   void OnPluginCrashed(CefRefPtr<CefBrowser> browser, const CefString& plugin_path) override;
   void OnRenderViewReady(CefRefPtr<CefBrowser> browser) override;
   void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status) override;
@@ -159,11 +194,21 @@ public:
 
   /// CefLoadHandler methods
   //@{
-  void OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward) override;
-  void OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type) override;
-  void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode) override;
-  void OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode errorCode,
-                   const CefString& errorText, const CefString& failedUrl) override;
+  void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                            bool isLoading,
+                            bool canGoBack,
+                            bool canGoForward) override;
+  void OnLoadStart(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefFrame> frame,
+                   TransitionType transition_type) override;
+  void OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                 CefRefPtr<CefFrame> frame,
+                 int httpStatusCode) override;
+  void OnLoadError(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefFrame> frame,
+                   ErrorCode errorCode,
+                   const CefString& errorText,
+                   const CefString& failedUrl) override;
   //@}
 
   bool IsLoading() { return m_isLoading; }
@@ -186,7 +231,7 @@ private:
   int ZoomLevelToPercentage(double zoomlevel);
   double PercentageToZoomLevel(int percent);
 
-  const int m_uniqueClientId;                // Unique identification id of this control client
+  const int m_uniqueClientId; // Unique identification id of this control client
   CWebBrowser* m_mainBrowserHandler;
   int m_browserId;
   int m_browserCount; // The current number of browsers using this handler.
@@ -208,9 +253,9 @@ private:
   bool m_isFullScreen;
   bool m_isLoading;
   std::string m_currentURL;
-  std::string m_currentTitle;              // Last sended website title string
-  std::string m_currentTooltip;            // Last sended tooltip string
-  std::string m_currentStatusMsg;          // Last sended status message string
+  std::string m_currentTitle; // Last sended website title string
+  std::string m_currentTooltip; // Last sended tooltip string
+  std::string m_currentStatusMsg; // Last sended status message string
   std::string m_currentIcon;
   std::vector<std::pair<std::string, bool>> m_historyWebsiteNames;
   std::string m_currentSearchText;
@@ -219,7 +264,8 @@ private:
 
   CefRefPtr<CefBrowser> m_browser;
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
-  CefRefPtr<CefResourceManager> m_resourceManager;        // Manages the registration and delivery of resources.
+  CefRefPtr<CefResourceManager>
+      m_resourceManager; // Manages the registration and delivery of resources.
   CefRefPtr<CBrowerDialogContextMenu> m_dialogContextMenu;
   CefRefPtr<CJSDialogHandler> m_jsDialogHandler;
   CefRefPtr<CRendererClient> m_renderer;

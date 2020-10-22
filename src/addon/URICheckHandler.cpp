@@ -10,8 +10,8 @@
 
 #include "include/cef_parser.h"
 
-#include <kodi/General.h>
 #include <iomanip>
+#include <kodi/General.h>
 #include <sstream>
 
 void CURICheck::LoadErrorPage(CefRefPtr<CefFrame> frame,
@@ -20,13 +20,15 @@ void CURICheck::LoadErrorPage(CefRefPtr<CefFrame> frame,
                               const std::string& other_info)
 {
   std::stringstream ss;
-  ss << "<html><head><title>"<< kodi::GetLocalizedString(30133) << "</title></head>"
+  ss << "<html><head><title>" << kodi::GetLocalizedString(30133)
+     << "</title></head>"
         "<body bgcolor=\"white\">"
-        "<h3>"<< kodi::GetLocalizedString(30133) << ".</h3>"
+        "<h3>"
+     << kodi::GetLocalizedString(30133)
+     << ".</h3>"
         "URL: <a href=\""
      << failed_url << "\">" << failed_url
-     << "</a><br/>Error: " << CURICheck::GetErrorString(error_code) << " ("
-     << error_code << ")";
+     << "</a><br/>Error: " << CURICheck::GetErrorString(error_code) << " (" << error_code << ")";
 
   if (!other_info.empty())
     ss << "<br/>" << other_info;
@@ -37,8 +39,9 @@ void CURICheck::LoadErrorPage(CefRefPtr<CefFrame> frame,
 
 std::string CURICheck::GetCertStatusString(cef_cert_status_t status)
 {
-#define FLAG(flag)                \
-  if (status & flag) {            \
+#define FLAG(flag) \
+  if (status & flag) \
+  { \
     result += std::string(#flag); \
   }
 
@@ -69,8 +72,9 @@ std::string CURICheck::GetCertStatusString(cef_cert_status_t status)
 
 std::string CURICheck::GetSSLVersionString(cef_ssl_version_t version)
 {
-#define VALUE(val, def)       \
-  if (val == def) {           \
+#define VALUE(val, def) \
+  if (val == def) \
+  { \
     return std::string(#def); \
   }
 
@@ -88,10 +92,11 @@ std::string CURICheck::GetErrorString(cef_errorcode_t code)
 {
 // Case condition that returns |code| as a string.
 #define CASE(code) \
-  case code:       \
+  case code: \
     return #code
 
-  switch (code) {
+  switch (code)
+  {
     CASE(ERR_NONE);
     CASE(ERR_FAILED);
     CASE(ERR_ABORTED);
@@ -149,8 +154,7 @@ std::string CURICheck::GetErrorString(cef_errorcode_t code)
 std::string CURICheck::GetDataURI(const std::string& data, const std::string& mime_type)
 {
   return "data:" + mime_type + ";base64," +
-         CefURIEncode(CefBase64Encode(data.data(), data.size()), false)
-             .ToString();
+         CefURIEncode(CefBase64Encode(data.data(), data.size()), false).ToString();
 }
 
 std::string GetTimeString(const CefTime& value)
@@ -158,9 +162,9 @@ std::string GetTimeString(const CefTime& value)
   if (value.GetTimeT() == 0)
     return "Unspecified";
 
-  static const char* kMonths[] = {
-      "January", "February", "March",     "April",   "May",      "June",
-      "July",    "August",   "September", "October", "November", "December"};
+  static const char* kMonths[] = {"January",   "February", "March",    "April",
+                                  "May",       "June",     "July",     "August",
+                                  "September", "October",  "November", "December"};
   std::string month;
   if (value.month >= 1 && value.month <= 12)
     month = kMonths[value.month - 1];
@@ -168,10 +172,9 @@ std::string GetTimeString(const CefTime& value)
     month = "Invalid";
 
   std::stringstream ss;
-  ss << month << " " << value.day_of_month << ", " << value.year << " "
-     << std::setfill('0') << std::setw(2) << value.hour << ":"
-     << std::setfill('0') << std::setw(2) << value.minute << ":"
-     << std::setfill('0') << std::setw(2) << value.second;
+  ss << month << " " << value.day_of_month << ", " << value.year << " " << std::setfill('0')
+     << std::setw(2) << value.hour << ":" << std::setfill('0') << std::setw(2) << value.minute
+     << ":" << std::setfill('0') << std::setw(2) << value.second;
   return ss.str();
 }
 
@@ -191,7 +194,8 @@ std::string GetBinaryString(CefRefPtr<CefBinaryValue> value)
 }
 
 // Return HTML string with information about a certificate.
-std::string CURICheck::GetCertificateInformation(CefRefPtr<CefX509Certificate> cert, cef_cert_status_t certstatus)
+std::string CURICheck::GetCertificateInformation(CefRefPtr<CefX509Certificate> cert,
+                                                 cef_cert_status_t certstatus)
 {
   CefRefPtr<CefX509CertPrincipal> subject = cert->GetSubject();
   CefRefPtr<CefX509CertPrincipal> issuer = cert->GetIssuer();

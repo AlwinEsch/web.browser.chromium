@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2019 Alwin Esch (Team Kodi)
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi)
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-3.0-or-later
@@ -9,7 +9,6 @@
 #include "AudioHandler.h"
 
 bool CAudioHandler::GetAudioParameters(CefRefPtr<CefBrowser> browser,
-                                       int audio_stream_id,
                                        CefAudioParameters& params)
 {
   kodi::audioengine::AudioEngineFormat format;
@@ -135,11 +134,12 @@ bool CAudioHandler::GetAudioParameters(CefRefPtr<CefBrowser> browser,
 }
 
 
-void CAudioHandler::OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int audio_stream_id, int channels, ChannelLayout channel_layout,
-                                         int sample_rate, int frames_per_buffer)
+void CAudioHandler::OnAudioStreamStarted(CefRefPtr<CefBrowser> browser,
+                                         const CefAudioParameters& params,
+                                         int channels)
 {
   std::vector<AudioEngineChannel> layout;
-  switch (channel_layout)
+  switch (params.channel_layout)
   {
     case CEF_CHANNEL_LAYOUT_MONO:
       layout.push_back(AUDIOENGINE_CH_FL);
@@ -413,36 +413,35 @@ void CAudioHandler::OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int audi
   kodi::audioengine::AudioEngineFormat format;
   format.SetDataFormat(AUDIOENGINE_FMT_FLOATP);
   format.SetChannelLayout(layout);
-  format.SetSampleRate(sample_rate);
+  format.SetSampleRate(params.sample_rate);
   format.SetFrameSize(sizeof(float)*channels);//bytes_per_frame;
-  format.SetFramesAmount(frames_per_buffer);
-  m_audioStreams[audio_stream_id] = new kodi::audioengine::CAEStream(format);
+  format.SetFramesAmount(params.frames_per_buffer);
+  m_audioStreams[browser->GetIdentifier()] = new kodi::audioengine::CAEStream(format);
 }
 
 void CAudioHandler::OnAudioStreamPacket(CefRefPtr<CefBrowser> browser,
-                                        int audio_stream_id,
                                         const float** data,
                                         int frames, int64_t pts)
 {
   if (m_mute)
     return;
 
-  const auto& handler = m_audioStreams.find(audio_stream_id);
+  const auto& handler = m_audioStreams.find(browser->GetIdentifier());
   if (handler != m_audioStreams.end())
     handler->second->AddData((uint8_t* const *)(data), 0, frames, pts);
 }
 
-void CAudioHandler::OnAudioStreamStopped(CefRefPtr<CefBrowser> browser,
-                                         int audio_stream_id)
+void CAudioHandler::OnAudioStreamStopped(CefRefPtr<CefBrowser> browser)
 {
-  const auto& handler = m_audioStreams.find(audio_stream_id);
+  const auto& handler = m_audioStreams.find(browser->GetIdentifier());
   if (handler != m_audioStreams.end())
   {
     delete handler->second;
-    m_audioStreams.erase(audio_stream_id);
+    m_audioStreams.erase(browser->GetIdentifier());
   }
 }
 
-void CAudioHandler::OnAudioStreamError(CefRefPtr<CefBrowser> browser, int audio_stream_id, const CefString& message)
+void CAudioHandler::OnAudioStreamError(CefRefPtr<CefBrowser> browser, const CefString& message)
 {
+  kodi::Log(ADDON_LOG_ERROR, "CAudioHandler::%s: Audio stream error: %s", message.ToString().c_str());
 }

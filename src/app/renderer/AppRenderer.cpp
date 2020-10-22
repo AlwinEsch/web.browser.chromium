@@ -20,11 +20,11 @@ std::vector<std::string> CWebAppRenderer::m_allowedInterfaceURLs =
   "https://forum.kodi.tv/"
 };
 
-void CWebAppRenderer::OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info)
-{
-  CefRefPtr<CefDictionaryValue> addon_settings = extra_info->GetDictionary(0);
-  m_securityWebaddonAccess = addon_settings->GetInt(SettingValues::security_webaddon_access);
-}
+// void CWebAppRenderer::OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info)
+// {
+//   CefRefPtr<CefDictionaryValue> addon_settings = extra_info->GetDictionary(0);
+//   m_securityWebaddonAccess = addon_settings->GetInt(SettingValues::security_webaddon_access);
+// }
 
 void CWebAppRenderer::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {

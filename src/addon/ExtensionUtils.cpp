@@ -20,6 +20,7 @@
 #include "include/cef_path_util.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "utils/FileUtils.h"
+
 #include <kodi/Filesystem.h>
 
 namespace ExtensionUtils
@@ -54,8 +55,7 @@ std::string GetInternalPath(const std::string& extension_path)
 #endif
 
   std::string internal_path;
-  if (!resources_path_lower.empty() &&
-      extension_path_lower.find(extension_path_lower) == 0U)
+  if (!resources_path_lower.empty() && extension_path_lower.find(extension_path_lower) == 0U)
   {
     internal_path = extension_path.substr(resources_path_lower.size());
   }
@@ -72,8 +72,7 @@ std::string GetInternalPath(const std::string& extension_path)
   return internal_path;
 }
 
-typedef base::Callback<void(CefRefPtr<CefDictionaryValue> /*manifest*/)>
-    ManifestCallback;
+typedef base::Callback<void(CefRefPtr<CefDictionaryValue> /*manifest*/)> ManifestCallback;
 
 void RunManifestCallback(const ManifestCallback& callback, CefRefPtr<CefDictionaryValue> manifest)
 {
@@ -96,7 +95,8 @@ void GetInternalManifest(const std::string& extension_path, const ManifestCallba
     return;
   }
 
-  const std::string& manifest_path = GetInternalExtensionResourcePath(FileUtils::JoinPath(extension_path, "manifest.json"));
+  const std::string& manifest_path =
+      GetInternalExtensionResourcePath(FileUtils::JoinPath(extension_path, "manifest.json"));
   std::string manifest_contents;
   kodi::vfs::CFile file;
   file.OpenFile(manifest_path);
@@ -107,14 +107,15 @@ void GetInternalManifest(const std::string& extension_path, const ManifestCallba
     return;
   }
 
-  cef_json_parser_error_t error_code;
   CefString error_msg;
-  CefRefPtr<CefValue> value = CefParseJSONAndReturnError(manifest_contents, JSON_PARSER_RFC, error_code, error_msg);
+  CefRefPtr<CefValue> value =
+      CefParseJSONAndReturnError(manifest_contents, JSON_PARSER_RFC, error_msg);
   if (!value || value->GetType() != VTYPE_DICTIONARY)
   {
     if (error_msg.empty())
       error_msg = "Incorrectly formatted dictionary contents.";
-    kodi::Log(ADDON_LOG_ERROR, "Failed to parse manifest from %s; %s", manifest_path.c_str(), error_msg.ToString().c_str());
+    kodi::Log(ADDON_LOG_ERROR, "Failed to parse manifest from %s; %s", manifest_path.c_str(),
+              error_msg.ToString().c_str());
     RunManifestCallback(callback, nullptr);
     return;
   }
@@ -134,7 +135,7 @@ void LoadExtensionWithManifest(CefRefPtr<CefRequestContext> request_context,
   request_context->LoadExtension(extension_path, manifest, handler);
 }
 
-}  // namespace
+} // namespace
 
 bool IsInternalExtension(const std::string& extension_path)
 {
@@ -146,8 +147,7 @@ bool IsInternalExtension(const std::string& extension_path)
   {
     // Exact match or first directory component.
     const std::string& extension = extensions[i];
-    if (internal_path == extension ||
-        internal_path.find(extension + '/') == 0)
+    if (internal_path == extension || internal_path.find(extension + '/') == 0)
     {
       return true;
     }
@@ -161,8 +161,7 @@ std::string GetInternalExtensionResourcePath(const std::string& extension_path)
   return "extensions/" + GetInternalPath(extension_path);
 }
 
-std::string GetExtensionResourcePath(const std::string& extension_path,
-                                     bool* internal)
+std::string GetExtensionResourcePath(const std::string& extension_path, bool* internal)
 {
   const bool is_internal = IsInternalExtension(extension_path);
   if (internal)
@@ -172,8 +171,7 @@ std::string GetExtensionResourcePath(const std::string& extension_path,
   return extension_path;
 }
 
-bool GetExtensionResourceContents(const std::string& extension_path,
-                                  std::string& contents)
+bool GetExtensionResourceContents(const std::string& extension_path, std::string& contents)
 {
   CEF_REQUIRE_FILE_THREAD();
 
@@ -195,8 +193,7 @@ void LoadExtension(CefRefPtr<CefRequestContext> request_context,
   if (!CefCurrentlyOn(TID_UI))
   {
     // Execute on the browser UI thread.
-    CefPostTask(TID_UI, base::Bind(LoadExtension, request_context,
-                                   extension_path, handler));
+    CefPostTask(TID_UI, base::Bind(LoadExtension, request_context, extension_path, handler));
     return;
   }
 
@@ -204,7 +201,7 @@ void LoadExtension(CefRefPtr<CefRequestContext> request_context,
   {
     // Read the extension manifest and load asynchronously.
     GetInternalManifest(extension_path, base::Bind(LoadExtensionWithManifest, request_context,
-                        extension_path, handler));
+                                                   extension_path, handler));
   }
   else
   {
@@ -221,7 +218,8 @@ void AddInternalExtensionToResourceManager(CefRefPtr<CefExtension> extension,
   if (!CefCurrentlyOn(TID_IO))
   {
     // Execute on the browser IO thread.
-    CefPostTask(TID_IO, base::Bind(AddInternalExtensionToResourceManager, extension, resource_manager));
+    CefPostTask(TID_IO,
+                base::Bind(AddInternalExtensionToResourceManager, extension, resource_manager));
     return;
   }
 
@@ -230,7 +228,8 @@ void AddInternalExtensionToResourceManager(CefRefPtr<CefExtension> extension,
 
   // Add provider for bundled resource files and read resources from a directory on disk.
   std::string resource_dir = kodi::GetAddonPath(resource_path);
-  resource_manager->AddDirectoryProvider(origin, kodi::GetAddonPath(resource_path), 50, std::string());
+  resource_manager->AddDirectoryProvider(origin, kodi::GetAddonPath(resource_path), 50,
+                                         std::string());
 }
 
 std::string GetExtensionOrigin(const std::string& extension_id)
@@ -240,7 +239,8 @@ std::string GetExtensionOrigin(const std::string& extension_id)
 
 std::string GetExtensionURL(CefRefPtr<CefExtension> extension)
 {
-  CefRefPtr<CefDictionaryValue> browser_action = extension->GetManifest()->GetDictionary("browser_action");
+  CefRefPtr<CefDictionaryValue> browser_action =
+      extension->GetManifest()->GetDictionary("browser_action");
   if (browser_action)
   {
     const std::string& default_popup = browser_action->GetString("default_popup");
@@ -253,17 +253,19 @@ std::string GetExtensionURL(CefRefPtr<CefExtension> extension)
 
 std::string GetExtensionIconPath(CefRefPtr<CefExtension> extension, bool* internal)
 {
-  CefRefPtr<CefDictionaryValue> browser_action = extension->GetManifest()->GetDictionary("browser_action");
+  CefRefPtr<CefDictionaryValue> browser_action =
+      extension->GetManifest()->GetDictionary("browser_action");
   if (browser_action)
   {
     const std::string& default_icon = browser_action->GetString("default_icon");
     if (!default_icon.empty())
     {
-      return GetExtensionResourcePath(FileUtils::JoinPath(extension->GetPath(), default_icon), internal);
+      return GetExtensionResourcePath(FileUtils::JoinPath(extension->GetPath(), default_icon),
+                                      internal);
     }
   }
 
   return std::string();
 }
 
-}  /* namespace ExtensionUtils */
+} /* namespace ExtensionUtils */

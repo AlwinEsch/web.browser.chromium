@@ -9,6 +9,7 @@
 #pragma once
 
 #include "include/wrapper/cef_resource_manager.h"
+
 #include <string>
 
 namespace ResourceManager

@@ -19,7 +19,7 @@ public:
 
   void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
 
-  void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info) override;
+//   void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info) override;
   void OnWebKitInitialized() override;
   void OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDictionaryValue> extra_info) override;
   void OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) override;

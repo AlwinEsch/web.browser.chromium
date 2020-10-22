@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2019 Alwin Esch (Team Kodi)
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi)
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-3.0-or-later
@@ -11,6 +11,7 @@
 #include "include/cef_audio_handler.h"
 #include "include/cef_app.h"
 
+#include <atomic>
 #include <kodi/AudioEngine.h>
 
 class CWebBrowser;
@@ -22,12 +23,13 @@ public:
 
   /// CefAudioHandler methods
   //@{
-  bool GetAudioParameters(CefRefPtr<CefBrowser> browser, int audio_stream_id, CefAudioParameters& params) override;
-  void OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int audio_stream_id, int channels, ChannelLayout channel_layout,
-                            int sample_rate, int frames_per_buffer) override;
-  void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser, int audio_stream_id, const float** data, int frames, int64_t pts) override;
-  void OnAudioStreamStopped(CefRefPtr<CefBrowser> browser, int audio_stream_id) override;
-  void OnAudioStreamError(CefRefPtr<CefBrowser> browser, int audio_stream_id, const CefString& message) override;
+  bool GetAudioParameters(CefRefPtr<CefBrowser> browser, CefAudioParameters& params) override;
+  void OnAudioStreamStarted(CefRefPtr<CefBrowser> browser,
+                            const CefAudioParameters& params,
+                            int channels) override;
+  void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser, const float** data, int frames, int64_t pts) override;
+  void OnAudioStreamStopped(CefRefPtr<CefBrowser> browser) override;
+  void OnAudioStreamError(CefRefPtr<CefBrowser> browser, const CefString& message) override;
   //@}
 
   void SetMute(bool mute) { m_mute = mute; }
@@ -37,5 +39,5 @@ private:
 
   CWebBrowser* m_addonMain;
   std::map<int, kodi::audioengine::CAEStream*> m_audioStreams;
-  bool m_mute;
+  std::atomic_bool m_mute;
 };

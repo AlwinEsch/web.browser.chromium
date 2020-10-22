@@ -116,7 +116,7 @@ void CBrowserDialogCookie::AddGUIEntry(const CefCookie& cookie)
   if (!m_inited)
     return;
 
-  kodi::gui::ListItemPtr item(new kodi::gui::CListItem(CefString(&cookie.name).ToString()));
+  std::shared_ptr<kodi::gui::CListItem> item(new kodi::gui::CListItem(CefString(&cookie.name).ToString()));
 
   item->SetProperty("content", CefString(&cookie.value).ToString());
   item->SetProperty("domain", CefString(&cookie.domain).ToString());

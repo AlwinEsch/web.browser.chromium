@@ -14,11 +14,10 @@
 #include "SandboxControl.h"
 #include "WebBrowserClient.h"
 #include "WidevineControl.h"
-#include "utils/Utils.h"
-#include "utils/StringUtils.h"
-
 #include "include/cef_app.h"
 #include "include/cef_version.h"
+#include "utils/StringUtils.h"
+#include "utils/Utils.h"
 #ifdef WIN32
 #include "include/cef_sandbox_win.h"
 #endif
@@ -27,19 +26,13 @@
 #endif
 #include "include/views/cef_textfield.h"
 
-#include <kodi/Filesystem.h>
-#include <kodi/gui/dialogs/OK.h>
-#include <kodi/gui/dialogs/FileBrowser.h>
 #include <chrono>
+#include <kodi/Filesystem.h>
+#include <kodi/gui/dialogs/FileBrowser.h>
+#include <kodi/gui/dialogs/OK.h>
 #include <thread>
 
-int CWebBrowser::m_iUniqueClientId = 0;
-
-CWebBrowser::CWebBrowser()
-  : m_guiManager(this)
-{
-
-}
+std::atomic_int CWebBrowser::m_iUniqueClientId{0};
 
 /*
  * StartInstance() is called from Kodi by other thread as main.
@@ -48,21 +41,22 @@ CWebBrowser::CWebBrowser()
  */
 WEB_ADDON_ERROR CWebBrowser::StartInstance()
 {
-  kodi::Log(ADDON_LOG_INFO, "%s - Creating the Google Chromium Internet Browser add-on", __FUNCTION__);
+  kodi::Log(ADDON_LOG_INFO, "%s - Creating the Google Chromium Internet Browser add-on", __func__);
 
 #if defined(TARGET_LINUX)
   // Load CEF library by self
   std::string cefLib = kodi::GetAddonPath(LIBRARY_PREFIX "cef" LIBRARY_SUFFIX);
   if (!cef_load_library(cefLib.c_str()))
   {
-    kodi::Log(ADDON_LOG_ERROR, "%s - Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
+    kodi::Log(ADDON_LOG_ERROR, "%s - Failed to load CEF library '%s'", __func__, cefLib.c_str());
     return WEB_ADDON_ERROR_FAILED;
   }
 #elif defined(TARGET_DARWIN)
-  std::string cefLib = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework");
+  std::string cefLib = kodi::GetAddonPath(
+      "Contents/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework");
   if (!m_cefLibraryLoader.LoadInMain(cefLib))
   {
-    kodi::Log(ADDON_LOG_ERROR, "%s - Failed to load CEF library '%s'", __FUNCTION__, cefLib.c_str());
+    kodi::Log(ADDON_LOG_ERROR, "%s - Failed to load CEF library '%s'", __func__, cefLib.c_str());
     return WEB_ADDON_ERROR_FAILED;
   }
 #endif
@@ -76,11 +70,13 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   // Set download path if not available
   if (kodi::GetSettingString("downloads.path").empty())
   {
-    kodi::gui::dialogs::OK::ShowAndGetInput(kodi::GetLocalizedString(30080), kodi::GetLocalizedString(30081));
+    kodi::gui::dialogs::OK::ShowAndGetInput(kodi::GetLocalizedString(30080),
+                                            kodi::GetLocalizedString(30081));
 
     std::string path;
     while (path.empty())
-      kodi::gui::dialogs::FileBrowser::ShowAndGetDirectory("local", kodi::GetLocalizedString(30081), path, true);
+      kodi::gui::dialogs::FileBrowser::ShowAndGetDirectory("local", kodi::GetLocalizedString(30081),
+                                                           path, true);
 
     kodi::SetSettingString("downloads.path", path);
   }
@@ -94,10 +90,14 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   // "CefSettingsTraits::clear" call on destruction of CWebBrowser
   m_cefSettings = new CefSettings;
 #if defined(TARGET_DARWIN)
-  m_browserSubprocessPath = kodi::GetAddonPath("Contents/Frameworks/kodichromium Helper.app/Contents/MacOS/kodichromium Helper");
-  m_frameworkDirPath = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/");
-  m_resourcesPath = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Resources/");
-  m_localesPath = kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Resources/");
+  m_browserSubprocessPath = kodi::GetAddonPath(
+      "Contents/Frameworks/kodichromium Helper.app/Contents/MacOS/kodichromium Helper");
+  m_frameworkDirPath =
+      kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/");
+  m_resourcesPath =
+      kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Resources/");
+  m_localesPath =
+      kodi::GetAddonPath("Contents/Frameworks/Chromium Embedded Framework.framework/Resources/");
 
   m_cefSettings->no_sandbox = true; // Currently not work on Mac
 #else
@@ -109,35 +109,36 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   m_cefSettings->no_sandbox = false;
 #endif
   CefString(&m_cefSettings->browser_subprocess_path) = m_browserSubprocessPath;
-  CefString(&m_cefSettings->framework_dir_path)      = m_frameworkDirPath;
-  CefString(&m_cefSettings->resources_dir_path)      = m_resourcesPath;
-  CefString(&m_cefSettings->locales_dir_path)        = m_localesPath;
-  m_cefSettings->multi_threaded_message_loop         = false;
-  m_cefSettings->external_message_pump               = true;
-  m_cefSettings->windowless_rendering_enabled        = true;
-  m_cefSettings->command_line_args_disabled          = false;
-  CefString(&m_cefSettings->cache_path)              = kodi::GetBaseUserPath("pchHTMLCache");
-  CefString(&m_cefSettings->user_data_path)          = kodi::GetBaseUserPath();
-  m_cefSettings->persist_session_cookies             = false;
-  m_cefSettings->persist_user_preferences            = false;
-  CefString(&m_cefSettings->product_version)         = StringUtils::Format("Kodi/%s Chrome/%d.%d.%d.%d",
-                                                                            KODICHROMIUM_VERSION,
-                                                                            CHROME_VERSION_MAJOR, CHROME_VERSION_MINOR,
-                                                                            CHROME_VERSION_BUILD, CHROME_VERSION_PATCH);
-  CefString(&m_cefSettings->locale)                  = language;
-  CefString(&m_cefSettings->log_file)                = "";
-  m_cefSettings->log_severity                        = static_cast<cef_log_severity_t>(kodi::GetSettingInt("system.loglevelcef"));
-  CefString(&m_cefSettings->javascript_flags)        = kodi::GetTempAddonPath("chromium.log");
-  m_cefSettings->pack_loading_disabled               = false;
-  m_cefSettings->remote_debugging_port               = 8457;
-  m_cefSettings->uncaught_exception_stack_size       = kodi::GetSettingInt("system.uncaught_exception_stack_size");
-  m_cefSettings->ignore_certificate_errors           = false;
-  m_cefSettings->background_color                    = 0;
-  CefString(&m_cefSettings->accept_language_list)    = language;
+  CefString(&m_cefSettings->framework_dir_path) = m_frameworkDirPath;
+  CefString(&m_cefSettings->resources_dir_path) = m_resourcesPath;
+  CefString(&m_cefSettings->locales_dir_path) = m_localesPath;
+  m_cefSettings->multi_threaded_message_loop = false;
+  m_cefSettings->external_message_pump = true;
+  m_cefSettings->windowless_rendering_enabled = true;
+  m_cefSettings->command_line_args_disabled = false;
+  CefString(&m_cefSettings->cache_path) = kodi::GetBaseUserPath("pchHTMLCache");
+  CefString(&m_cefSettings->user_data_path) = kodi::GetBaseUserPath();
+  m_cefSettings->persist_session_cookies = false;
+  m_cefSettings->persist_user_preferences = false;
+  CefString(&m_cefSettings->product_version) =
+      StringUtils::Format("Kodi/%s Chrome/%d.%d.%d.%d", KODICHROMIUM_VERSION, CHROME_VERSION_MAJOR,
+                          CHROME_VERSION_MINOR, CHROME_VERSION_BUILD, CHROME_VERSION_PATCH);
+  CefString(&m_cefSettings->locale) = language;
+  CefString(&m_cefSettings->log_file) = "";
+  m_cefSettings->log_severity =
+      static_cast<cef_log_severity_t>(kodi::GetSettingInt("system.loglevelcef"));
+  CefString(&m_cefSettings->javascript_flags) = kodi::GetTempAddonPath("chromium.log");
+  m_cefSettings->pack_loading_disabled = false;
+  m_cefSettings->remote_debugging_port = 8457;
+  m_cefSettings->uncaught_exception_stack_size =
+      kodi::GetSettingInt("system.uncaught_exception_stack_size");
+  m_cefSettings->ignore_certificate_errors = false;
+  m_cefSettings->background_color = 0;
+  CefString(&m_cefSettings->accept_language_list) = language;
 
-  kodi::Log(ADDON_LOG_DEBUG, "%s - Started web browser add-on process", __FUNCTION__);
+  kodi::Log(ADDON_LOG_DEBUG, "%s - Started web browser add-on process", __func__);
 
-  m_app = new CClientAppBrowser(this);
+  m_app = new CClientAppBrowser(*this);
   m_audioHandler = new CAudioHandler(this, IsMuted());
   m_started = true;
   return WEB_ADDON_ERROR_NO_ERROR;
@@ -164,7 +165,7 @@ void CWebBrowser::StopInstance()
   // unload cef library
   if (!cef_unload_library())
   {
-    kodi::Log(ADDON_LOG_DEBUG, "%s - Failed to unload CEF library", __FUNCTION__);
+    kodi::Log(ADDON_LOG_DEBUG, "%s - Failed to unload CEF library", __func__);
     return;
   }
 #endif
@@ -187,18 +188,18 @@ bool CWebBrowser::MainInitialize()
   if (!m_started)
     return false;
 
-// #ifndef WIN32
-//   const char* cmdLine[3];
-//   cmdLine[0] = "";
-//   cmdLine[1] = "--disable-gpu";
-//   cmdLine[2] = "--disable-software-rasterizer";
-//   CefMainArgs args(3, (char**)cmdLine);
-// #else
+  // #ifndef WIN32
+  //   const char* cmdLine[3];
+  //   cmdLine[0] = "";
+  //   cmdLine[1] = "--disable-gpu";
+  //   cmdLine[2] = "--disable-software-rasterizer";
+  //   CefMainArgs args(3, (char**)cmdLine);
+  // #else
   CefMainArgs args;
-// #endif
+  // #endif
   if (!CefInitialize(args, *m_cefSettings, m_app.get(), nullptr))
   {
-    kodi::Log(ADDON_LOG_ERROR, "%s - Web browser start failed", __FUNCTION__);
+    kodi::Log(ADDON_LOG_ERROR, "%s - Web browser start failed", __func__);
     return false;
   }
 
@@ -220,12 +221,15 @@ void CWebBrowser::MainShutdown()
     return;
 
   kodi::Log(ADDON_LOG_DEBUG, "Active clients during shutdown %li\n", m_browserClients.size());
-  kodi::Log(ADDON_LOG_DEBUG, "Inactive clients during shutdown %li\n", m_browserClientsInactive.size());
-  kodi::Log(ADDON_LOG_DEBUG, "Clients in delete process during shutdown start %li\n", m_browserClientsInDelete.size());
+  kodi::Log(ADDON_LOG_DEBUG, "Inactive clients during shutdown %li\n",
+            m_browserClientsInactive.size());
+  kodi::Log(ADDON_LOG_DEBUG, "Clients in delete process during shutdown start %li\n",
+            m_browserClientsInDelete.size());
 
   if (!m_browserClients.empty() || !m_browserClientsInactive.empty())
-    kodi::Log(ADDON_LOG_FATAL, "Still browser clients in use during shutdown (active: %li, inactive: %li\n",
-                                  m_browserClients.size(), m_browserClientsInactive.size());
+    kodi::Log(ADDON_LOG_FATAL,
+              "Still browser clients in use during shutdown (active: %li, inactive: %li\n",
+              m_browserClients.size(), m_browserClientsInactive.size());
 
   // Wait until all clients are deleted otherwise can CefShutdown() not work right!
   int tries = 1000;
@@ -240,7 +244,8 @@ void CWebBrowser::MainShutdown()
   if (size == 0)
     CefShutdown();
   else
-    kodi::Log(ADDON_LOG_FATAL, "Still %li browsers not deleted! CefShutdown() becomes not called", size);
+    kodi::Log(ADDON_LOG_FATAL, "Still %li browsers not deleted! CefShutdown() becomes not called",
+              size);
 }
 
 void CWebBrowser::InformDestroyed(int uniqueClientId)
@@ -254,23 +259,25 @@ void CWebBrowser::SetMute(bool mute)
     m_audioHandler->SetMute(mute);
 }
 
-bool CWebBrowser::SetLanguage(const char *language)
+bool CWebBrowser::SetLanguage(const char* language)
 {
   if (!m_started)
     return false;
 
-  kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser language set to '%s'", __FUNCTION__, language);
+  kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser language set to '%s'", __func__, language);
   return true;
 }
 
-kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceName, const std::string& startURL, KODI_HANDLE handle)
+kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceName,
+                                                     const std::string& startURL,
+                                                     KODI_HANDLE handle)
 {
   CEF_REQUIRE_UI_THREAD();
 
   if (!m_started)
     return nullptr;
 
-  kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control creation started", __FUNCTION__);
+  kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control creation started", __func__);
 
   CefRefPtr<CWebBrowserClient> browserClient;
 
@@ -279,7 +286,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
   auto itr = m_browserClientsInactive.find(sourceName);
   if (itr != m_browserClientsInactive.end())
   {
-    kodi::Log(ADDON_LOG_INFO, "%s - Found control in inactive mode and setting active", __FUNCTION__);
+    kodi::Log(ADDON_LOG_INFO, "%s - Found control in inactive mode and setting active", __func__);
     browserClient = itr->second;
     browserClient->SetActive();
     m_browserClientsInactive.erase(itr);
@@ -295,7 +302,8 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
     }
 
     CefRefPtr<CRequestContextHandler> contextHandler = new CRequestContextHandler;
-    browserClient = new CWebBrowserClient(handle, m_iUniqueClientId++, startURL, this, contextHandler);
+    browserClient =
+        new CWebBrowserClient(handle, m_iUniqueClientId++, startURL, this, contextHandler);
     contextHandler->Init(browserClient);
 
     CefWindowInfo info;
@@ -307,43 +315,47 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
 
     CefBrowserSettings settings;
     //TODO Check CefBrowserHost::SetWindowlessFrameRate(...) usable for streams?
-    settings.windowless_frame_rate              = static_cast<int>(browserClient->GetFPS());
-    CefString(&settings.standard_font_family)   = "";
-    CefString(&settings.fixed_font_family)      = "";
-    CefString(&settings.serif_font_family)      = "";
+    settings.windowless_frame_rate = static_cast<int>(browserClient->GetFPS());
+    CefString(&settings.standard_font_family) = "";
+    CefString(&settings.fixed_font_family) = "";
+    CefString(&settings.serif_font_family) = "";
     CefString(&settings.sans_serif_font_family) = "";
-    CefString(&settings.cursive_font_family)    = "";
-    CefString(&settings.fantasy_font_family)    = "";
-    settings.default_font_size                  = 0;
-    settings.default_fixed_font_size            = 0;
-    settings.minimum_font_size                  = 0;
-    settings.minimum_logical_font_size          = 0;
-    CefString(&settings.default_encoding)       = ""; // "ISO-8859-1" if empty
-    settings.remote_fonts                       = STATE_DEFAULT;
-    settings.javascript                         = STATE_ENABLED;
-    settings.javascript_close_windows           = STATE_DEFAULT;
-    settings.javascript_access_clipboard        = STATE_DEFAULT;
-    settings.javascript_dom_paste               = STATE_DEFAULT;
-    settings.plugins                            = STATE_ENABLED;
-    settings.universal_access_from_file_urls    = STATE_DEFAULT;
-    settings.file_access_from_file_urls         = STATE_DEFAULT;
-    settings.web_security                       = STATE_DEFAULT;
-    settings.image_loading                      = STATE_DEFAULT;
-    settings.image_shrink_standalone_to_fit     = STATE_DEFAULT;
-    settings.text_area_resize                   = STATE_DEFAULT;
-    settings.tab_to_links                       = STATE_DEFAULT;
-    settings.local_storage                      = STATE_DEFAULT;
-    settings.databases                          = STATE_DEFAULT;
-    settings.application_cache                  = STATE_DEFAULT;
-    settings.webgl                              = STATE_ENABLED;
-    settings.background_color                   = 0x00; // fully transparent
-    CefString(&settings.accept_language_list)   = "";
+    CefString(&settings.cursive_font_family) = "";
+    CefString(&settings.fantasy_font_family) = "";
+    settings.default_font_size = 0;
+    settings.default_fixed_font_size = 0;
+    settings.minimum_font_size = 0;
+    settings.minimum_logical_font_size = 0;
+    CefString(&settings.default_encoding) = ""; // "ISO-8859-1" if empty
+    settings.remote_fonts = STATE_DEFAULT;
+    settings.javascript = STATE_ENABLED;
+    settings.javascript_close_windows = STATE_DEFAULT;
+    settings.javascript_access_clipboard = STATE_DEFAULT;
+    settings.javascript_dom_paste = STATE_DEFAULT;
+    settings.plugins = STATE_ENABLED;
+    settings.universal_access_from_file_urls = STATE_DEFAULT;
+    settings.file_access_from_file_urls = STATE_DEFAULT;
+    settings.web_security = STATE_DEFAULT;
+    settings.image_loading = STATE_DEFAULT;
+    settings.image_shrink_standalone_to_fit = STATE_DEFAULT;
+    settings.text_area_resize = STATE_DEFAULT;
+    settings.tab_to_links = STATE_DEFAULT;
+    settings.local_storage = STATE_DEFAULT;
+    settings.databases = STATE_DEFAULT;
+    settings.application_cache = STATE_DEFAULT;
+    settings.webgl = STATE_ENABLED;
+    settings.background_color = 0x00; // fully transparent
+    CefString(&settings.accept_language_list) = "";
 
-    CefRefPtr<CefRequestContext> request_context = CefRequestContext::CreateContext(CefRequestContext::GetGlobalContext(),
-                                                                                    contextHandler);
-    if (!CefBrowserHost::CreateBrowser(info, browserClient, "", settings, nullptr, request_context))
+    CefRefPtr<CefDictionaryValue> extra_info = CefDictionaryValue::Create();
+    extra_info->SetInt(SettingValues::security_webaddon_access,
+                       kodi::GetSettingInt("security.webaddon.access"));
+    CefRefPtr<CefRequestContext> request_context =
+        CefRequestContext::CreateContext(CefRequestContext::GetGlobalContext(), contextHandler);
+    if (!CefBrowserHost::CreateBrowser(info, browserClient, "", settings, extra_info,
+                                       request_context))
     {
-      kodi::Log(ADDON_LOG_ERROR, "%s - Web browser creation failed", __FUNCTION__);
+      kodi::Log(ADDON_LOG_ERROR, "%s - Web browser creation failed", __func__);
       if (browserClient)
       {
         contextHandler->Clear();
@@ -355,7 +367,7 @@ kodi::addon::CWebControl* CWebBrowser::CreateControl(const std::string& sourceNa
 
   int uniqueId = browserClient->GetUniqueId();
   m_browserClients.emplace(std::pair<int, CefRefPtr<CWebBrowserClient>>(uniqueId, browserClient));
-  kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control created", __FUNCTION__);
+  kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control created", __func__);
   return browserClient.get();
 }
 
@@ -368,7 +380,7 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
   CefRefPtr<CWebBrowserClient> browserClient = static_cast<CWebBrowserClient*>(control);
   if (browserClient == nullptr)
   {
-    kodi::Log(ADDON_LOG_ERROR, "%s - Web browser control destroy called without handle!", __FUNCTION__);
+    kodi::Log(ADDON_LOG_ERROR, "%s - Web browser control destroy called without handle!", __func__);
     return false;
   }
 
@@ -381,7 +393,7 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
 
   if (complete)
   {
-    kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control destroy complete", __FUNCTION__);
+    kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control destroy complete", __func__);
     const auto& inactiveClient = m_browserClientsInactive.find(browserClient->GetName());
     if (inactiveClient != m_browserClientsInactive.end())
       m_browserClientsInactive.erase(inactiveClient);
@@ -392,17 +404,17 @@ bool CWebBrowser::DestroyControl(kodi::addon::CWebControl* control, bool complet
   }
   else
   {
-    kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control destroy to set inactive", __FUNCTION__);
+    kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control destroy to set inactive", __func__);
     if (itr == m_browserClients.end())
     {
       kodi::Log(ADDON_LOG_ERROR, "%s - Web browser control destroy called for invalid id '%i'",
-                                              __FUNCTION__, browserClient->GetDataIdentifier());
+                __func__, browserClient->GetDataIdentifier());
       return false;
     }
     m_browserClientsInactive[browserClient->GetName()] = browserClient;
   }
 
-  kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control destroy done", __FUNCTION__);
+  kodi::Log(ADDON_LOG_DEBUG, "%s - Web browser control destroy done", __func__);
   return true;
 }
 

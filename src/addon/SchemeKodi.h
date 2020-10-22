@@ -15,15 +15,20 @@
 // Implementation of the schema handler for client:// requests.
 class CSchemeKodiHandler : public CefResourceHandler
 {
- public:
+public:
   CSchemeKodiHandler() : m_offset(0) {}
 
   bool ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback) override;
-  void GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl) override;
+  void GetResponseHeaders(CefRefPtr<CefResponse> response,
+                          int64& response_length,
+                          CefString& redirectUrl) override;
   void Cancel() override { CEF_REQUIRE_IO_THREAD(); }
-  bool ReadResponse(void* m_dataout, int bytes_to_read, int& bytes_read, CefRefPtr<CefCallback> callback) override;
+  bool ReadResponse(void* m_dataout,
+                    int bytes_to_read,
+                    int& bytes_read,
+                    CefRefPtr<CefCallback> callback) override;
 
- private:
+private:
   std::string m_data;
   std::string m_mime_type;
   size_t m_offset;
@@ -34,10 +39,12 @@ class CSchemeKodiHandler : public CefResourceHandler
 // Implementation of the factory for for creating schema handlers.
 class CSchemeKodiFactory : public CefSchemeHandlerFactory
 {
- public:
+public:
   // Return a new scheme handler instance to handle the request.
-  CefRefPtr<CefResourceHandler> Create(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                                       const CefString& scheme_name, CefRefPtr<CefRequest> request) override
+  CefRefPtr<CefResourceHandler> Create(CefRefPtr<CefBrowser> browser,
+                                       CefRefPtr<CefFrame> frame,
+                                       const CefString& scheme_name,
+                                       CefRefPtr<CefRequest> request) override
   {
     CEF_REQUIRE_IO_THREAD();
     return new CSchemeKodiHandler();
@@ -45,5 +52,3 @@ class CSchemeKodiFactory : public CefSchemeHandlerFactory
 
   IMPLEMENT_REFCOUNTING(CSchemeKodiFactory);
 };
-
-

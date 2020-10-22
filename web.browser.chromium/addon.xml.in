@@ -4,7 +4,12 @@
   version="0.0.7"
   name="KODI Chromium Internet Browser"
   provider-name="Team KODI">
-  <requires>@ADDON_DEPENDS@</requires>
+  <requires>
+    <import addon="game.controller.default" version="1.0.5"/>
+    <import addon="game.controller.keyboard" version="1.0.0"/>
+    <import addon="game.controller.mouse" version="1.0.0"/>
+    @ADDON_DEPENDS@
+  </requires>
   <extension
     point="kodi.web"
     library_@PLATFORM@="@LIBRARY_FILENAME@">

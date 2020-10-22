@@ -8,16 +8,17 @@
 
 #include "SchemeKodi.h"
 
-#include <kodi/General.h>
-#include <kodi/Filesystem.h>
 #include <algorithm>
+#include <kodi/Filesystem.h>
+#include <kodi/General.h>
 #include <string>
 
 /*
  * Scheme handler for: kodi://home/index.html
  */
 
-bool CSchemeKodiHandler::ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback)
+bool CSchemeKodiHandler::ProcessRequest(CefRefPtr<CefRequest> request,
+                                        CefRefPtr<CefCallback> callback)
 {
   CEF_REQUIRE_IO_THREAD();
 
@@ -27,26 +28,26 @@ bool CSchemeKodiHandler::ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr
   if (strstr(url.c_str(), "index.html") != nullptr)
   {
     // Build the response html
-    m_data =
-        "<html>"
-          "<head>"
-            "<title>Kodi</title>"
-            "<link rel=\"shortcut icon\" href=\"https://kodi.tv/sites/default/themes/kodi/favicon.png\" type=\"image/png\">"
-            "<style>"
-"p.sansserif {"
-"  font-family: Arial, Helvetica, sans-serif;"
-"}"
-            "</style>"
-          "</head>"
-          "<body bgcolor=\"white\">"
-            "<div align=\"center\">"
-              "<img src=\"kodi://home/icon.png\"><br/>"
-              "<header>"
-                "<h1><p class=\"sansserif\">Kodi's scheme homepage</p></h1>"
-              "</header>"
-            "</div>"
-          "</body>"
-        "</html>";
+    m_data = "<html>"
+             "<head>"
+             "<title>Kodi</title>"
+             "<link rel=\"shortcut icon\" "
+             "href=\"https://kodi.tv/sites/default/themes/kodi/favicon.png\" type=\"image/png\">"
+             "<style>"
+             "p.sansserif {"
+             "  font-family: Arial, Helvetica, sans-serif;"
+             "}"
+             "</style>"
+             "</head>"
+             "<body bgcolor=\"white\">"
+             "<div align=\"center\">"
+             "<img src=\"kodi://home/icon.png\"><br/>"
+             "<header>"
+             "<h1><p class=\"sansserif\">Kodi's scheme homepage</p></h1>"
+             "</header>"
+             "</div>"
+             "</body>"
+             "</html>";
 
     handled = true;
 
@@ -80,7 +81,9 @@ bool CSchemeKodiHandler::ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr
   return false;
 }
 
-void CSchemeKodiHandler::GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl)
+void CSchemeKodiHandler::GetResponseHeaders(CefRefPtr<CefResponse> response,
+                                            int64& response_length,
+                                            CefString& redirectUrl)
 {
   CEF_REQUIRE_IO_THREAD();
 
@@ -93,7 +96,10 @@ void CSchemeKodiHandler::GetResponseHeaders(CefRefPtr<CefResponse> response, int
   response_length = m_data.length();
 }
 
-bool CSchemeKodiHandler::ReadResponse(void* m_dataout, int bytes_to_read, int& bytes_read, CefRefPtr<CefCallback> callback)
+bool CSchemeKodiHandler::ReadResponse(void* m_dataout,
+                                      int bytes_to_read,
+                                      int& bytes_read,
+                                      CefRefPtr<CefCallback> callback)
 {
   CEF_REQUIRE_IO_THREAD();
 
