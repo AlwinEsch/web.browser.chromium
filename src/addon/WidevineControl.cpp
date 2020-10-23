@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2019 Alwin Esch (Team Kodi)
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi)
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-3.0-or-later
@@ -14,12 +14,7 @@
 #include <kodi/General.h>
 #include <kodi/gui/dialogs/FileBrowser.h>
 #include <kodi/gui/dialogs/YesNo.h>
-
-#ifdef _WIN32 // windows
-#include "third_party/dlfcn-win32/dlfcn.h"
-#else
-#include <dlfcn.h> // linux+osx
-#endif
+#include <kodi/tools/DllHelper.h>
 
 #include "include/cef_app.h"
 #include "include/cef_version.h"
@@ -68,60 +63,75 @@ bool CreateManifestAndInstall()
     return false;
   }
 
+  /*
+   * Check widevine already present for use on browser.
+   */
   std::string addonPath = kodi::GetBaseUserPath("widevine/");
-
-  if (kodi::vfs::FileExists(kodi::GetBaseUserPath("widevine/" WIDEVINE_LIB)) &&
-      kodi::vfs::FileExists(kodi::GetBaseUserPath("widevine/manifest.json")))
+  if (kodi::vfs::FileExists(addonPath + WIDEVINE_LIB) &&
+      kodi::vfs::FileExists(addonPath + "widevine/manifest.json"))
   {
     kodi::Log(ADDON_LOG_INFO, "Chromium widevine already present under '%s'", addonPath.c_str());
     return true;
   }
 
+  /*
+   * If not present for this addon check is present by inputstream.adaptive and
+   * script.module.inputstreamhelper.
+   *
+   * If yes copy it to browser (independent copy to prevent change problems).
+   *
+   * If it was not found becomes user asked to get a path too.
+   */
   std::string path;
-
-  bool canceled = true;
-  // Retry if Yes/No is canceled
-  while (canceled)
+  if (kodi::vfs::FileExists("special://home/cdm/" WIDEVINE_LIB))
   {
-    kodi::gui::dialogs::FileBrowser::ShowAndGetFile(
-        "local", WIDEVINE_LIB,
-        StringUtils::Format(kodi::GetLocalizedString(30196).c_str(), WIDEVINE_LIB), path, true);
-    if (!path.empty())
-      break;
-
-    if (!kodi::gui::dialogs::YesNo::ShowAndGetInput(kodi::GetLocalizedString(30197),
-                                                    kodi::GetLocalizedString(30198), canceled))
+    kodi::Log(ADDON_LOG_INFO, "Found widevine from inputstream.adaptive and becomes used");
+    path = "special://home/cdm/" WIDEVINE_LIB;
+  }
+  else
+  {
+    bool canceled = true;
+    // Retry if Yes/No is canceled
+    while (canceled)
     {
-      if (!canceled)
-        kodi::SetSettingBoolean("system.usewidevine", false);
+      kodi::gui::dialogs::FileBrowser::ShowAndGetFile(
+          "local", WIDEVINE_LIB,
+          StringUtils::Format(kodi::GetLocalizedString(30196).c_str(), WIDEVINE_LIB), path, true);
+      if (!path.empty())
+        break;
+
+      if (!kodi::gui::dialogs::YesNo::ShowAndGetInput(kodi::GetLocalizedString(30197),
+                                                      kodi::GetLocalizedString(30198), canceled))
+      {
+        if (!canceled)
+          kodi::SetSettingBoolean("system.usewidevine", false);
+      }
+    }
+
+    if (!ends_with(path, WIDEVINE_LIB))
+    {
+      kodi::Log(ADDON_LOG_ERROR, "Selected Widevine library '%s' seems not correct", path.c_str());
+      return false;
+    }
+
+    if (!kodi::vfs::FileExists(path))
+    {
+      kodi::Log(ADDON_LOG_ERROR, "Widevine file path '%s' does not exists", path.c_str());
+      return false;
     }
   }
 
-  if (!ends_with(path, WIDEVINE_LIB))
-  {
-    kodi::Log(ADDON_LOG_ERROR, "Selected Widevine library '%s' seems not correct", path.c_str());
-    return false;
-  }
-
-  if (!kodi::vfs::FileExists(path))
-  {
-    kodi::Log(ADDON_LOG_ERROR, "Widevine file path '%s' does not exists", path.c_str());
-    return false;
-  }
-
   // Get cdm version from selected library
-  void* handle;
-  const char* (*get_cdm_version)();
+  kodi::tools::CDllHelper dllHelper;
 
-  handle = dlopen(path.c_str(), RTLD_LAZY);
-  if (!handle)
+  if (!dllHelper.LoadDll(kodi::vfs::TranslateSpecialProtocol(path)))
   {
     kodi::Log(ADDON_LOG_ERROR, "Widevine library failed to load '%s'", dlerror());
     return false;
   }
 
-  get_cdm_version = reinterpret_cast<const char* (*)()>(dlsym(handle, "GetCdmVersion"));
-  if (!get_cdm_version)
+  const char* (*get_cdm_version)();
+  if (!dllHelper.RegisterSymbol(get_cdm_version, "GetCdmVersion"))
   {
     kodi::Log(ADDON_LOG_ERROR, "Widevine library failed to get version call '%s'", dlerror());
     return false;
@@ -138,14 +148,12 @@ bool CreateManifestAndInstall()
                           "  \"os\": \"%s\",\n"
                           "  \"arch\": \"%s\",\n"
                           "  \"x-cdm-module-versions\": \"4\",\n"
-                          "  \"x-cdm-interface-versions\": \"9\",\n"
-                          "  \"x-cdm-host-versions\": \"9\",\n"
-                          "  \"x-cdm-codecs\": \"vp8,vp9.0,avc1\"\n"
+                          "  \"x-cdm-interface-versions\": \"10\",\n"
+                          "  \"x-cdm-host-versions\": \"10\",\n"
+                          "  \"x-cdm-codecs\": \"vp8,vp9.0,avc1,av01\"\n"
                           "}\n",
                           get_cdm_version(), CHROME_VERSION_MAJOR, CHROME_VERSION_MINOR,
                           CHROME_VERSION_BUILD, CHROME_VERSION_PATCH, WIDEVINE_OS, WIDEVINE_CPU);
-
-  dlclose(handle);
 
   // Create directory if not exists
   kodi::vfs::CreateDirectory(addonPath);

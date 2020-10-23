@@ -229,11 +229,9 @@ endif()
 
 if(${CORE_SYSTEM_NAME} STREQUAL windows)
   set(KODICHROMIUM_SOURCES src/addon/renderer/RendererDX.cpp
-                           src/addon/renderer/d3d11.cpp
-                           src/addon/third_party/dlfcn-win32/dlfcn.c)
+                           src/addon/renderer/d3d11.cpp)
   set(KODICHROMIUM_HEADERS src/addon/renderer/RendererDX.h
-                           src/addon/renderer/d3d11.h
-                           src/addon/third_party/dlfcn-win32/dlfcn.h)
+                           src/addon/renderer/d3d11.h)
 else()
   set(KODICHROMIUM_SOURCES src/addon/renderer/RendererGL.cpp)
   set(KODICHROMIUM_HEADERS src/addon/renderer/RendererGL.h)
@@ -301,7 +299,6 @@ list(APPEND KODICHROMIUM_HEADERS src/addon/addon.h
                                  src/addon/utils/FileUtils.h
                                  src/addon/utils/StringUtils.h
                                  src/addon/utils/SystemTranslator.h
-                                 src/addon/utils/Thread.h
                                  src/addon/utils/Utils.h
                                  src/addon/utils/XMLUtils.h
                                  src/addon/third_party/tinyxml/tinystr.h

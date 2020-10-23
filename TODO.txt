@@ -1,0 +1,2 @@
+Helper notes for me to forget not a part:
+- Allow new added libexpat to use in chromium libcef to prevent outside depend

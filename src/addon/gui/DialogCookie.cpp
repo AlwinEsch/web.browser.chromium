@@ -17,7 +17,7 @@
 
 #include <iomanip>
 
-class CDeleteCookiesCallback : public CefDeleteCookiesCallback
+class ATTRIBUTE_HIDDEN CDeleteCookiesCallback : public CefDeleteCookiesCallback
 {
 public:
   CDeleteCookiesCallback(CBrowserDialogCookie* cookieHandler)
@@ -43,7 +43,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-class CCookieVisitor : public CefCookieVisitor
+class ATTRIBUTE_HIDDEN CCookieVisitor : public CefCookieVisitor
 {
 public:
   CCookieVisitor(CBrowserDialogCookie* cookieHandler, CefCookie* deleteThis = nullptr)
