@@ -9,6 +9,7 @@
 #pragma once
 
 #include "WebBrowserClient.h"
+#include "WidevineControl.h"
 #include "audio/AudioHandler.h"
 #include "gui/GUIManager.h"
 #include "include/base/cef_thread_checker.h"
@@ -63,6 +64,7 @@ private:
   static std::atomic_int m_iUniqueClientId;
 
   CBrowserGUIManager m_guiManager{this};
+  CWidewineControl m_widewineControl{*this};
   CefRefPtr<CefApp> m_app;
   CefRefPtr<CAudioHandler> m_audioHandler;
 

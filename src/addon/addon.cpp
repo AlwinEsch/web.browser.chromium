@@ -13,7 +13,6 @@
 #include "RequestContextHandler.h"
 #include "SandboxControl.h"
 #include "WebBrowserClient.h"
-#include "WidevineControl.h"
 #include "include/cef_app.h"
 #include "include/cef_version.h"
 #include "utils/StringUtils.h"
@@ -48,7 +47,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   std::string cefLib = kodi::GetAddonPath(LIBRARY_PREFIX "cef" LIBRARY_SUFFIX);
   if (!cef_load_library(cefLib.c_str()))
   {
-    kodi::Log(ADDON_LOG_ERROR, "%s - Failed to load CEF library '%s'", __func__, cefLib.c_str());
+    kodi::Log(ADDON_LOG_ERROR, "CWebBrowser::%s: Failed to load CEF library '%s'", __func__, cefLib.c_str());
     return WEB_ADDON_ERROR_FAILED;
   }
 #elif defined(TARGET_DARWIN)
@@ -56,7 +55,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
       "Contents/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework");
   if (!m_cefLibraryLoader.LoadInMain(cefLib))
   {
-    kodi::Log(ADDON_LOG_ERROR, "%s - Failed to load CEF library '%s'", __func__, cefLib.c_str());
+    kodi::Log(ADDON_LOG_ERROR, "CWebBrowser::%s: Failed to load CEF library '%s'", __func__, cefLib.c_str());
     return WEB_ADDON_ERROR_FAILED;
   }
 #endif
@@ -82,7 +81,7 @@ WEB_ADDON_ERROR CWebBrowser::StartInstance()
   }
 
   // Initialize DRM widevine
-  WidevineControl::InitializeWidevine();
+  m_widewineControl.InitializeWidevine();
 
   std::string language = kodi::GetLanguage(LANG_FMT_ISO_639_1, true);
 
@@ -155,6 +154,8 @@ void CWebBrowser::StopInstance()
   m_started = false;
   m_audioHandler = nullptr;
   m_app = nullptr;
+
+  m_widewineControl.DeinitializeWidevine();
 
   // deleted the created settings class
   m_cefSettings->Reset();
