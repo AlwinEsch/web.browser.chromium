@@ -64,7 +64,7 @@ public:
   CefRefPtr<CefFindHandler> GetFindHandler() override { return this; }
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
 
-  bool OnAction(int actionId, uint32_t buttoncode, wchar_t unicode, int& nextItem) override;
+  bool OnAction(const kodi::gui::input::CAction& action, int& nextItem) override;
   bool OnMouseEvent(int id, double x, double y, double offsetX, double offsetY, int state) override;
   bool OpenWebsite(const std::string& url) override;
   void Render() override;

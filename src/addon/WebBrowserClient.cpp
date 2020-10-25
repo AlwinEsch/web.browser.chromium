@@ -33,10 +33,9 @@
 
 #include <algorithm>
 #include <iomanip>
-#include <kodi/ActionIDs.h>
 #include <kodi/Filesystem.h>
 #include <kodi/General.h>
-#include <kodi/XBMC_vkeys.h>
+// #include <kodi/XBMC_vkeys.h>
 #include <kodi/gui/dialogs/ContextMenu.h>
 #include <kodi/gui/dialogs/FileBrowser.h>
 #include <kodi/gui/dialogs/Keyboard.h>
@@ -169,22 +168,22 @@ bool CWebBrowserClient::HandleScrollEvent(int actionId)
 {
   switch (actionId)
   {
-    case ACTION_MOVE_LEFT:
+    case ADDON_ACTION_MOVE_LEFT:
       SendKey(VKEY_LEFT);
       break;
-    case ACTION_MOVE_RIGHT:
+    case ADDON_ACTION_MOVE_RIGHT:
       SendKey(VKEY_RIGHT);
       break;
-    case ACTION_MOVE_UP:
+    case ADDON_ACTION_MOVE_UP:
       SendKey(VKEY_UP);
       break;
-    case ACTION_MOVE_DOWN:
+    case ADDON_ACTION_MOVE_DOWN:
       SendKey(VKEY_DOWN);
       break;
-    case ACTION_PAGE_UP:
+    case ADDON_ACTION_PAGE_UP:
       SendKey(VKEY_PRIOR);
       break;
-    case ACTION_PAGE_DOWN:
+    case ADDON_ACTION_PAGE_DOWN:
       SendKey(VKEY_NEXT);
       break;
   }
@@ -202,59 +201,60 @@ bool CWebBrowserClient::HandleScrollEvent(int actionId)
   return true;
 }
 
-bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unicode, int& nextItem)
+bool CWebBrowserClient::OnAction(const kodi::gui::input::CAction& action, int& nextItem)
 {
   if (!m_browser.get())
     return false;
 
-  fprintf(stderr, "--> %s %i %i %i %i\n", __func__, actionId, buttoncode, unicode, nextItem);
+  fprintf(stderr, "--> %s %i %i %i %i\n", __func__, action.GetID(), action.GetButtonCode(), action.GetUnicode(), nextItem);
 
   CefRefPtr<CefBrowserHost> host = m_browser->GetHost();
+  ADDON_ACTION actionId = action.GetID();
   if (!m_focusOnEditableField)
   {
     switch (actionId)
     {
-      case ACTION_VOLUME_UP:
-      case ACTION_VOLUME_DOWN:
-      case ACTION_VOLAMP:
-      case ACTION_MUTE:
+      case ADDON_ACTION_VOLUME_UP:
+      case ADDON_ACTION_VOLUME_DOWN:
+      case ADDON_ACTION_VOLAMP:
+      case ADDON_ACTION_MUTE:
         return false;
-      case ACTION_NAV_BACK:
-      case ACTION_MENU:
-      case ACTION_PREVIOUS_MENU:
+      case ADDON_ACTION_NAV_BACK:
+      case ADDON_ACTION_MENU:
+      case ADDON_ACTION_PREVIOUS_MENU:
         return false;
-      case ACTION_MOVE_LEFT:
-      case ACTION_MOVE_RIGHT:
-      case ACTION_MOVE_UP:
-      case ACTION_MOVE_DOWN:
-      case ACTION_PAGE_UP:
-      case ACTION_PAGE_DOWN:
+      case ADDON_ACTION_MOVE_LEFT:
+      case ADDON_ACTION_MOVE_RIGHT:
+      case ADDON_ACTION_MOVE_UP:
+      case ADDON_ACTION_MOVE_DOWN:
+      case ADDON_ACTION_PAGE_UP:
+      case ADDON_ACTION_PAGE_DOWN:
       {
         if (!HandleScrollEvent(actionId))
         {
-          if (actionId == ACTION_MOVE_LEFT)
+          if (actionId == ADDON_ACTION_MOVE_LEFT)
             nextItem = GetGUIItemLeft();
-          else if (actionId == ACTION_MOVE_RIGHT)
+          else if (actionId == ADDON_ACTION_MOVE_RIGHT)
             nextItem = GetGUIItemRight();
-          else if (actionId == ACTION_MOVE_UP)
+          else if (actionId == ADDON_ACTION_MOVE_UP)
             nextItem = GetGUIItemTop();
-          else if (actionId == ACTION_MOVE_DOWN)
+          else if (actionId == ADDON_ACTION_MOVE_DOWN)
             nextItem = GetGUIItemBottom();
-          else if (actionId == ACTION_PAGE_UP)
+          else if (actionId == ADDON_ACTION_PAGE_UP)
             nextItem = GetGUIItemTop();
-          else if (actionId == ACTION_PAGE_DOWN)
+          else if (actionId == ADDON_ACTION_PAGE_DOWN)
             nextItem = GetGUIItemBottom();
           return false;
         }
         break;
       }
-      case ACTION_FIRST_PAGE:
+      case ADDON_ACTION_FIRST_PAGE:
         SendKey(VKEY_HOME);
         return true;
-      case ACTION_LAST_PAGE:
+      case ADDON_ACTION_LAST_PAGE:
         SendKey(VKEY_END);
         return true;
-      case ACTION_ZOOM_OUT:
+      case ADDON_ACTION_ZOOM_OUT:
       {
         int zoomTo =
             kodi::GetSettingInt("main.zoomlevel") - kodi::GetSettingInt("main.zoom_step_size");
@@ -266,7 +266,7 @@ bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unic
         kodi::SetSettingInt("main.zoomlevel", zoomTo);
         break;
       }
-      case ACTION_ZOOM_IN:
+      case ADDON_ACTION_ZOOM_IN:
       {
         int zoomTo =
             kodi::GetSettingInt("main.zoomlevel") + kodi::GetSettingInt("main.zoom_step_size");
@@ -287,12 +287,12 @@ bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unic
   }
 
   CefKeyEvent key_event;
-  key_event.modifiers = CSystemTranslator::ButtonCodeToModifier(buttoncode);
-  key_event.windows_key_code = CSystemTranslator::ButtonCodeToKeyboardCode(buttoncode);
+  key_event.modifiers = CSystemTranslator::ButtonCodeToModifier(action.GetButtonCode());
+  key_event.windows_key_code = CSystemTranslator::ButtonCodeToKeyboardCode(action.GetButtonCode());
   key_event.native_key_code = 0;
   key_event.is_system_key = false;
-  key_event.character = unicode;
-  key_event.unmodified_character = CSystemTranslator::ButtonCodeToUnmodifiedCharacter(buttoncode);
+  key_event.character = action.GetUnicode();
+  key_event.unmodified_character = CSystemTranslator::ButtonCodeToUnmodifiedCharacter(action.GetButtonCode());
   key_event.focus_on_editable_field = m_focusOnEditableField;
 
   if (key_event.windows_key_code == VKEY_RETURN)

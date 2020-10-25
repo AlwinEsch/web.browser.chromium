@@ -22,7 +22,7 @@ public:
   void Show(CefRefPtr<CWebBrowserClient> client, cef_text_input_mode_t input_mode);
 
   bool OnInit() override;
-  bool OnAction(ADDON_ACTION actionId) override;
+  bool OnAction(const kodi::gui::input::CAction& action) override;
   bool OnClick(int controlId) override;
 
 private:
