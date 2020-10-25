@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2019 Alwin Esch (Team Kodi)
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi)
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-3.0-or-later
@@ -19,6 +19,7 @@
 #include "interface/v8/v8-kodi.h"
 #include "renderer/Renderer.h"
 
+#include <atomic>
 #include <kodi/AudioEngine.h>
 #include <kodi/addon-instance/Web.h>
 #include <kodi/gui/dialogs/Select.h>
@@ -191,7 +192,6 @@ public:
   void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status) override;
   //@}
 
-
   /// CefLoadHandler methods
   //@{
   void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
@@ -233,25 +233,25 @@ private:
 
   const int m_uniqueClientId; // Unique identification id of this control client
   CWebBrowser* m_mainBrowserHandler;
-  int m_browserId;
-  int m_browserCount; // The current number of browsers using this handler.
+  int m_browserId{-1};
+  int m_browserCount{0}; // The current number of browsers using this handler.
 
-  double m_scrollOffsetX = -1.0;
-  double m_scrollOffsetY = -1.0;
+  double m_scrollOffsetX{-1.0};
+  double m_scrollOffsetY{-1.0};
 
-  bool m_contextMenuOpenClosed = false; // To know for Keyboard that a context menu is opened
-  bool m_focusOnEditableField = false;
-  bool m_dragActive = false;
+  bool m_contextMenuOpenClosed{false}; // To know for Keyboard that a context menu is opened
+  bool m_focusOnEditableField{false};
+  bool m_dragActive{false};
 
-  bool m_renderViewReady;
+  bool m_renderViewReady{false};
   std::string m_strStartupURL;
   float m_fMouseXScaleFactor;
   float m_fMouseYScaleFactor;
-  int m_iMousePreviousFlags;
-  cef_mouse_button_type_t m_iMousePreviousControl;
+  int m_iMousePreviousFlags{0};
+  cef_mouse_button_type_t m_iMousePreviousControl{MBT_LEFT};
 
-  bool m_isFullScreen;
-  bool m_isLoading;
+  bool m_isFullScreen{false};
+  bool m_isLoading{false};
   std::string m_currentURL;
   std::string m_currentTitle; // Last sended website title string
   std::string m_currentTooltip; // Last sended tooltip string

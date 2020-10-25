@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2019 Alwin Esch (Team Kodi)
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi)
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-3.0-or-later
@@ -26,7 +26,8 @@ void SetupResourceManager(CefRefPtr<CefResourceManager> resource_manager)
   }
 
   // Add the URL filter.
-  resource_manager->SetUrlFilter(base::Bind(KodiURLFilter));
+  if (resource_manager)
+    resource_manager->SetUrlFilter(base::Bind(KodiURLFilter));
 }
 
 } // namespace ResourceManager

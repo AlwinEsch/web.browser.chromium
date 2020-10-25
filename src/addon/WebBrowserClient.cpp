@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2019 Alwin Esch (Team Kodi)
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi)
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-3.0-or-later
@@ -49,6 +49,11 @@
 
 #define ZOOM_MULTIPLY 25.0
 
+namespace
+{
+static std::atomic_int m_ctorcount{0}; // For debug purposes and to see destructs done
+}
+
 CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle,
                                      int uniqueClientId,
                                      const std::string& startURL,
@@ -58,13 +63,6 @@ CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle,
     m_mainBrowserHandler{instance},
     m_renderViewReady{false},
     m_uniqueClientId{uniqueClientId},
-    m_iMousePreviousFlags{0},
-    m_iMousePreviousControl{MBT_LEFT},
-    m_browserId{-1},
-    m_browser{nullptr},
-    m_browserCount{0},
-    m_isFullScreen{false},
-    m_isLoading{false},
     m_contextHandler(handler)
 {
   m_fMouseXScaleFactor = GetWidth() / GetSkinWidth();
@@ -91,10 +89,16 @@ CWebBrowserClient::CWebBrowserClient(KODI_HANDLE handle,
   m_renderer = new CRendererClient(this);
   m_dialogContextMenu = new CBrowerDialogContextMenu(this);
   m_v8Kodi = new CV8Kodi(this);
+
+  LOG_MESSAGE(ADDON_LOG_DEBUG, "CWebBrowserClient START (%p) count open %i\n", this, ++m_ctorcount);
 }
 
 CWebBrowserClient::~CWebBrowserClient()
 {
+  LOG_MESSAGE(ADDON_LOG_DEBUG, "CWebBrowserClient STOP (%p) count open %i\n", this, --m_ctorcount);
+
+  m_renderer = nullptr;
+
   // Inform main addon class that's browser client is destroyed and to destroy CEF if needed
   m_mainBrowserHandler->InformDestroyed(m_uniqueClientId);
 }
@@ -131,6 +135,8 @@ void CWebBrowserClient::CloseComplete()
 {
   CEF_REQUIRE_UI_THREAD();
 
+  SetInactive();
+
   if (m_browser.get())
   {
     m_contextHandler->Clear();
@@ -138,11 +144,12 @@ void CWebBrowserClient::CloseComplete()
     m_browser->GetHost()->CloseBrowser(true);
   }
 
+  m_renderer->ClearClient();
+
   m_resourceManager = nullptr;
   m_jsDialogHandler = nullptr;
   m_dialogContextMenu = nullptr;
   m_v8Kodi = nullptr;
-  m_renderer->ClearClient();
 }
 
 void CWebBrowserClient::SendKey(int key)
@@ -185,11 +192,8 @@ bool CWebBrowserClient::HandleScrollEvent(int actionId)
   double scrollOffsetX = m_renderer->ScrollOffsetX();
   double scrollOffsetY = m_renderer->ScrollOffsetY();
 
-  fprintf(stderr, "------111----------- %f %f\n", scrollOffsetX, m_scrollOffsetY);
-
   if (scrollOffsetX == m_scrollOffsetX && scrollOffsetY == m_scrollOffsetY)
   {
-    fprintf(stderr, "---------222-------- %f %f\n", scrollOffsetX, m_scrollOffsetY);
     return false;
   }
 
@@ -203,7 +207,7 @@ bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unic
   if (!m_browser.get())
     return false;
 
-  fprintf(stderr, "--> %s %i %i %i %i\n", __FUNCTION__, actionId, buttoncode, unicode, nextItem);
+  fprintf(stderr, "--> %s %i %i %i %i\n", __func__, actionId, buttoncode, unicode, nextItem);
 
   CefRefPtr<CefBrowserHost> host = m_browser->GetHost();
   if (!m_focusOnEditableField)
@@ -257,7 +261,7 @@ bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unic
         if (zoomTo < 30)
           break;
 
-        LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - Zoom out to %i %%", __FUNCTION__, zoomTo);
+        LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - Zoom out to %i %%", __func__, zoomTo);
         m_browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(zoomTo));
         kodi::SetSettingInt("main.zoomlevel", zoomTo);
         break;
@@ -269,7 +273,7 @@ bool CWebBrowserClient::OnAction(int actionId, uint32_t buttoncode, wchar_t unic
         if (zoomTo > 330)
           break;
 
-        LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - Zoom in to %i %% - %i %i", __FUNCTION__, zoomTo,
+        LOG_MESSAGE(ADDON_LOG_DEBUG, "%s - Zoom in to %i %% - %i %i", __func__, zoomTo,
                     kodi::GetSettingInt("main.zoomlevel"),
                     kodi::GetSettingInt("main.zoom_step_size"));
         m_browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(zoomTo));
@@ -408,11 +412,12 @@ bool CWebBrowserClient::Initialize()
 {
   if (!m_browser.get())
   {
-    LOG_MESSAGE(ADDON_LOG_ERROR, "%s - Called without present browser", __FUNCTION__);
+    LOG_MESSAGE(ADDON_LOG_ERROR, "%s - Called without present browser", __func__);
     return false;
   }
 
-  m_browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(kodi::GetSettingInt("main.zoomlevel")));
+  if (m_renderViewReady)
+    m_browser->GetHost()->SetZoomLevel(PercentageToZoomLevel(kodi::GetSettingInt("main.zoomlevel")));
 
   return true;
 }
@@ -436,14 +441,14 @@ bool CWebBrowserClient::OpenWebsite(const std::string& url)
   LOG_MESSAGE(ADDON_LOG_DEBUG, "Open website '%s'", url.c_str());
   if (!m_browser.get())
   {
-    LOG_MESSAGE(ADDON_LOG_ERROR, "%s - Called without present browser", __FUNCTION__);
+    LOG_MESSAGE(ADDON_LOG_ERROR, "CWebBrowserClient::%s: Called without present browser", __func__);
     return false;
   }
 
   CefRefPtr<CefFrame> frame = m_browser->GetMainFrame();
   if (!frame.get())
   {
-    LOG_MESSAGE(ADDON_LOG_ERROR, "%s - Called without present frame", __FUNCTION__);
+    LOG_MESSAGE(ADDON_LOG_ERROR, "CWebBrowserClient::%s: Called without present frame", __func__);
     return false;
   }
 
@@ -554,7 +559,6 @@ void CWebBrowserClient::StopSearch(bool clearSelection)
 void CWebBrowserClient::ScreenSizeChange(
     float x, float y, float width, float height, bool fullscreen)
 {
-  fprintf(stderr, "--> %s %f %f %f %f %i\n", __FUNCTION__, x, y, width, height, fullscreen);
   m_isFullScreen = true;
   m_renderer->ScreenSizeChange(x, y, width, height);
   if (m_browser.get())
@@ -1038,8 +1042,8 @@ void CWebBrowserClient::OnFindResult(CefRefPtr<CefBrowser> browser,
                                            m_currentSearchText.c_str());
     kodi::QueueNotification(QUEUE_INFO, kodi::GetLocalizedString(30037), text);
   }
-  LOG_MESSAGE(ADDON_LOG_DEBUG, "%s -identifier %i, count %i finalUpdate %i activeMatchOrdinal %i",
-              __FUNCTION__, identifier, count, finalUpdate, activeMatchOrdinal);
+  LOG_MESSAGE(ADDON_LOG_DEBUG, "CWebBrowserClient::%s: identifier %i, count %i finalUpdate %i activeMatchOrdinal %i",
+              __func__, identifier, count, finalUpdate, activeMatchOrdinal);
 }
 //@}
 

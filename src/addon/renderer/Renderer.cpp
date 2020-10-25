@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2019 Alwin Esch (Team Kodi)
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi)
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-3.0-or-later
@@ -72,7 +72,14 @@ void CRendererClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
   CEF_REQUIRE_UI_THREAD();
 
   if (!m_client)
+  {
+    // Set to prevent SIGTRAP expections by cef/libcef/browser/osr/render_widget_host_view_osr.cc:749
+    rect.x = 0;
+    rect.y = 0;
+    rect.width = 512;
+    rect.height = 512;
     return;
+  }
 
   // The simulated screen and view rectangle are the same. This is necessary
   // for popup menus to be located and sized inside the view.
@@ -136,7 +143,6 @@ void CRendererClient::UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperat
 
 void CRendererClient::OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser, double x, double y)
 {
-fprintf(stderr, "----------------- %f %f\n",x, y);
   m_scrollOffsetX = x;
   m_scrollOffsetY = y;
 }
