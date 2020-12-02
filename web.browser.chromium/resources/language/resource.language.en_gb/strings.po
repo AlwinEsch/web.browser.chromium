@@ -662,6 +662,113 @@ msgctxt "#31003"
 msgid "Cancel load"
 msgstr ""
 
+#. Context menu entry to show SSL info if available
+#: src/app/app-main/WebBrowserClient.cpp
+msgctxt "#31004"
+msgid "Website SSL information"
+msgstr ""
+
+#. Used as header on text dialog to show SSL info of website
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31005"
+msgid "SSL Information"
+msgstr ""
+
+#. Text view group entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31006"
+msgid "[COLOR green][B]X.509 Certificate Information[/B][/COLOR]"
+msgstr ""
+
+#. Text view entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31007"
+msgid "[COLOR white][I]Status:[/I][/COLOR][TABS]3[/TABS]%s"
+msgstr ""
+
+#. Text view entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31008"
+msgid "[COLOR white][I]Subject:[/I][/COLOR][TABS]3[/TABS]%s"
+msgstr ""
+
+#. Text view entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31009"
+msgid "[COLOR white][I]Issuer:[/I][/COLOR][TABS]3[/TABS]%s"
+msgstr ""
+
+#. Text view entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31010"
+msgid "[COLOR white][I]Serial:[/I][/COLOR][TABS]3[/TABS]%s"
+msgstr ""
+
+#. Text view entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31011"
+msgid "[COLOR white][I]Valid Start:[/I][/COLOR][TABS]2[/TABS]%s"
+msgstr ""
+
+#. Text view entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31012"
+msgid "[COLOR white][I]Valid Expiry:[/I][/COLOR][TABS]2[/TABS]%s"
+msgstr ""
+
+#. Text view entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31013"
+msgid "[COLOR white][I]DER Encoded*:[/I][/COLOR][CR]%s"
+msgstr ""
+
+#. Text view entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31014"
+msgid "[COLOR white][I]PEM Encoded*:[/I][/COLOR][CR]%s"
+msgstr ""
+
+#. Text view entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31015"
+msgid "* Displayed value is base64 encoded.[CR]"
+msgstr ""
+
+#. Text view group entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31016"
+msgid "[COLOR green][B]SSL Connection[/B][/COLOR]"
+msgstr ""
+
+#. Text view group entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31017"
+msgid "[COLOR white][I]Server:[/I][/COLOR][TABS]3[/TABS]%s"
+msgstr ""
+
+#. Text view group entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31018"
+msgid "[COLOR white][I]SSL Version:[/I][/COLOR][TABS]2[/TABS]%s"
+msgstr ""
+
+#. Text view group entry
+#: src/app/app-main/gui/DialogSSLInformation.cpp
+msgctxt "#31019"
+msgid "[COLOR white][I]Content Status:[/I][/COLOR][TABS]2[/TABS]%s"
+msgstr ""
+
+#. Setting to bring entry in browser context menu to show SSL certificate info
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31020"
+msgid "Allow website SSL information to show by context menu"
+msgstr ""
+
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31021"
+msgid "If activated, there is a switch on the website context menu to show the associated SSL information."
+msgstr ""
+
 
 #   FLAG(CERT_STATUS_COMMON_NAME_INVALID);
 #   FLAG(CERT_STATUS_DATE_INVALID);
@@ -681,6 +788,140 @@ msgstr ""
 #   FLAG(CERT_STATUS_SHA1_SIGNATURE_PRESENT);
 #   FLAG(CERT_STATUS_CT_COMPLIANCE_FAILED);
 
+#. Chromium id 458
+msgctxt "#50458"
+msgid "Chromium"
+msgstr ""
+
+#. Chromium id 999
+msgctxt "#50999"
+msgid "Sign in to get your bookmarks, history, passwords and other settings on all your devices"
+msgstr ""
+
+#. Chromium id 6073
+msgctxt "#56073"
+msgid "Back"
+msgstr ""
+
+#. Chromium id 6074
+msgctxt "#56074"
+msgid "Forward"
+msgstr ""
+
+#. Chromium id 6075
+msgctxt "#56075"
+msgid "Save as..."
+msgstr ""
+
+#. Chromium id 6076
+msgctxt "#56076"
+msgid "Print"
+msgstr ""
+
+#. Chromium id 6077
+msgctxt "#56077"
+msgid "View page source"
+msgstr ""
+
+#. Chromium id 6078
+msgctxt "#56078"
+msgid "Open link width..."
+msgstr ""
+
+#. Chromium id 6079
+msgctxt "#56079"
+msgid "Configure"
+msgstr ""
+
+#. Chromium id 6080
+msgctxt "#56080"
+msgid "Inspect background page"
+msgstr ""
+
+#. Chromium id 6081
+msgctxt "#56081"
+msgid "Reload"
+msgstr ""
+
+#. Chromium id 6117
+msgctxt "#56117"
+msgid "Undo"
+msgstr ""
+
+#. Chromium id 6118
+msgctxt "#56118"
+msgid "Redo"
+msgstr ""
+
+#. Chromium id 6119
+msgctxt "#56119"
+msgid "Cut"
+msgstr ""
+
+#. Chromium id 6120
+msgctxt "#56120"
+msgid "Copy"
+msgstr ""
+
+#. Chromium id 6121
+msgctxt "#56121"
+msgid "Paste"
+msgstr ""
+
+#. Chromium id 6122
+msgctxt "#56122"
+msgid "Paste as plain text"
+msgstr ""
+
+#. Chromium id 6123
+msgctxt "#56123"
+msgid "Add to dictionary"
+msgstr ""
+
+#! empty 56124
+
+#. Chromium id 6125
+msgctxt "#56125"
+msgid "Always"
+msgstr ""
+
+#. Chromium id 6126
+msgctxt "#56126"
+msgid "Just once"
+msgstr ""
+
+#. Chromium id 6127
+msgctxt "#56127"
+msgid "Use enhanced spell check"
+msgstr ""
+
+#. Chromium id 6128
+msgctxt "#56128"
+msgid "Turn on enhanced spell check"
+msgstr ""
+
+#. Chromium id 6129
+msgctxt "#56129"
+msgid "Turn on"
+msgstr ""
+
+#! empty 56130
+
+#. Chromium id 6131
+msgctxt "#56131"
+msgid "Loading suggestion"
+msgstr ""
+
+#. Chromium id 6132
+msgctxt "#56132"
+msgid "No more suggestions from Google"
+msgstr ""
+
+#. Chromium id 6133
+msgctxt "#56133"
+msgid "Select all"
+msgstr ""
+
 
 msgctxt "#56500"
 msgid "Open"
@@ -692,4 +933,88 @@ msgstr ""
 
 msgctxt "#56502"
 msgid "Open Keyboard"
+msgstr ""
+
+#. Chromium id 10000
+msgctxt "#60000"
+msgid "en-GB"
+msgstr ""
+
+#. Chromium id 10100
+msgctxt "#60100"
+msgid "Times New Roman"
+msgstr ""
+
+#. Chromium id 10101
+msgctxt "#60101"
+msgid "Monospace"
+msgstr ""
+
+#. Chromium id 10102 ???
+msgctxt "#60102"
+msgid ""
+msgstr ""
+
+#. Chromium id 10103
+msgctxt "#60103"
+msgid "Arial"
+msgstr ""
+
+#. Chromium id 10104
+msgctxt "#60104"
+msgid "Roboto"
+msgstr ""
+
+#. Chromium id 10105
+msgctxt "#60105"
+msgid "Comic Sans MS"
+msgstr ""
+
+#. Chromium id 10106
+msgctxt "#60106"
+msgid "Impact"
+msgstr ""
+
+#. Chromium id 10107 ???
+msgctxt "#60107"
+msgid ""
+msgstr ""
+
+#. Chromium id 10108
+msgctxt "#60108"
+msgid "0"
+msgstr ""
+
+#. Chromium id 10109
+msgctxt "#60109"
+msgid "6"
+msgstr ""
+
+#. Chromium id 15530
+msgctxt "#65530"
+msgid "en-GB,en-US,en"
+msgstr ""
+
+#. Chromium id 15531
+msgctxt "#65531"
+msgid "windows-1252"
+msgstr ""
+
+#! empty 65532 to 65540
+
+#. Chromium id 15541
+msgctxt "#65541"
+msgid "Sorry, something went wrong."
+msgstr ""
+
+#! empty 65542
+
+#. Chromium id 22063
+msgctxt "#72063"
+msgid "Arial, sans-serif"
+msgstr ""
+
+#. Chromium id 22064
+msgctxt "#72064"
+msgid "75%"
 msgstr ""

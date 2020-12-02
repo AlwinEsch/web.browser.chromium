@@ -14,7 +14,7 @@
             <onclick>noop</onclick>
         </control>
 		<control type="group">
-            <animation effect="slide" end="0,-620" time="200" tween="sine" easing="inout" condition="String.IsEqual(Window.Property(kbpos),up">Conditional</animation>
+            <animation effect="slide" end="0,-640" time="200" tween="sine" easing="inout" condition="String.IsEqual(Window.Property(kbpos),up">Conditional</animation>
 			<bottom>0</bottom>
 			<centerleft>50%</centerleft>
 			<width>100%</width>
@@ -24,7 +24,7 @@
 				<left>0</left>
 				<bottom>0</bottom>
 				<width>100%</width>
-				<height>470</height>
+				<height>450</height>
 				<texture colordiffuse="dialog_tint">colors/white.png</texture>
 			</control>
 			<control type="label" id="311">
@@ -41,7 +41,7 @@
 			<control type="group" id="78500">
 				<centerleft>59%</centerleft>
 				<bottom>0</bottom>
-				<height>480</height>
+				<height>450</height>
 				<width>1920</width>
 				<animation effect="slide" end="-60,0" time="200" tween="sine" easing="inout" condition="Control.IsVisible(110) | Control.IsVisible(130) | Control.IsVisible(150) | Control.IsVisible(170)">conditional</animation>
 				<animation effect="slide" end="-110,0" time="200" tween="sine" easing="inout" condition="Control.IsVisible(111) | Control.IsVisible(131) | Control.IsVisible(151) | Control.IsVisible(171)">conditional</animation>
@@ -50,7 +50,7 @@
 					<left>320</left>
 					<itemgap>-30</itemgap>
 					<orientation>horizontal</orientation>
-                    <onleft>20000</onleft>
+					<onleft>20000</onleft>
 					<onright>95200</onright>
 					<control type="button" id="100">
 						<description>(0,0) key button</description>
@@ -147,7 +147,7 @@
 				<!-- 2nd row -->
 				<control type="grouplist">
 					<left>320</left>
-					<top>90</top>
+					<top>85</top>
 					<itemgap>-30</itemgap>
 					<orientation>horizontal</orientation>
                     <onleft>20000</onleft>
@@ -234,7 +234,7 @@
 				<!-- 3rd row -->
 				<control type="grouplist">
 					<left>320</left>
-					<top>180</top>
+					<top>170</top>
 					<orientation>horizontal</orientation>
                     <onleft>20000</onleft>
 					<onright>95200</onright>
@@ -321,7 +321,7 @@
 				<!-- 4th row -->
 				<control type="grouplist">
 					<left>320</left>
-					<top>270</top>
+					<top>255</top>
 					<itemgap>-30</itemgap>
 					<orientation>horizontal</orientation>
                     <onleft>20000</onleft>
@@ -408,7 +408,7 @@
 				<!-- 5th row -->
 				<control type="grouplist">
 					<left>320</left>
-					<top>360</top>
+					<top>340</top>
 					<itemgap>-30</itemgap>
 					<orientation>horizontal</orientation>
                     <onleft>20000</onleft>
@@ -530,7 +530,7 @@
 			</control>
 			<control type="grouplist" id="95200">
 				<bottom>0</bottom>
-				<height>460</height>
+				<height>450</height>
 				<centerleft>88%</centerleft>
 				<itemgap>dialogbuttons_itemgap</itemgap>
 				<onup condition="!Integer.IsGreater(Container(9010).NumItems,0)">95200</onup>
@@ -561,7 +561,7 @@
 			</control>
 			<control type="panel" id="9010">
 				<centerleft>50%</centerleft>
-				<bottom>490</bottom>
+				<bottom>470</bottom>
 				<width>1500</width>
 				<height>200</height>
 				<scrolltime tween="cubic" easing="out">500</scrolltime>
@@ -575,7 +575,7 @@
 					<control type="image">
 						<left>10</left>
 						<top>0</top>
-						<width>480</width>
+						<width>460</width>
 						<height>50</height>
 						<texture colordiffuse="dialog_tint">colors/white.png</texture>
 					</control>
@@ -595,13 +595,13 @@
 						<control type="image">
 							<left>10</left>
 							<top>0</top>
-							<width>480</width>
+							<width>460</width>
 							<height>50</height>
 							<texture colordiffuse="dialog_tint">colors/white.png</texture>
 						</control>
 						<control type="image">
 							<left>10</left>
-							<width>480</width>
+							<width>460</width>
 							<height>50</height>
 							<texture colordiffuse="button_focus">colors/grey.png</texture>
 							<include>Animation_FocusTextureFade</include>

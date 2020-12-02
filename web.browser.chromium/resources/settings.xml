@@ -67,6 +67,10 @@
           </constraints>
           <control type="spinner" format="integer" delayed="true"/>
         </setting>
+        <setting id="security.allow_ssl_info_dialog" type="boolean" label="31020" help="31021">
+          <default>false</default>
+          <control type="toggle" />
+        </setting>
       </group>
     </category>
     <category id="downloads" label="30009" help="-1">
