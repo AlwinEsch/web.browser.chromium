@@ -31,6 +31,7 @@ namespace main
 namespace gui
 {
 class CBrowerDialogContextMenu;
+class CJSDialogHandler;
 } /* namespace */
 
 class CMainCEFProcess;
@@ -242,12 +243,12 @@ private:
   CMainCEFProcess& m_mainProcess;
 
   CefRefPtr<CefBrowser> m_browser;
-  CefRefPtr<gui::CBrowerDialogContextMenu> m_dialogContextMenu;
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
-  CefRefPtr<CRequestContextHandler> m_contextHandler;
-//   CefRefPtr<CJSDialogHandler> m_jsDialogHandler;
-  CefRefPtr<renderer::CRendererClient> m_renderer;
   CefRefPtr<CefResourceManager> m_resourceManager; // Manages the reg. and delivery of resources.
+  CefRefPtr<chromium::app::main::CRequestContextHandler> m_contextHandler;
+  CefRefPtr<chromium::app::main::gui::CBrowerDialogContextMenu> m_dialogContextMenu;
+  CefRefPtr<chromium::app::main::gui::CJSDialogHandler> m_jsDialogHandler;
+  CefRefPtr<chromium::app::main::renderer::CRendererClient> m_renderer;
   CefRefPtr<interface::v8::CV8Kodi> m_v8Kodi;
 
   std::string m_clientIdentifier;

@@ -764,11 +764,181 @@ msgctxt "#31020"
 msgid "Allow website SSL information to show by context menu"
 msgstr ""
 
+#. Help text of with 31020 defined Setting
 #: web.browser.chromium/resources/settings.xml
 msgctxt "#31021"
 msgid "If activated, there is a switch on the website context menu to show the associated SSL information."
 msgstr ""
 
+#. Printer page size
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31022"
+msgid "Printer page size"
+msgstr ""
+
+#. Help text of with 31022 defined Setting
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31023"
+msgid "To set the paper size for printing to PDF files."
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31024"
+msgid "A3"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31025"
+msgid "A4"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31026"
+msgid "A5"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31027"
+msgid "A6"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31028"
+msgid "JB4"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31029"
+msgid "Tabloid"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31030"
+msgid "Letter"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31031"
+msgid "Legal"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31032"
+msgid "Folio"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31033"
+msgid "Executive"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31034"
+msgid "JIS B5"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31035"
+msgid "4 x 6 in"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31036"
+msgid "5 x 8 in"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31037"
+msgid "3.5 x 5 in"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31038"
+msgid "5 x 7 in"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31039"
+msgid "Postcard 1"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31040"
+msgid "Postcard 2 (Double)"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31041"
+msgid "C5 Envelope"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31042"
+msgid "DL Envelope"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31043"
+msgid "Com-10"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31044"
+msgid "Monarch"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31045"
+msgid "C6 Envelope"
+msgstr ""
+
+#. Page size format in selection list
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31046"
+msgid "Y4 Envelope"
+msgstr ""
+
+#! empty 31046 to 31049
+
+#. Settings category name
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31050"
+msgid "Others"
+msgstr ""
+
+#. Settings category help text
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31051"
+msgid "Others settings related to webbrowser addon."
+msgstr ""
+
+#. Settings group name
+#: web.browser.chromium/resources/settings.xml
+msgctxt "#31052"
+msgid "Print"
+msgstr ""
 
 #   FLAG(CERT_STATUS_COMMON_NAME_INVALID);
 #   FLAG(CERT_STATUS_DATE_INVALID);
@@ -841,6 +1011,27 @@ msgstr ""
 #. Chromium id 6081
 msgctxt "#56081"
 msgid "Reload"
+msgstr ""
+
+#. Chromium id 6095
+msgctxt "#56095"
+msgid "Save link…"
+msgstr ""
+
+#. Chromium id 6100, used on centext menu by selected image to download
+#: src/app/app-main/gui/DialogBrowserContextMenu.cpp
+msgctxt "#56100"
+msgid "Save image…"
+msgstr ""
+
+#. Chromium id 6110
+msgctxt "#56110"
+msgid "Save video…"
+msgstr ""
+
+#. Chromium id 6113
+msgctxt "#56113"
+msgid "Save audio…"
 msgstr ""
 
 #. Chromium id 6117

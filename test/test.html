@@ -42,6 +42,11 @@ function setup() {
   }
 }
 
+function test_HelloWorld()
+{
+  HelloKodiWorld();
+}
+
 function test_kodi_Log()
 {
   kodi.Log(ADDON_LOG_ERROR, "ADDON_LOG_ERROR test call");
@@ -90,6 +95,7 @@ Click a button to show the associated dialog type.
 <br/>
 <input type="button" onclick="test_exception();" value="Test: test_exception()" disabled="false">
 <br/>
+<br/><input type="button" onclick="test_HelloWorld();" value="Test: HelloKodiWorld" disabled="false">
 <br/><input type="button" onclick="test_kodi_Log();" value="Test: kodi.Log(level, str)" disabled="false">
 <br/><input type="button" onclick="test_kodi_QueueNotification();" value="Test: kodi.QueueNotification(...)" disabled="false">
 <br/><input type="button" onclick="test_kodi_GetAddonInfo();" value="Test: kodi.GetAddonInfo(id)" disabled="false">

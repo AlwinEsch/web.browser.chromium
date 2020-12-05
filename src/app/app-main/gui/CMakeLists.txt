@@ -2,6 +2,7 @@ set(SOURCES DialogBrowserContextMenu.cpp
             DialogCookie.cpp
             DialogDownload.cpp
             DialogFile.cpp
+            DialogJSHandler.cpp
             DialogKeyboard.cpp
             DialogSSLInformation.cpp
             GUIManager.cpp)
@@ -10,6 +11,7 @@ set(HEADERS DialogBrowserContextMenu.h
             DialogCookie.h
             DialogDownload.h
             DialogFile.h
+            DialogJSHandler.h
             DialogKeyboard.h
             DialogSSLInformation.h
             GUIManager.h)

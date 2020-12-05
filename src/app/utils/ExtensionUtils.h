@@ -15,17 +15,19 @@
 
 #pragma once
 
+// CEF
 #include "include/cef_extension.h"
 #include "include/cef_extension_handler.h"
 #include "include/wrapper/cef_resource_manager.h"
 
+// Global
 #include <string>
 
 namespace chromium
 {
 namespace app
 {
-namespace main
+namespace utils
 {
 
 namespace ExtensionUtils
@@ -88,6 +90,6 @@ std::string GetExtensionIconPath(CefRefPtr<CefExtension> extension, bool* intern
 
 } /* namespace ExtensionUtils */
 
-} /* namespace main */
+} /* namespace utils */
 } /* namespace app */
 } /* namespace chromium */

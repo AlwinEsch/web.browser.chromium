@@ -10,7 +10,7 @@
 
 #include "../../../lib/kodi-dev-kit/include/kodi/Filesystem.h"
 #include "../../../lib/kodi-dev-kit/include/kodi/General.h"
-#include "ExtensionUtils.h"
+#include "../utils/ExtensionUtils.h"
 #include "WebBrowserClient.h"
 #include "include/cef_command_line.h"
 #include "include/wrapper/cef_helpers.h"
@@ -52,7 +52,7 @@ void CRequestContextHandler::OnRequestContextInitialized(
     {
       if (item.IsFolder())
       {
-        ExtensionUtils::LoadExtension(request_context, item.Path(), this);
+        chromium::app::utils::ExtensionUtils::LoadExtension(request_context, item.Path(), this);
       }
     }
   }

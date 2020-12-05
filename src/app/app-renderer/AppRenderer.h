@@ -18,6 +18,8 @@ public:
   CWebAppRenderer();
   ~CWebAppRenderer();
 
+  void OnBeforeCommandLineProcessing(const CefString& process_type,
+                                     CefRefPtr<CefCommandLine> command_line) override;
   void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
 
 //   void OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info) override;
@@ -48,6 +50,9 @@ private:
   CefRefPtr<CefBrowser> m_browser;
   int m_securityWebaddonAccess = 0; // controlled by addon settings to set rights for Kodi's interface access
   bool m_interfaceAllowed = false;
+  bool m_v8Inited = false;
+
+  std::string m_mainShared;
 
   IMPLEMENT_REFCOUNTING(CWebAppRenderer);
   DISALLOW_COPY_AND_ASSIGN(CWebAppRenderer);

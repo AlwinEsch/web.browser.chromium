@@ -12,8 +12,9 @@
 #include "powerpolicy/PowerPolicyController.h"
 
 #include "../../../lib/kodi-dev-kit/include/kodi/General.h"
+#include "../../../lib/kodi-dev-kit/include/kodi/Processor.h"
 #include "MainCEFProcess.h"
-#include "PrintHandler.h"
+#include "print/PrintHandler.h"
 #include "../common/Scheme.h"
 
 #include <kodi/tools/StringUtils.h>
@@ -55,8 +56,7 @@ bool CClientAppBrowser::GetLocalizedString(int string_id, CefString& str)
 
 bool CClientAppBrowser::GetDataResource(int resource_id, void*& data, size_t& data_size)
 {
-  //TODO is useful?
-  return false;
+  return GetDataResourceForScale(resource_id, SCALE_FACTOR_NONE, data, data_size);
 }
 
 bool CClientAppBrowser::GetDataResourceForScale(int resource_id,
@@ -86,7 +86,6 @@ void CClientAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
                                                       CefRefPtr<CefCommandLine> command_line)
 {
 //   command_line->AppendSwitch("kodi-addon-path=" + kodi::GetAddonPath());
-  command_line->AppendSwitchWithValue("main-shared", m_addonMain->GetMainShared());
 #ifdef WIN32
   command_line->AppendSwitch("disable-gpu-shader-disk-cache");
   command_line->AppendSwitchWithValue("use-angle", "d3d11");
@@ -105,7 +104,16 @@ void CClientAppBrowser::OnContextInitialized()
   else
     kodi::Log(ADDON_LOG_ERROR, "Failed to get cookie manager");
 
-  m_printHandler = CPrintHandler::CreatePrintHandler();
+  m_printHandler = print::CPrintHandler::CreatePrintHandler();
+}
+
+void CClientAppBrowser::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line)
+{
+  const std::string id = m_addonMain->GetMainShared() + "-childProcess-" + std::to_string(m_nextChildProcessIdentifier++);
+
+  kodi::sandbox::CChildProcessor& proc = kodi::sandbox::CChildProcessor::GetActiveProcessor();
+
+  command_line->AppendSwitchWithValue("main-shared", id);
 }
 
 void CClientAppBrowser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)

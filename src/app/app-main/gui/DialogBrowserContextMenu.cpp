@@ -11,6 +11,7 @@
 #include "DialogSSLInformation.h"
 #include "GUIManager.h"
 #include "../MainCEFProcess.h"
+#include "../../utils/Info.h"
 
 // Dev-kit
 #include "../../../../lib/kodi-dev-kit/include/kodi/General.h"
@@ -46,6 +47,7 @@ enum client_menu_ids {
   CLIENT_ID_OPEN_SELECTED_SIDE = MENU_ID_USER_FIRST,
   CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB,
   CLIENT_ID_OPEN_KEYBOARD,
+  CLIENT_ID_DOWNLOAD_IMAGE,
   CLIENT_ID_SHOW_SSL_INFO,
 };
 
@@ -65,6 +67,11 @@ void CBrowerDialogContextMenu::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser
   int flags = params->GetTypeFlags();
   if (flags & CM_TYPEFLAG_EDITABLE)
     model->InsertItemAt(0, CLIENT_ID_OPEN_KEYBOARD, kodi::GetLocalizedString(30000 + CLIENT_ID_OPEN_KEYBOARD));
+
+  if (chromium::app::utils::IsImageURL(params->GetSourceUrl()))
+  {
+    model->AddItem(CLIENT_ID_DOWNLOAD_IMAGE, kodi::GetLocalizedString(56100));
+  }
 
   if (HasSSLInformation(browser) && kodi::GetSettingBoolean("security.allow_ssl_info_dialog"))
   {
@@ -179,6 +186,9 @@ bool CBrowerDialogContextMenu::OnContextMenuCommand(CefRefPtr<CefBrowser> browse
       break;
     case CLIENT_ID_OPEN_SELECTED_SIDE_IN_NEW_TAB:
       m_client->RequestOpenSiteInNewTab(params->GetLinkUrl().ToString());
+      break;
+    case CLIENT_ID_DOWNLOAD_IMAGE:
+      browser->GetHost()->StartDownload(params->GetSourceUrl());
       break;
     case CLIENT_ID_SHOW_SSL_INFO:
       ShowSSLInformation(browser);

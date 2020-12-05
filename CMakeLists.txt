@@ -119,16 +119,16 @@ add_subdirectory(src/app/app-main/audio)
 add_subdirectory(src/app/app-main/certificate)
 add_subdirectory(src/app/app-main/gui)
 add_subdirectory(src/app/app-main/powerpolicy)
+add_subdirectory(src/app/app-main/print)
 add_subdirectory(src/app/app-main/scheme)
 add_subdirectory(src/app/common)
+add_subdirectory(src/app/utils)
 
 list(APPEND KODICHROMIUM_APP_SOURCES src/app/main_linux.cpp
                                      src/app/LibraryLoader.cpp
                                      src/app/MessageIds.cpp
                                      src/app/app-main/AppBrowser.cpp
-                                     src/app/app-main/ExtensionUtils.cpp
                                      src/app/app-main/MainCEFProcess.cpp
-                                     src/app/app-main/PrintHandler.cpp
                                      src/app/app-main/RequestContextHandler.cpp
                                      src/app/app-main/ResourceManager.cpp
                                      src/app/app-main/WebBrowserClient.cpp
@@ -142,16 +142,12 @@ list(APPEND KODICHROMIUM_APP_SOURCES src/app/main_linux.cpp
                                      src/app/app-other/AppOther.cpp
                                      src/app/app-renderer/AppRenderer.cpp
                                      src/app/app-renderer/DOMVisitor.cpp
-                                     src/app/app-renderer/V8Handler.cpp
-                                     src/app/utils/FileUtils.cpp
-                                     src/app/utils/SystemTranslator.cpp)
+                                     src/app/app-renderer/V8Handler.cpp)
 
 list(APPEND KODICHROMIUM_APP_HEADERS src/app/LibraryLoader.h
                                      src/app/MessageIds.h
                                      src/app/app-main/AppBrowser.h
-                                     src/app/app-main/ExtensionUtils.h
                                      src/app/app-main/MainCEFProcess.h
-                                     src/app/app-main/PrintHandler.h
                                      src/app/app-main/RequestContextHandler.h
                                      src/app/app-main/ResourceManager.h
                                      src/app/app-main/WebBrowserClient.h
@@ -165,9 +161,7 @@ list(APPEND KODICHROMIUM_APP_HEADERS src/app/LibraryLoader.h
                                      src/app/app-other/AppOther.h
                                      src/app/app-renderer/AppRenderer.h
                                      src/app/app-renderer/DOMVisitor.h
-                                     src/app/app-renderer/V8Handler.h
-                                     src/app/utils/FileUtils.h
-                                     src/app/utils/SystemTranslator.h)
+                                     src/app/app-renderer/V8Handler.h)
 
 set(KODICHROMIUM_APP_POSIX_SOURCES src/app/app-main/renderer/OffscreenBasePosix.cpp)
 

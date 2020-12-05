@@ -58,7 +58,7 @@ public:
   //@{
   void GetCookieableSchemes(std::vector<CefString>& schemes, bool& include_defaults) override;
   void OnContextInitialized() override;
-  void OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line) override {}
+  void OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line) override;
   CefRefPtr<CefPrintHandler> GetPrintHandler() override;
   void OnScheduleMessagePumpWork(int64 delay_ms) override;
   CefRefPtr<CefClient> GetDefaultClient() override { return nullptr; }
@@ -76,6 +76,8 @@ private:
 
   IMPLEMENT_REFCOUNTING(CClientAppBrowser);
   DISALLOW_COPY_AND_ASSIGN(CClientAppBrowser);
+
+  uint32_t m_nextChildProcessIdentifier{0};
 };
 
 } /* namespace main */

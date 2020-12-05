@@ -10,7 +10,9 @@
 #include "AppRenderer.h"
 #include "../MessageIds.h"
 
-#include <kodi/General.h>
+#include "../../../lib/kodi-dev-kit/include/kodi/General.h"
+
+#include <atomic>
 
 /*
  * VERY BIG TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -58,12 +60,65 @@ function test_kodi_DialogYesNo()
 }
  */
 
+namespace
+{
+static std::atomic_int m_ctorcount{0}; // For debug purposes and to see destructs done
+}
+
+CV8Handler::CV8Handler(CWebAppRenderer* renderer)
+  : m_renderer(renderer)
+{
+  fprintf(stderr, "CV8Handler START (%p) count open %i\n", this, ++m_ctorcount);
+}
+
+CV8Handler::~CV8Handler()
+{
+  fprintf(stderr, "CV8Handler STOP (%p) count open %i\n", this, --m_ctorcount);
+}
+
+bool CV8Handler::InitKodiAPI(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context)
+{
+  CefRefPtr<CefV8Value> object = context->GetGlobal();
+
+  CefRefPtr<CefV8Value> objKodi = CefV8Value::CreateObject(nullptr, nullptr);
+
+  // Namespace kodi functions
+  object->SetValue("kodi", objKodi, V8_PROPERTY_ATTRIBUTE_NONE);
+  objKodi->SetValue("Log", CefV8Value::CreateFunction("Log", this), V8_PROPERTY_ATTRIBUTE_NONE);
+  objKodi->SetValue("QueueNotification", CefV8Value::CreateFunction("QueueNotification", this), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  // kodi's typedef enum QueueMsg
+  object->SetValue("QUEUE_INFO", CefV8Value::CreateUInt(QUEUE_INFO), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("QUEUE_WARNING", CefV8Value::CreateUInt(QUEUE_WARNING), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("QUEUE_ERROR", CefV8Value::CreateUInt(QUEUE_ERROR), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("QUEUE_OWN_STYLE", CefV8Value::CreateUInt(QUEUE_OWN_STYLE), V8_PROPERTY_ATTRIBUTE_READONLY);
+
+  // kodi's typedef enum ADDON_STATUS
+  object->SetValue("ADDON_STATUS_OK", CefV8Value::CreateUInt(ADDON_STATUS_OK), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("ADDON_STATUS_LOST_CONNECTION", CefV8Value::CreateUInt(ADDON_STATUS_LOST_CONNECTION), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("ADDON_STATUS_NEED_RESTART", CefV8Value::CreateUInt(ADDON_STATUS_NEED_RESTART), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("ADDON_STATUS_NEED_SETTINGS", CefV8Value::CreateUInt(ADDON_STATUS_NEED_SETTINGS), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("ADDON_STATUS_UNKNOWN", CefV8Value::CreateUInt(ADDON_STATUS_UNKNOWN), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("ADDON_STATUS_PERMANENT_FAILURE", CefV8Value::CreateUInt(ADDON_STATUS_PERMANENT_FAILURE), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("ADDON_STATUS_NOT_IMPLEMENTED", CefV8Value::CreateUInt(ADDON_STATUS_NOT_IMPLEMENTED), V8_PROPERTY_ATTRIBUTE_READONLY);
+
+  // kodi's typedef enum AddonLog
+  object->SetValue("ADDON_LOG_DEBUG", CefV8Value::CreateUInt(ADDON_LOG_DEBUG), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("ADDON_LOG_INFO", CefV8Value::CreateUInt(ADDON_LOG_INFO), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("ADDON_LOG_WARNING", CefV8Value::CreateUInt(ADDON_LOG_WARNING), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("ADDON_LOG_ERROR", CefV8Value::CreateUInt(ADDON_LOG_ERROR), V8_PROPERTY_ATTRIBUTE_READONLY);
+  object->SetValue("ADDON_LOG_FATAL", CefV8Value::CreateUInt(ADDON_LOG_FATAL), V8_PROPERTY_ATTRIBUTE_READONLY);
+  return true;
+}
+
 bool CV8Handler::Execute(const CefString& name,
                          CefRefPtr<CefV8Value> object,
                          const CefV8ValueList& arguments,
                          CefRefPtr<CefV8Value>& retval,
                          CefString& exception)
 {
+  fprintf(stderr, "####---------- %p %s %s\n", this, __PRETTY_FUNCTION__, name.ToString().c_str());
+
   if (!m_renderer->GetBrowser() ||
       !m_renderer->CurrentSiteInterfaceAllowed())
     return false;
@@ -105,8 +160,10 @@ bool CV8Handler::Execute(const CefString& name,
   return false;
 }
 
-void CV8Handler::OnWebKitInitialized(CWebAppRenderer* renderer)
+bool CV8Handler::OnWebKitInitialized(CWebAppRenderer* renderer)
 {
+  fprintf(stderr, "---------- %s\n", __func__);
+
   // Register the client_app extension.
   std::string app_code =
     "var kodi;"
@@ -186,6 +243,5 @@ void CV8Handler::OnWebKitInitialized(CWebAppRenderer* renderer)
     "  };"
     "})();";
 
-  CefRegisterExtension("kodi", app_code, new CV8Handler(renderer));
+  return CefRegisterExtension("kodi", app_code, new CV8Handler(renderer));
 }
-

@@ -7,14 +7,15 @@
 
 #include "WebBrowserClient.h"
 
-#include "ExtensionUtils.h"
 #include "MainCEFProcess.h"
 #include "ResourceManager.h"
 #include "certificate/CertificateError.h"
 #include "certificate/URICheckHandler.h"
 #include "gui/DialogBrowserContextMenu.h"
+#include "gui/DialogJSHandler.h"
 #include "interface/JSException.h"
 #include "interface/v8/v8-kodi.h"
+#include "../utils/ExtensionUtils.h"
 #include "../utils/SystemTranslator.h"
 #include "../MessageIds.h"
 
@@ -71,18 +72,18 @@ CWebBrowserClient::CWebBrowserClient(const WEB_ADDON_GUI_PROPS& properties,
   ResourceManager::SetupResourceManager(m_resourceManager);
 
   // Create the browser-side router for query handling.
-//   m_jsDialogHandler = new CJSDialogHandler(this);
+  m_dialogContextMenu = new gui::CBrowerDialogContextMenu(this);
+  m_jsDialogHandler = new gui::CJSDialogHandler(this);
+  m_v8Kodi = new interface::v8::CV8Kodi(this);
   m_renderer = new renderer::CRendererClient(this);
   m_renderer->Initialize(GetWidth(), GetHeight());
-  m_dialogContextMenu = new gui::CBrowerDialogContextMenu(this);
-  m_v8Kodi = new interface::v8::CV8Kodi(this);
 
-  kodi::Log(ADDON_LOG_DEBUG, "CWebBrowserClient START (%p) count open %i\n", this, ++m_ctorcount);
+  kodi::Log(ADDON_LOG_DEBUG, "CWebBrowserClient START (%p) count open %i", this, ++m_ctorcount);
 }
 
 CWebBrowserClient::~CWebBrowserClient()
 {
-  kodi::Log(ADDON_LOG_DEBUG, "CWebBrowserClient STOP (%p) count open %i\n", this, --m_ctorcount);
+  kodi::Log(ADDON_LOG_DEBUG, "CWebBrowserClient STOP (%p) count open %i", this, --m_ctorcount);
 
   m_renderer = nullptr;
 
@@ -149,7 +150,7 @@ void CWebBrowserClient::CloseComplete()
   m_renderer->ClearClient();
 
   m_resourceManager = nullptr;
-//   m_jsDialogHandler = nullptr;
+  m_jsDialogHandler = nullptr;
   m_dialogContextMenu = nullptr;
   m_v8Kodi = nullptr;
 }
@@ -172,7 +173,7 @@ void CWebBrowserClient::CreateMessageHandlers(MessageHandlerSet& handlers)
 void CWebBrowserClient::AddExtension(CefRefPtr<CefExtension> extension)
 {
   // Don't track extensions that can't be loaded directly.
-  if (ExtensionUtils::GetExtensionURL(extension).empty())
+  if (chromium::app::utils::ExtensionUtils::GetExtensionURL(extension).empty())
     return;
 
   // Don't add the same extension multiple times.
@@ -638,7 +639,7 @@ CefRefPtr<CefDownloadHandler> CWebBrowserClient::GetDownloadHandler()
 
 CefRefPtr<CefJSDialogHandler> CWebBrowserClient::GetJSDialogHandler()
 {
-  return nullptr;//m_jsDialogHandler;
+  return m_jsDialogHandler;
 }
 
 CefRefPtr<CefRenderHandler> CWebBrowserClient::GetRenderHandler()
@@ -870,10 +871,10 @@ void CWebBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
     browser->GetHost()->SetAutoResizeEnabled(true, CefSize(20, 20), CefSize(1000, 1000));
 
     CefRefPtr<CefExtension> extension = browser->GetHost()->GetExtension();
-    if (ExtensionUtils::IsInternalExtension(extension->GetPath()))
+    if (chromium::app::utils::ExtensionUtils::IsInternalExtension(extension->GetPath()))
     {
       // Register the internal handler for extension resources.
-      ExtensionUtils::AddInternalExtensionToResourceManager(extension, m_resourceManager);
+      chromium::app::utils::ExtensionUtils::AddInternalExtensionToResourceManager(extension, m_resourceManager);
     }
   }
 

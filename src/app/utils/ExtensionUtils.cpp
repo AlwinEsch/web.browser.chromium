@@ -15,19 +15,24 @@
 
 #include "ExtensionUtils.h"
 
-#include "../../../lib/kodi-dev-kit/include/kodi/Filesystem.h"
-#include "../../../lib/kodi-dev-kit/include/kodi/General.h"
+// Own
+#include "FileUtils.h"
+
+// Dev-kit
 #include "include/base/cef_bind.h"
 #include "include/cef_parser.h"
 #include "include/cef_path_util.h"
 #include "include/wrapper/cef_closure_task.h"
-#include "../utils/FileUtils.h"
+
+// CEF
+#include "../../../lib/kodi-dev-kit/include/kodi/Filesystem.h"
+#include "../../../lib/kodi-dev-kit/include/kodi/General.h"
 
 namespace chromium
 {
 namespace app
 {
-namespace main
+namespace utils
 {
 
 namespace ExtensionUtils
@@ -277,6 +282,6 @@ std::string GetExtensionIconPath(CefRefPtr<CefExtension> extension, bool* intern
 
 } /* namespace ExtensionUtils */
 
-} /* namespace main */
+} /* namespace utils */
 } /* namespace app */
 } /* namespace chromium */

@@ -16,7 +16,10 @@ class CWebAppRenderer;
 class CV8Handler : public CefV8Handler
 {
 public:
-  CV8Handler(CWebAppRenderer* renderer) : m_renderer(renderer) {}
+  CV8Handler(CWebAppRenderer* renderer);
+  ~CV8Handler() override;
+
+  bool InitKodiAPI(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context);
 
   virtual bool Execute(const CefString& name,
                        CefRefPtr<CefV8Value> object,
@@ -24,10 +27,11 @@ public:
                        CefRefPtr<CefV8Value>& retval,
                        CefString& exception) override;
 
-  static void OnWebKitInitialized(CWebAppRenderer* renderer);
+  static bool OnWebKitInitialized(CWebAppRenderer* renderer);
 
 private:
   IMPLEMENT_REFCOUNTING(CV8Handler);
+  DISALLOW_COPY_AND_ASSIGN(CV8Handler);
 
   CWebAppRenderer* m_renderer;
 };

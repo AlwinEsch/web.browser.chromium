@@ -6,11 +6,12 @@
  *  See LICENSES/README.md for more information.
  */
 
+#include "LibraryLoader.h"
 #include "app-main/AppBrowser.h"
 #include "app-main/MainCEFProcess.h"
-#include "LibraryLoader.h"
 #include "app-other/AppOther.h"
 #include "app-renderer/AppRenderer.h"
+#include "utils/Info.h"
 
 // Dev-kit
 #include "../../lib/kodi-dev-kit/include/kodi/General.h"
@@ -24,7 +25,9 @@
 
 #define DEBUG
 
-namespace client
+namespace chromium
+{
+namespace app
 {
 
 // These flags must match the Chromium values.
@@ -61,6 +64,8 @@ int RunMain(int argc, char* argv[])
     kodi::Log(ADDON_LOG_FATAL, "%s: cef library load failed!", __func__);
     return EXIT_FAILURE;
   }
+
+  chromium::app::utils::PrintCEFInfos(argc, argv, false);
 
 #if defined(CEF_USE_SANDBOX)
   // Check set of sandbox and if needed ask user about root password to set correct rights of them
@@ -137,6 +142,8 @@ int RunChild(int argc, char* argv[])
     return ret;
   }
 
+  chromium::app::utils::PrintCEFInfos(argc, argv, true);
+
   CefMainArgs main_args(argc, argv);
 
   // Parse command-line arguments.
@@ -156,18 +163,22 @@ int RunChild(int argc, char* argv[])
     if (process_type == kRendererProcess ||
         process_type == kZygoteProcess)
     {
+      fprintf(stderr, "################################ 1\n");
+      // Startup the shared memory interface
+//       kodi::sandbox::CChildProcessor processor(kodi::sandbox::CheckMainShared(argc, argv), false, true);
+      fprintf(stderr, "################################ 2\n");
+
       // On Linux the zygote process is used to spawn other process types. Since
       // we don't know what type of process it will be give it the renderer
       // client.
       app = new CWebAppRenderer();
+      ret = CefExecuteProcess(main_args, app, nullptr);
     }
     else
     {
       app = new CWebAppOther();
+      ret = CefExecuteProcess(main_args, app, nullptr);
     }
-
-    // Execute the secondary process, if any.
-    ret = CefExecuteProcess(main_args, app, nullptr);
   }
   else
   {
@@ -181,7 +192,8 @@ int RunChild(int argc, char* argv[])
   return ret;
 }
 
-} /* namespace client */
+} /* namespace app */
+} /* namespace chromium */
 
 int main(int argc, char* argv[])
 {
@@ -189,7 +201,7 @@ int main(int argc, char* argv[])
   const std::string main_shared = kodi::sandbox::CheckMainShared(argc, argv);
   const uint64_t base_handle = kodi::sandbox::CheckBaseHandle(argc, argv);
   if (sandbox.empty() || main_shared.empty() || !base_handle)
-    return client::RunChild(argc, argv);
+    return chromium::app::RunChild(argc, argv);
 
-  return client::RunMain(argc, argv);
+  return chromium::app::RunMain(argc, argv);
 }
