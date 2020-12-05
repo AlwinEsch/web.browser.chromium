@@ -133,19 +133,6 @@ void SetSettingBoolean(const std::string& settingName, bool settingValue)
 }
 
 template<typename enumType>
-enumType GetSettingEnum(const std::string& settingName, enumType defaultValue)
-{
-  msgpack::sbuffer in;
-  msgpack::sbuffer out;
-  msgpack::pack(in, msgIdentifier(funcGroup_General_h, funcParent_General_h::kodi_GetSettingInt));
-  msgpack::pack(in, msgParent__IN_kodi_GetSettingInt(settingName, static_cast<int>(defaultValue)));
-  CChildProcessor::GetCurrentProcessor()->SendMessage(in, out);
-  msgpack::unpacked ident = msgpack::unpack(out.data(), out.size());
-  msgParent_OUT_kodi_GetSettingInt t = ident.get().as<decltype(t)>();
-  return std::get<0>(t);
-}
-
-template<typename enumType>
 void SetSettingEnum(const std::string& settingName, enumType settingValue)
 {
   msgpack::sbuffer in;

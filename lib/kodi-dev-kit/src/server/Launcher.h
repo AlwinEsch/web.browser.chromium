@@ -62,12 +62,15 @@ protected:
 
   const std::string m_identifier;
 
-  std::shared_ptr<CShareProcessTransmitter> m_mainTransmitter;
-  std::shared_ptr<CShareProcessTransmitter> m_otherTransmitter;
-  std::shared_ptr<CShareProcessTransmitter> m_otherTransmitter2;
-  std::shared_ptr<CShareProcessReceiver> m_mainReceiver;
-  std::shared_ptr<CShareProcessReceiver> m_otherThreadReceiver;
-  std::shared_ptr<CShareProcessReceiver> m_otherThreadReceiver2;
+  std::thread::id mainThreadId;
+
+  std::shared_ptr<kodi::sandbox::CShareProcessTransmitter> m_mainThreadTransmit;
+  std::shared_ptr<kodi::sandbox::CShareProcessReceiver> m_mainThreadReceive;
+
+  std::vector<std::shared_ptr<kodi::sandbox::CShareProcessTransmitter>> m_childThreadTransmit;
+  std::vector<std::shared_ptr<kodi::sandbox::CShareProcessReceiver>> m_childThreadReceive;
+  uint32_t m_nextChildIdentifier{0};
+
   std::atomic<ChildStatus> m_lastStatus{ChildStatus::NotStarted};
   int m_exitCode = 0;
 

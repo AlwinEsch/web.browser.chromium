@@ -39,19 +39,35 @@ void CShareProcessTransmitter::SendMessage(const msgpack::sbuffer& in)
 {
   std::unique_lock<std::mutex> lock(m_lock);
 
+  fprintf(stderr, "--------------------------------------##################!!!!!1 %i\n", m_mainThread);
+
   apiShareData* sharedMem = m_memControl->GetSharedMem();
 
   size_t size = in.size();
   sharedMem->bigger = size > DEFAULT_SHARED_MEM_ARRAY_SIZE;
   sharedMem->data_size = sharedMem->bigger ? DEFAULT_SHARED_MEM_ARRAY_SIZE : size;
+  sharedMem->main_thread = m_mainThread;
   memcpy(sharedMem->data, in.data(), sharedMem->data_size);
+  m_active = true;
+back:
   m_memControl->Unlock_Target();
   m_memControl->Lock_Caller();
+
+  if (m_mainThreadReceive)
+  {
+    m_mainReceiver->ProcessMemory(m_mainReceiveSharedMem);
+    goto back;
+  }
+  m_active = false;
+//   memset(sharedMem->data, 0, sharedMem->data_size);
 }
 
 void CShareProcessTransmitter::SendMessage(const msgpack::sbuffer& in, msgpack::sbuffer& ret)
 {
   std::unique_lock<std::mutex> lock(m_lock);
+  msgpack::unpacked ident = msgpack::unpack(in.data(), in.size());
+
+  fprintf(stderr, "--------------------------------------##################!!!!!2 %i\n", m_mainThread);
 
   apiShareData* sharedMem = m_memControl->GetSharedMem();
 
@@ -72,10 +88,12 @@ back:
   }
   m_active = false;
   ret.write(sharedMem->data, sharedMem->data_size);
+//   memset(sharedMem->data, 0, sharedMem->data_size);
 }
 
 bool CShareProcessTransmitter::ProcessMainThreadReceive(apiShareData* sharedMem, CShareProcessReceiver* receiver)
 {
+  fprintf(stderr, "--------------------------------------##################!!!!!3 %i\n", m_mainThread);
   if (m_mainThreadReceive)
   {
     fprintf(stderr, "FATAL: A main thread call should never be called twice at same time!\n");

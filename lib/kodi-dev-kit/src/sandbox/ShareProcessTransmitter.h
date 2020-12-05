@@ -42,11 +42,12 @@ public:
   void SendMessage(const msgpack::sbuffer& in, msgpack::sbuffer& ret);
   bool ProcessMainThreadReceive(apiShareData* sharedMem, CShareProcessReceiver* receiver);
 
+  std::atomic_bool m_active{false};
+
 private:
   const std::string m_identifier;
   const bool m_child;
   const bool m_mainThread;
-  std::atomic_bool m_active{false};
   std::mutex m_lock;
   std::shared_ptr<CSharedMemControl> m_memControl;
 

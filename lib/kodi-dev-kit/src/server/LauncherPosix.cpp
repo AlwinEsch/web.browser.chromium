@@ -80,36 +80,25 @@ bool CChildLauncherPosix::Launch(const std::vector<std::string>& argv, bool wait
   argv_cstr.push_back(const_cast<char*>(mainSharedId.c_str()));
   argv_cstr.push_back(nullptr);
 
-  if (!m_mainReceiver)
+  if (!m_mainThreadReceive)
   {
     kodi::utils::LOG_MESSAGE(ADDON_LOG_ERROR, "CChildLauncherPosix::%s: Main receiver not present",
                              __func__);
     return false;
   }
 
-  if (!m_mainReceiver->Create(true, true))
+  if (!m_mainThreadReceive->Create(true, true))
   {
     kodi::utils::LOG_MESSAGE(ADDON_LOG_ERROR, "CChildLauncherPosix::%s: Failed to create receiver",
                              __func__);
     return false;
   }
 
-  if (!m_mainTransmitter->Create(true))
+  if (!m_mainThreadTransmit->Create(true))
   {
     kodi::utils::LOG_MESSAGE(ADDON_LOG_ERROR,
                              "CChildLauncherPosix::%s: Failed to create transmitter", __func__);
     return false;
-  }
-
-  if (m_otherThreadReceiver)
-  {
-    if (!m_otherThreadReceiver->Create(true, true))
-    {
-      kodi::utils::LOG_MESSAGE(ADDON_LOG_ERROR,
-                               "CChildLauncherPosix::%s: Failed to create other thread receiver",
-                               __func__);
-      return false;
-    }
   }
 
   sigset_t full_sigset;
@@ -271,10 +260,11 @@ bool CChildLauncherPosix::Kill(bool wait)
                                __func__);
     }
 
-    if (m_mainReceiver)
-      m_mainReceiver->Destroy();
-    if (m_otherThreadReceiver)
-      m_otherThreadReceiver->Destroy();
+    if (m_mainThreadReceive)
+      m_mainThreadReceive->Destroy();
+    for (const auto& entry : m_childThreadReceive)
+      entry->Destroy();
+    m_childThreadReceive.clear();
 
     if (m_lastStatus == ChildStatus::Running)
     {

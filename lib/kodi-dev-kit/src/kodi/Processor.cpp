@@ -23,6 +23,8 @@
 #include "AddonBaseInternal.h"
 #include "addon-instance/Web.h"
 
+#include <unordered_set>
+
 namespace kodi
 {
 namespace sandbox
@@ -115,23 +117,56 @@ uint64_t CheckBaseHandle(int argc, char* argv[])
   return strtoll(base_handle.c_str(), nullptr, 16);
 }
 
-std::thread::id main_thread_id;
-std::array<IMsgHdl*, funcGroup_Max> message_handlers = {nullptr};
-std::shared_ptr<::kodi::sandbox::CShareProcessReceiver> CChildProcessor::g_mainIn;
-std::shared_ptr<::kodi::sandbox::CShareProcessReceiver> CChildProcessor::g_otherIn;
-std::shared_ptr<::kodi::sandbox::CShareProcessReceiver> CChildProcessor::g_otherIn2;
-std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> CChildProcessor::g_mainOut;
-std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> CChildProcessor::g_otherOut;
-std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> CChildProcessor::g_otherOut2;
-std::mutex CChildProcessor::g_lock;
+
+
+
+
+
+
+struct InterfaceStatic
+{
+  InterfaceStatic() = default;
+  ~InterfaceStatic()
+  {
+    for (auto& handler : message_handlers)
+      delete handler;
+  }
+
+  std::mutex g_lock;
+
+  CChildProcessor* processorClass;
+  std::array<kodi::sandbox::IMsgHdl*, funcGroup_Max> message_handlers = {nullptr};
+
+  std::thread::id mainThreadId;
+
+  std::shared_ptr<kodi::sandbox::CShareProcessReceiver> mainThreadReceive;
+  std::shared_ptr<kodi::sandbox::CShareProcessTransmitter> mainThreadTransmit;
+  std::shared_ptr<kodi::sandbox::CShareProcessTransmitter> childThreadConstuct;
+
+  std::vector<std::shared_ptr<kodi::sandbox::CShareProcessReceiver>> childThreadReceive;
+  std::vector<std::shared_ptr<kodi::sandbox::CShareProcessTransmitter>> childThreadTransmit;
+  uint32_t nextChildIdentifier{0};
+};
+
+InterfaceStatic* CChildProcessor::g_interface = nullptr;
 
 CChildProcessor::CChildProcessor(const std::string& main_shared, bool viaMainThread)
   : m_mainShared(main_shared)
 {
-  main_thread_id = std::this_thread::get_id();
+  if (g_interface)
+  {
+    fprintf(stderr, R"error(
+FATAL: This class "CChildProcessor" should only be used one time in App.
+       Here becomes a second time called and child app becomes destroyed now.
+       Inform developer about this addon to fix it!
+    )error");
+    exit(1);
+  }
 
-  std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> transmitter =
-      std::make_shared<::kodi::sandbox::CShareProcessTransmitter>(m_mainShared, true, true);
+  g_interface = new InterfaceStatic;
+  g_interface->mainThreadId = std::this_thread::get_id();
+
+  auto transmitter = std::make_shared<::kodi::sandbox::CShareProcessTransmitter>(m_mainShared, true, true);
   if (!transmitter->Create(false))
   {
     fprintf(stderr,
@@ -139,10 +174,10 @@ CChildProcessor::CChildProcessor(const std::string& main_shared, bool viaMainThr
     exit(EXIT_FAILURE);
   }
 
-  g_mainOut = transmitter;
+  g_interface->mainThreadTransmit = transmitter;
 
-  std::shared_ptr<::kodi::sandbox::CShareProcessReceiver> receiver =
-      std::make_shared<::kodi::sandbox::CShareProcessReceiver>(m_mainShared + "-receiver", g_mainOut, true);
+  auto receiver =
+      std::make_shared<::kodi::sandbox::CShareProcessReceiver>(m_mainShared + "-receiver", g_interface->mainThreadTransmit, true);
   receiver->RegisterReceiver(
       std::bind(&CChildProcessor::HandleMessage, this, std::placeholders::_1,
                 std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
@@ -153,91 +188,89 @@ CChildProcessor::CChildProcessor(const std::string& main_shared, bool viaMainThr
     exit(EXIT_FAILURE);
   }
 
-  g_mainIn = receiver;
+  g_interface->mainThreadReceive = receiver;
 
-  message_handlers[funcGroup_AddonBase_h] = new child::C_AddonBase_h(*this);
-  message_handlers[funcGroup_addoninstance_Web_h] = new child::C_addoninstance_Web_h(*this);
 
-  ::kodi::Log(ADDON_LOG_INFO, "Inform for start of sandbox process id '%s'", m_mainShared.c_str());
+  g_interface->message_handlers[funcGroup_AddonBase_h] = new child::C_AddonBase_h(*this);
+  g_interface->message_handlers[funcGroup_addoninstance_Web_h] = new child::C_addoninstance_Web_h(*this);
+
+  kodi::Log(ADDON_LOG_INFO, "Inform for start of sandbox process id '%s'", m_mainShared.c_str());
+
+  g_interface->processorClass = this;
 }
 
 CChildProcessor::~CChildProcessor()
 {
-  for (auto& handler : message_handlers)
-    delete handler;
+  delete g_interface;
+  g_interface = nullptr;
+}
 
-  g_mainOut.reset();
-  g_otherOut.reset();
-  g_otherOut2.reset();
+CChildProcessor& CChildProcessor::GetActiveProcessor()
+{
+  return *g_interface->processorClass;
+}
+
+bool CChildProcessor::InitSubChild(const std::string& identifier)
+{
+
 }
 
 bool CChildProcessor::ProcessOutside()
 {
-  if (!g_mainIn || !m_active)
+  if (!g_interface || !m_active)
     return false;
 
-  return g_mainIn->ProcessOutside();
+  return g_interface->mainThreadReceive->ProcessOutside();
 }
 
-std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> CChildProcessor::GetCurrentProcessor()
+std::shared_ptr<kodi::sandbox::CShareProcessTransmitter> CChildProcessor::GetCurrentProcessor()
 {
   // BIG TODO in this work way!!!
   std::thread::id threadId = std::this_thread::get_id();
 
-  if (main_thread_id == threadId)
+  if (g_interface->mainThreadId == threadId)
   {
-    return g_mainOut;
+    return g_interface->mainThreadTransmit;
   }
 
-  std::unique_lock<std::mutex> lock(g_lock);
+  std::unique_lock<std::mutex> lock(g_interface->g_lock);
 
-  if (!g_otherOut)
+//   fprintf(stderr, "g_interface->childThreadTransmit %li %i\n", g_interface->childThreadTransmit.size(), !g_interface->childThreadTransmit.empty() ?  g_interface->childThreadTransmit[0]->IsActive() : false);
+
+
+  auto it = std::find_if(g_interface->childThreadTransmit.begin(),
+               g_interface->childThreadTransmit.end(),
+               [](std::shared_ptr<kodi::sandbox::CShareProcessTransmitter> entry){ fprintf(stderr, "--------> %i\n", entry->IsActive()); return !entry->IsActive();}
+              );
+  if (it == g_interface->childThreadTransmit.end())
   {
     msgpack::sbuffer in;
     msgpack::sbuffer out;
     msgpack::pack(in, msgIdentifier(funcGroup_Main, kodi_processor_CreateForNewThread));
-    msgpack::pack(in, msgParent__IN_kodi_processor_CreateForNewThread("other"));
-    g_mainOut->SendMessage(in, out);
+    msgpack::pack(in, msgParent__IN_kodi_processor_CreateForNewThread("subthread-" + std::to_string(g_interface->nextChildIdentifier++)));
+    fprintf(stderr, "--------------------------------------##################1\n");
+    g_interface->mainThreadTransmit->SendMessage(in, out);
+//     char* a = nullptr;
+//     a[0] = NULL;
+    fprintf(stderr, "--------------------------------------##################2\n");
     msgpack::unpacked ident = msgpack::unpack(out.data(), out.size());
     msgParent_OUT_kodi_processor_CreateForNewThread t = ident.get().as<decltype(t)>();
 
-    std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> transmitter =
+    auto transmitter =
         std::make_shared<::kodi::sandbox::CShareProcessTransmitter>(std::get<0>(t), true, false);
     if (!transmitter->Create(false))
     {
       fprintf(stderr, "FATAL: Failed to init other process of sandbox, process not usable!\n");
-      return g_mainOut;
+      return g_interface->mainThreadTransmit;
     }
 
-    g_otherOut = transmitter;
-  }
-  else if (g_otherOut->IsActive())
-  {
-    if (!g_otherOut2)
-    {
-      msgpack::sbuffer in;
-      msgpack::sbuffer out;
-      msgpack::pack(in, msgIdentifier(funcGroup_Main, kodi_processor_CreateForNewThread2));
-      msgpack::pack(in, msgParent__IN_kodi_processor_CreateForNewThread("other2"));
-      g_mainOut->SendMessage(in, out);
-      msgpack::unpacked ident = msgpack::unpack(out.data(), out.size());
-      msgParent_OUT_kodi_processor_CreateForNewThread t = ident.get().as<decltype(t)>();
-
-      std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> transmitter =
-          std::make_shared<::kodi::sandbox::CShareProcessTransmitter>(std::get<0>(t), true, false);
-      if (!transmitter->Create(false))
-      {
-        fprintf(stderr, "FATAL: Failed to init other process of sandbox, process not usable!\n");
-        return g_mainOut;
-      }
-
-      g_otherOut2 = transmitter;
-    }
-
-    return g_otherOut2;
+    g_interface->childThreadTransmit.emplace_back(transmitter);
+    return transmitter;
   }
 
-  return g_otherOut;
+  fprintf(stderr, "--------------------------------------##################3333333333333333333\n");
+
+  return *it;
 }
 
 bool CChildProcessor::HandleMessage(uint32_t group,
@@ -248,8 +281,8 @@ bool CChildProcessor::HandleMessage(uint32_t group,
                                     std::size_t size,
                                     std::size_t offset)
 {
-  if (message_handlers[group])
-    return message_handlers[group]->HandleMessage(group, func, in, out,data, size, offset);
+  if (g_interface->message_handlers[group])
+    return g_interface->message_handlers[group]->HandleMessage(group, func, in, out,data, size, offset);
 
   if (group == funcGroup_Main)
   {
@@ -260,21 +293,19 @@ bool CChildProcessor::HandleMessage(uint32_t group,
         ::kodi::Log(ADDON_LOG_INFO, "Informed for stop of sandbox process id '%s'",
                     m_mainShared.c_str());
         m_active = false;
-        g_otherOut.reset();
-        g_otherOut2.reset();
         return false;
       }
       case kodi_processor_CreateForNewChildThread:
       {
-        msgParent__IN_kodi_processor_CreateForNewThread t = in.get().as<decltype(t)>();
+        msgChild__IN_kodi_processor_CreateForNewThread t = in.get().as<decltype(t)>();
         const std::string identifier = m_mainShared + "-subthread-child-" + std::get<0>(t);
 
-        g_otherIn = std::make_shared<CShareProcessReceiver>(identifier, g_mainOut, true);
-        g_otherIn->RegisterReceiver(
+        auto other = std::make_shared<CShareProcessReceiver>(identifier, g_interface->mainThreadTransmit, true);
+        other->RegisterReceiver(
             std::bind(&CChildProcessor::HandleMessage, this, std::placeholders::_1,
                       std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
                       std::placeholders::_5, std::placeholders::_6, std::placeholders::_7));
-        if (!g_otherIn->Create(true, true))
+        if (!other->Create(true, true))
         {
           kodi::Log(ADDON_LOG_ERROR,
                                   "CProcessReceiver::%s: Failed to create other second receiver",
@@ -282,28 +313,9 @@ bool CChildProcessor::HandleMessage(uint32_t group,
           return false;
         }
 
-        msgpack::pack(out, msgParent_OUT_kodi_processor_CreateForNewThread(identifier));
-        return true;
-      }
-      case kodi_processor_CreateForNewChildThread2:
-      {
-        msgParent__IN_kodi_processor_CreateForNewThread t = in.get().as<decltype(t)>();
-        const std::string identifier = m_mainShared + "-subthread-child-" + std::get<0>(t);
+        msgpack::pack(out, msgChild_OUT_kodi_processor_CreateForNewThread(identifier));
 
-        g_otherIn2 = std::make_shared<CShareProcessReceiver>(identifier, g_mainOut, true);
-        g_otherIn2->RegisterReceiver(
-            std::bind(&CChildProcessor::HandleMessage, this, std::placeholders::_1,
-                      std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
-                      std::placeholders::_5, std::placeholders::_6, std::placeholders::_7));
-        if (!g_otherIn2->Create(true, true))
-        {
-          kodi::Log(ADDON_LOG_ERROR,
-                                  "CProcessReceiver::%s: Failed to create other second receiver",
-                                  __func__);
-          return false;
-        }
-
-        msgpack::pack(out, msgParent_OUT_kodi_processor_CreateForNewThread(identifier));
+        g_interface->childThreadReceive.emplace_back(other);
         return true;
       }
       default:

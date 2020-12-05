@@ -56,8 +56,8 @@ std::thread::id main_thread_id;
 
 CChildLauncher::CChildLauncher()
   : m_identifier("kodi-sandproc-" + generateUUID()),
-    m_mainTransmitter(std::make_shared<CShareProcessTransmitter>(m_identifier + "-receiver", false, true)),
-    m_mainReceiver(std::make_shared<CShareProcessReceiver>(m_identifier, m_mainTransmitter, false))
+    m_mainThreadTransmit(std::make_shared<CShareProcessTransmitter>(m_identifier + "-receiver", false, true)),
+    m_mainThreadReceive(std::make_shared<CShareProcessReceiver>(m_identifier, m_mainThreadTransmit, false))
 {
   for (auto& handler : m_handlers)
     handler = nullptr;
@@ -110,7 +110,7 @@ bool CChildLauncher::StartObserver()
   m_running = true;
   m_thread = std::thread([&] { ObserveProcess(); });
 
-  m_mainReceiver->RegisterReceiver(
+  m_mainThreadReceive->RegisterReceiver(
       std::bind(&CChildLauncher::HandleMainMessage, this, std::placeholders::_1,
                 std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
                 std::placeholders::_5, std::placeholders::_6, std::placeholders::_7));
@@ -127,7 +127,7 @@ bool CChildLauncher::StopObserver()
     msgpack::sbuffer in;
     msgpack::pack(in, msgIdentifier(funcGroup_Main, kodi_processor_KillChild));
     msgpack::pack(in, msgChild__IN_kodi_processor_KillChild("end"));
-    m_mainTransmitter->SendMessage(in);
+    m_mainThreadTransmit->SendMessage(in);
   }
 
   if (m_thread.joinable())
@@ -155,61 +155,38 @@ const std::shared_ptr<CShareProcessTransmitter> CChildLauncher::GetCurrentTransm
 
   if (main_thread_id == threadId)
   {
-    return m_mainTransmitter;
+    return m_mainThreadTransmit;
   }
 
 //   std::unique_lock<std::mutex> lock(g_lock);
 
-  if (!m_otherTransmitter)
+  auto it = std::find_if(m_childThreadTransmit.begin(),
+               m_childThreadTransmit.end(),
+               [](std::shared_ptr<kodi::sandbox::CShareProcessTransmitter> entry){ return !entry->m_active;}
+              );
+  if (it == m_childThreadTransmit.end())
   {
     msgpack::sbuffer in;
     msgpack::sbuffer out;
     msgpack::pack(in, msgIdentifier(funcGroup_Main, kodi_processor_CreateForNewChildThread));
-    msgpack::pack(in, msgChild__IN_kodi_processor_CreateForNewThread("other"));
-    m_mainTransmitter->SendMessage(in, out);
+    msgpack::pack(in, msgChild__IN_kodi_processor_CreateForNewThread("subthread" + std::to_string(m_nextChildIdentifier++)));
+    m_mainThreadTransmit->SendMessage(in, out);
     msgpack::unpacked ident = msgpack::unpack(out.data(), out.size());
-    msgChild_OUT_kodi_processor_CreateForNewThread t = ident.get().as<decltype(t)>();
+    msgParent_OUT_kodi_processor_CreateForNewThread t = ident.get().as<decltype(t)>();
 
     std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> transmitter =
-        std::make_shared<::kodi::sandbox::CShareProcessTransmitter>(std::get<0>(t), false, false);
-
+        std::make_shared<::kodi::sandbox::CShareProcessTransmitter>(std::get<0>(t), true, false);
     if (!transmitter->Create(false))
     {
       fprintf(stderr, "FATAL: Failed to init other process of sandbox, process not usable!\n");
-      return m_mainTransmitter;
+      return m_mainThreadTransmit;
     }
 
-    m_otherTransmitter = transmitter;
-  }
-  else if (m_otherTransmitter->IsActive())
-  {
-    fprintf(stderr, "----------------<< 1\n");
-    if (!m_otherTransmitter2)
-    {
-      fprintf(stderr, "----------------<< 2\n");
-      msgpack::sbuffer in;
-      msgpack::sbuffer out;
-      msgpack::pack(in, msgIdentifier(funcGroup_Main, kodi_processor_CreateForNewThread2));
-      msgpack::pack(in, msgParent__IN_kodi_processor_CreateForNewThread("other 2"));
-      m_mainTransmitter->SendMessage(in, out);
-      msgpack::unpacked ident = msgpack::unpack(out.data(), out.size());
-      msgParent_OUT_kodi_processor_CreateForNewThread t = ident.get().as<decltype(t)>();
-
-      std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> transmitter =
-          std::make_shared<::kodi::sandbox::CShareProcessTransmitter>(std::get<0>(t), true, false);
-      if (!transmitter->Create(false))
-      {
-        fprintf(stderr, "FATAL: Failed to init other process of sandbox, process not usable!\n");
-        return m_mainTransmitter;
-      }
-
-      m_otherTransmitter2 = transmitter;
-    }
-
-    return m_otherTransmitter2;
+    m_childThreadTransmit.emplace_back(transmitter);
+    return transmitter;
   }
 
-  return m_otherTransmitter;
+  return *it;
 }
 
 bool CChildLauncher::HandleMessage(int group,
@@ -224,44 +201,26 @@ bool CChildLauncher::HandleMessage(int group,
   {
     case kodi_processor_CreateForNewThread:
     {
+      fprintf(stderr, "---------------------aa--> DATA: %i\n", in.get().is_nil());
       msgParent__IN_kodi_processor_CreateForNewThread t = in.get().as<decltype(t)>();
       const std::string identifier = m_identifier + "-subthread-" + std::get<0>(t);
 
-      m_otherThreadReceiver = std::make_shared<CShareProcessReceiver>(identifier, m_mainTransmitter, false);
-      m_otherThreadReceiver->RegisterReceiver(
-          std::bind(&CChildLauncher::HandleMainMessage, this, std::placeholders::_1,
+      auto other = std::make_shared<CShareProcessReceiver>(identifier, m_mainThreadTransmit, true);
+      other->RegisterReceiver(
+          std::bind(&CChildLauncher::HandleMessage, this, std::placeholders::_1,
                     std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
                     std::placeholders::_5, std::placeholders::_6, std::placeholders::_7));
-      if (!m_otherThreadReceiver->Create(true, true))
+      if (!other->Create(true, true))
       {
-        kodi::utils::LOG_MESSAGE(ADDON_LOG_ERROR,
-                                 "CProcessReceiver::%s: Failed to create other second receiver",
-                                 __func__);
+        kodi::Log(ADDON_LOG_ERROR,
+                                "CProcessReceiver::%s: Failed to create other second receiver",
+                                __func__);
         return false;
       }
 
       msgpack::pack(out, msgParent_OUT_kodi_processor_CreateForNewThread(identifier));
-      break;
-    }
-    case kodi_processor_CreateForNewThread2:
-    {
-      msgParent__IN_kodi_processor_CreateForNewThread t = in.get().as<decltype(t)>();
-      const std::string identifier = m_identifier + "-subthread-" + std::get<0>(t);
 
-      m_otherThreadReceiver2 = std::make_shared<CShareProcessReceiver>(identifier, m_mainTransmitter, false);
-      m_otherThreadReceiver2->RegisterReceiver(
-          std::bind(&CChildLauncher::HandleMainMessage, this, std::placeholders::_1,
-                    std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
-                    std::placeholders::_5, std::placeholders::_6, std::placeholders::_7));
-      if (!m_otherThreadReceiver2->Create(true, true))
-      {
-        kodi::utils::LOG_MESSAGE(ADDON_LOG_ERROR,
-                                 "CProcessReceiver::%s: Failed to create other second receiver",
-                                 __func__);
-        return false;
-      }
-
-      msgpack::pack(out, msgParent_OUT_kodi_processor_CreateForNewThread(identifier));
+      m_childThreadReceive.emplace_back(other);
       break;
     }
 

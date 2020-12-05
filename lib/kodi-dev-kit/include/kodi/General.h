@@ -37,8 +37,12 @@ void SetSettingInt(const std::string& settingName, int settingValue);
 bool GetSettingBoolean(const std::string& settingName, bool defaultValue = false);
 void SetSettingBoolean(const std::string& settingName, bool settingValue);
 template<typename enumType>
-enumType GetSettingEnum(const std::string& settingName,
-                        enumType defaultValue = static_cast<enumType>(0));
+inline enumType GetSettingEnum(const std::string& settingName,
+                        enumType defaultValue = static_cast<enumType>(0))
+{
+  return static_cast<enumType>(GetSettingInt(settingName, static_cast<int>(defaultValue)));
+}
+
 template<typename enumType>
 void SetSettingEnum(const std::string& settingName, enumType settingValue);
 std::string GetAddonInfo(const std::string& id);

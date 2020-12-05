@@ -7,15 +7,18 @@
 
 #pragma once
 
+#include <array>
 #include <map>
 #include <memory>
 #include <msgpack.hpp>
 #include <mutex>
+#include <thread>
 
 namespace kodi
 {
 namespace sandbox
 {
+class IMsgHdl;
 class CShareProcessReceiver;
 class CShareProcessTransmitter;
 } /* namespace sandbox */
@@ -23,12 +26,14 @@ class CShareProcessTransmitter;
 
 namespace kodi
 {
-  namespace sandbox
+namespace sandbox
 {
 
 std::string CheckSandbox(int argc, char* argv[]);
 std::string CheckMainShared(int argc, char* argv[]);
 uint64_t CheckBaseHandle(int argc, char* argv[]);
+
+struct InterfaceStatic;
 
 class CChildProcessor
 {
@@ -36,11 +41,15 @@ public:
   CChildProcessor(const std::string& main_shared, bool viaMainThread);
   virtual ~CChildProcessor();
 
+  static CChildProcessor& GetActiveProcessor();
+
+  bool InitSubChild(const std::string& identifier);
+
   bool ProcessOutside();
 
   const std::string GetIdentifier() const { return m_mainShared; }
 
-  static std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> GetCurrentProcessor();
+  static std::shared_ptr<kodi::sandbox::CShareProcessTransmitter> GetCurrentProcessor();
 
 protected:
   bool HandleMessage(uint32_t group, uint32_t func, const msgpack::unpacked& in, msgpack::sbuffer& out,
@@ -49,14 +58,7 @@ protected:
                                        std::size_t offset);
 
 private:
-  // TODO: Not make like this where limited! Allow much more for all cases
-  static std::shared_ptr<::kodi::sandbox::CShareProcessReceiver> g_mainIn;
-  static std::shared_ptr<::kodi::sandbox::CShareProcessReceiver> g_otherIn;
-  static std::shared_ptr<::kodi::sandbox::CShareProcessReceiver> g_otherIn2;
-  static std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> g_mainOut;
-  static std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> g_otherOut;
-  static std::shared_ptr<::kodi::sandbox::CShareProcessTransmitter> g_otherOut2;
-  static std::mutex g_lock;
+  static InterfaceStatic* g_interface;
 
   const std::string m_mainShared;
 

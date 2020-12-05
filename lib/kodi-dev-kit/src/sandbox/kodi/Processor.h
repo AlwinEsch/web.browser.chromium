@@ -19,8 +19,7 @@ namespace sandbox
 
 typedef enum funcParent_Processor_h : int
 {
-  kodi_processor_CreateForNewThread,
-  kodi_processor_CreateForNewThread2,
+  kodi_processor_CreateForNewThread = 100,
 } funcParent_Processor_h;
 
 // clang-format off
@@ -32,8 +31,7 @@ typedef std::tuple<std::string>                                                 
 
 typedef enum funcChild_Processor_h
 {
-  kodi_processor_CreateForNewChildThread,
-  kodi_processor_CreateForNewChildThread2,
+  kodi_processor_CreateForNewChildThread = 200,
   kodi_processor_KillChild,
 } funcChild_Processor_h;
 
