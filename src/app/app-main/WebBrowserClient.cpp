@@ -12,8 +12,9 @@
 #include "certificate/CertificateError.h"
 #include "certificate/URICheckHandler.h"
 #include "gui/DialogBrowserContextMenu.h"
+#include "gui/DialogJSException.h"
 #include "gui/DialogJSHandler.h"
-#include "interface/JSException.h"
+#include "interface/MessageJSHandler.h"
 #include "interface/v8/v8-kodi.h"
 #include "../utils/ExtensionUtils.h"
 #include "../utils/SystemTranslator.h"
@@ -167,7 +168,7 @@ double CWebBrowserClient::PercentageToZoomLevel(int percent)
 
 void CWebBrowserClient::CreateMessageHandlers(MessageHandlerSet& handlers)
 {
-//   handlers.insert(new CJSHandler(this));
+  handlers.insert(new interface::CMessageJSHandler(this));
 }
 
 void CWebBrowserClient::AddExtension(CefRefPtr<CefExtension> extension)
@@ -679,7 +680,7 @@ bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
   }
   else if (message_name == RendererMessage::OnUncaughtException)
   {
-    interface::JSException::ReportJSException(message);
+    gui::JSException::ReportJSException(message);
     return true;
   }
 

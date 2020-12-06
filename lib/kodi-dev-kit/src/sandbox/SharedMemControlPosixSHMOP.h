@@ -17,7 +17,7 @@ namespace sandbox
 class CSharedMemControlPosix : public CSharedMemControl
 {
 public:
-  CSharedMemControlPosix(const std::string& identifier, size_t size = SHARED_DEFAULT_MEM_SIZE);
+  CSharedMemControlPosix(bool child, const std::string& identifier, size_t size = SHARED_DEFAULT_MEM_SIZE);
   ~CSharedMemControlPosix() override;
 
   bool Create(bool initial) override;

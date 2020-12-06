@@ -118,9 +118,13 @@ mark_as_advanced(CORE_LIBRARY)
 add_subdirectory(src/app/app-main/audio)
 add_subdirectory(src/app/app-main/certificate)
 add_subdirectory(src/app/app-main/gui)
+add_subdirectory(src/app/app-main/interface)
 add_subdirectory(src/app/app-main/powerpolicy)
 add_subdirectory(src/app/app-main/print)
 add_subdirectory(src/app/app-main/scheme)
+add_subdirectory(src/app/app-renderer/v8/kodi)
+add_subdirectory(src/app/app-renderer/v8/kodi/gui/dialogs)
+add_subdirectory(src/app/app-renderer/v8)
 add_subdirectory(src/app/common)
 add_subdirectory(src/app/utils)
 
@@ -132,7 +136,6 @@ list(APPEND KODICHROMIUM_APP_SOURCES src/app/main_linux.cpp
                                      src/app/app-main/RequestContextHandler.cpp
                                      src/app/app-main/ResourceManager.cpp
                                      src/app/app-main/WebBrowserClient.cpp
-                                     src/app/app-main/interface/JSException.cpp
                                      src/app/app-main/interface/v8/v8-kodi.cpp
                                      src/app/app-main/renderer/EGLUtil.cpp
                                      src/app/app-main/renderer/IRenderer.cpp
@@ -141,8 +144,7 @@ list(APPEND KODICHROMIUM_APP_SOURCES src/app/main_linux.cpp
                                      src/app/app-main/renderer/WorkRendererGL.cpp
                                      src/app/app-other/AppOther.cpp
                                      src/app/app-renderer/AppRenderer.cpp
-                                     src/app/app-renderer/DOMVisitor.cpp
-                                     src/app/app-renderer/V8Handler.cpp)
+                                     src/app/app-renderer/DOMVisitor.cpp)
 
 list(APPEND KODICHROMIUM_APP_HEADERS src/app/LibraryLoader.h
                                      src/app/MessageIds.h
@@ -151,7 +153,6 @@ list(APPEND KODICHROMIUM_APP_HEADERS src/app/LibraryLoader.h
                                      src/app/app-main/RequestContextHandler.h
                                      src/app/app-main/ResourceManager.h
                                      src/app/app-main/WebBrowserClient.h
-                                     src/app/app-main/interface/JSException.h
                                      src/app/app-main/interface/v8/v8-kodi.h
                                      src/app/app-main/renderer/EGLUtil.h
                                      src/app/app-main/renderer/IRenderer.h
@@ -160,8 +161,7 @@ list(APPEND KODICHROMIUM_APP_HEADERS src/app/LibraryLoader.h
                                      src/app/app-main/renderer/WorkRendererGL.h
                                      src/app/app-other/AppOther.h
                                      src/app/app-renderer/AppRenderer.h
-                                     src/app/app-renderer/DOMVisitor.h
-                                     src/app/app-renderer/V8Handler.h)
+                                     src/app/app-renderer/DOMVisitor.h)
 
 set(KODICHROMIUM_APP_POSIX_SOURCES src/app/app-main/renderer/OffscreenBasePosix.cpp)
 

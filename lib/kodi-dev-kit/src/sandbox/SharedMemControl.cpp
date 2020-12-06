@@ -12,9 +12,11 @@ namespace kodi
 namespace sandbox
 {
 
-CSharedMemControl::CSharedMemControl(const std::string& identifier,
+CSharedMemControl::CSharedMemControl(bool child,
+                                     const std::string& identifier,
                                      size_t size /* = DEFAULT_SHARED_MEM_SIZE*/)
-  : m_identifier(identifier),
+  : m_child(child),
+    m_identifier(identifier),
     m_sharedMemSize(size)
 {
 }

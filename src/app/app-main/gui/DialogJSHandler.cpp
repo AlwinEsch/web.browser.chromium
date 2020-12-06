@@ -116,7 +116,7 @@ bool CJSDialogHandler::OnBeforeUnloadDialog(CefRefPtr<CefBrowser> browser,
       CefFormatUrlForSecurityDisplay(browser->GetFocusedFrame()->GetURL());
   const std::string messageText = message_text;
 
-  std::thread([formatURL, messageText, is_reload, callback] {
+  std::thread([formatURL, messageText, is_reload, callback]() {
     bool canceled;
     bool ret = kodi::gui::dialogs::YesNo::ShowAndGetInput(
         formatURL, kodi::GetLocalizedString(30036), canceled);

@@ -112,8 +112,11 @@ void CClientAppBrowser::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> com
   const std::string id = m_addonMain->GetMainShared() + "-childProcess-" + std::to_string(m_nextChildProcessIdentifier++);
 
   kodi::sandbox::CChildProcessor& proc = kodi::sandbox::CChildProcessor::GetActiveProcessor();
+  std::string useId = proc.InitSubChild(id);
 
-  command_line->AppendSwitchWithValue("main-shared", id);
+  fprintf(stderr, "------ '%s' '%s'\n", id.c_str(), useId.c_str());
+
+  command_line->AppendSwitchWithValue("main-shared", useId);
 }
 
 void CClientAppBrowser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)

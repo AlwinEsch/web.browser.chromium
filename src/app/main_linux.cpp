@@ -53,7 +53,7 @@ int RunMain(int argc, char* argv[])
   }
 
   // Startup the shared memory interface
-  kodi::sandbox::CChildProcessor processor(main_shared, true);
+  kodi::sandbox::CChildProcessor processor(main_shared, true, false);
 
   kodi::Log(ADDON_LOG_INFO, "%s: Creating the Google Chromium Internet Browser add-on", __func__);
 
@@ -163,15 +163,13 @@ int RunChild(int argc, char* argv[])
     if (process_type == kRendererProcess ||
         process_type == kZygoteProcess)
     {
-      fprintf(stderr, "################################ 1\n");
       // Startup the shared memory interface
-//       kodi::sandbox::CChildProcessor processor(kodi::sandbox::CheckMainShared(argc, argv), false, true);
-      fprintf(stderr, "################################ 2\n");
+      kodi::sandbox::CChildProcessor processor(kodi::sandbox::CheckMainShared(argc, argv), false, true);
 
       // On Linux the zygote process is used to spawn other process types. Since
       // we don't know what type of process it will be give it the renderer
       // client.
-      app = new CWebAppRenderer();
+      app = new chromium::app::renderer::CWebAppRenderer();
       ret = CefExecuteProcess(main_args, app, nullptr);
     }
     else

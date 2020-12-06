@@ -20,11 +20,14 @@ namespace sandbox
 typedef enum funcParent_Processor_h : int
 {
   kodi_processor_CreateForNewThread = 100,
+  kodi_processor_CreateForNewProcess = 101,
 } funcParent_Processor_h;
 
 // clang-format off
 typedef std::tuple<std::string>                                                   msgParent__IN_kodi_processor_CreateForNewThread;
 typedef std::tuple<std::string>                                                   msgParent_OUT_kodi_processor_CreateForNewThread;
+typedef std::tuple<std::string>                                                   msgParent__IN_kodi_processor_CreateForNewProcess;
+typedef std::tuple<std::string>                                                   msgParent_OUT_kodi_processor_CreateForNewProcess;
 // clang-format on
 
 //==============================================================================

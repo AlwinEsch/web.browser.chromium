@@ -43,6 +43,7 @@ public:
   bool ProcessMainThreadReceive(apiShareData* sharedMem, CShareProcessReceiver* receiver);
 
   std::atomic_bool m_active{false};
+  std::atomic_bool m_unusedNext{true};
 
 private:
   const std::string m_identifier;

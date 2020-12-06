@@ -178,7 +178,9 @@ const std::shared_ptr<CShareProcessTransmitter> CChildLauncher::GetCurrentTransm
         std::make_shared<::kodi::sandbox::CShareProcessTransmitter>(std::get<0>(t), true, false);
     if (!transmitter->Create(false))
     {
-      fprintf(stderr, "FATAL: Failed to init other process of sandbox, process not usable!\n");
+      kodi::Log(ADDON_LOG_ERROR,
+                                "CProcessReceiver::%s: Failed to init other process of sandbox, process not usable!",
+                                __func__);
       return m_mainThreadTransmit;
     }
 
@@ -201,13 +203,12 @@ bool CChildLauncher::HandleMessage(int group,
   {
     case kodi_processor_CreateForNewThread:
     {
-      fprintf(stderr, "---------------------aa--> DATA: %i\n", in.get().is_nil());
       msgParent__IN_kodi_processor_CreateForNewThread t = in.get().as<decltype(t)>();
       const std::string identifier = m_identifier + "-subthread-" + std::get<0>(t);
 
       auto other = std::make_shared<CShareProcessReceiver>(identifier, m_mainThreadTransmit, true);
       other->RegisterReceiver(
-          std::bind(&CChildLauncher::HandleMessage, this, std::placeholders::_1,
+          std::bind(&CChildLauncher::HandleMainMessage, this, std::placeholders::_1,
                     std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
                     std::placeholders::_5, std::placeholders::_6, std::placeholders::_7));
       if (!other->Create(true, true))
@@ -223,12 +224,37 @@ bool CChildLauncher::HandleMessage(int group,
       m_childThreadReceive.emplace_back(other);
       break;
     }
+    case kodi_processor_CreateForNewProcess:
+    {
+      msgParent__IN_kodi_processor_CreateForNewProcess t = in.get().as<decltype(t)>();
+      const std::string identifier = m_identifier + "-subthread-" + std::get<0>(t);
+
+      auto other = std::make_shared<CShareProcessReceiver>(identifier, m_mainThreadTransmit, true);
+      other->RegisterReceiver(
+          std::bind(&CChildLauncher::HandleMainMessage, this, std::placeholders::_1,
+                    std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
+                    std::placeholders::_5, std::placeholders::_6, std::placeholders::_7));
+      if (!other->Create(true, true))
+      {
+        kodi::Log(ADDON_LOG_ERROR,
+                                "CProcessReceiver::%s: Failed to create other second receiver",
+                                __func__);
+        return false;
+      }
+
+      msgpack::pack(out, msgParent_OUT_kodi_processor_CreateForNewProcess(identifier));
+
+      m_childThreadReceive.emplace_back(other);
+      break;
+    }
 
     default:
       kodi::utils::LOG_MESSAGE(
           ADDON_LOG_ERROR,
-          "CProcessReceiver::%s: addon called with unknown function id '%i' on group 'kodi'",
-          __func__, func);
+          "CProcessReceiver::%s: addon called with unknown function id '%i/%i' on group 'kodi'",
+          __func__, group, func);
+      char* a = nullptr;
+      a[0] = 0;
       return false;
   }
 

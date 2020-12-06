@@ -1,16 +1,19 @@
 /*
- *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi)
- *  This file is part of Kodi - https://kodi.tv
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi) <https://kodi.tv>
  *
- *  SPDX-License-Identifier: GPL-3.0-or-later
+ *  SPDX-License-Identifier: GPL-2.0-or-later
  *  See LICENSES/README.md for more information.
  */
 
-#include "JSException.h"
+#include "DialogJSException.h"
 
+// DevKit
 #include "../../../../lib/kodi-dev-kit/include/kodi/General.h"
 #include "../../../../lib/kodi-dev-kit/include/kodi/gui/dialogs/TextViewer.h"
-#include <kodi/tools/StringUtils.h>
+#include "../../../../lib/kodi-dev-kit/include/kodi/tools/StringUtils.h"
+
+// Global
+#include <thread>
 
 using kodi::tools::StringUtils;
 
@@ -20,7 +23,7 @@ namespace app
 {
 namespace main
 {
-namespace interface
+namespace gui
 {
 
 namespace JSException
@@ -57,12 +60,14 @@ void ReportJSException(CefRefPtr<CefProcessMessage> message)
     text += StringUtils::Format(kodi::GetLocalizedString(30049).c_str(), lineNumber, columnNumber, functionName.c_str(), sourceName.c_str());
   }
 
-  kodi::gui::dialogs::TextViewer::Show(header, text);
+  std::thread([header, text] {
+    kodi::gui::dialogs::TextViewer::Show(header, text);
+  }).detach();
 }
 
 } /* namespace JSException */
 
-} /* namespace interface */
+} /* namespace gui */
 } /* main */
 } /* app */
 } /* chromium */

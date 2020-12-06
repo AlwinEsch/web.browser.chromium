@@ -19,7 +19,7 @@ CShareProcessTransmitter::CShareProcessTransmitter(const std::string& identifier
     m_child(child),
     m_mainThread(mainThread)
 {
-  m_memControl = std::make_shared<CSharedMemControlPosix>(identifier, size);
+  m_memControl = std::make_shared<CSharedMemControlPosix>(child, identifier, size);
 }
 
 bool CShareProcessTransmitter::Create(bool initial)
@@ -39,8 +39,6 @@ void CShareProcessTransmitter::SendMessage(const msgpack::sbuffer& in)
 {
   std::unique_lock<std::mutex> lock(m_lock);
 
-  fprintf(stderr, "--------------------------------------##################!!!!!1 %i\n", m_mainThread);
-
   apiShareData* sharedMem = m_memControl->GetSharedMem();
 
   size_t size = in.size();
@@ -59,15 +57,12 @@ back:
     goto back;
   }
   m_active = false;
-//   memset(sharedMem->data, 0, sharedMem->data_size);
 }
 
 void CShareProcessTransmitter::SendMessage(const msgpack::sbuffer& in, msgpack::sbuffer& ret)
 {
   std::unique_lock<std::mutex> lock(m_lock);
   msgpack::unpacked ident = msgpack::unpack(in.data(), in.size());
-
-  fprintf(stderr, "--------------------------------------##################!!!!!2 %i\n", m_mainThread);
 
   apiShareData* sharedMem = m_memControl->GetSharedMem();
 
@@ -88,12 +83,10 @@ back:
   }
   m_active = false;
   ret.write(sharedMem->data, sharedMem->data_size);
-//   memset(sharedMem->data, 0, sharedMem->data_size);
 }
 
 bool CShareProcessTransmitter::ProcessMainThreadReceive(apiShareData* sharedMem, CShareProcessReceiver* receiver)
 {
-  fprintf(stderr, "--------------------------------------##################!!!!!3 %i\n", m_mainThread);
   if (m_mainThreadReceive)
   {
     fprintf(stderr, "FATAL: A main thread call should never be called twice at same time!\n");

@@ -1,21 +1,25 @@
 /*
- *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi)
- *  This file is part of Kodi - https://kodi.tv
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi) <https://kodi.tv>
  *
- *  SPDX-License-Identifier: GPL-3.0-or-later
+ *  SPDX-License-Identifier: GPL-2.0-or-later
  *  See LICENSES/README.md for more information.
  */
 
 #include "AppRenderer.h"
 #include "DOMVisitor.h"
-#include "V8Handler.h"
+#include "v8/V8Handler.h"
 
 #include "../MessageIds.h"
 #include "../common/Scheme.h"
 
 #include "../../../lib/kodi-dev-kit/include/kodi/General.h"
 
-
+namespace chromium
+{
+namespace app
+{
+namespace renderer
+{
 
 class CLauncherAccessor : public CefV8Accessor
 {
@@ -121,8 +125,8 @@ void CWebAppRenderer::OnWebKitInitialized()
 {
   fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
   CefMessageRouterConfig config;
-//   config.js_query_function = "kodiQuery";
-//   config.js_cancel_function = "kodiQueryCancel";
+  config.js_query_function = "kodiQuery";
+  config.js_cancel_function = "kodiQueryCancel";
   m_messageRouter = CefMessageRouterRendererSide::Create(config);
 }
 
@@ -196,7 +200,7 @@ void CWebAppRenderer::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<
 
   if (m_interfaceAllowed)
   {
-    CefRefPtr<CV8Handler> handler = new CV8Handler(this);
+    CefRefPtr<v8::CV8Handler> handler = new v8::CV8Handler(*this);
     handler->InitKodiAPI(browser, frame, context);
 
     m_messageRouter->OnContextCreated(browser, frame, context);
@@ -268,11 +272,6 @@ bool CWebAppRenderer::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, Ce
   return false;
 }
 
-void CWebAppRenderer::InitWebToKodiInterface()
-{
-  fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
-//   CefMessageRouterConfig config;
-//   config.js_query_function = "kodiQuery";
-//   config.js_cancel_function = "kodiQueryCancel";
-//   m_messageRouter = CefMessageRouterRendererSide::Create(config);
-}
+} /* namespace renderer */
+} /* namespace app */
+} /* namespace chromium */

@@ -1,14 +1,14 @@
 /*
- *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi)
- *  This file is part of Kodi - https://kodi.tv
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi) <https://kodi.tv>
  *
- *  SPDX-License-Identifier: GPL-3.0-or-later
+ *  SPDX-License-Identifier: GPL-2.0-or-later
  *  See LICENSES/README.md for more information.
  */
 
 #pragma once
 
-#include "include/cef_v8.h"
+// CEF
+#include "include/cef_process_message.h"
 
 namespace chromium
 {
@@ -16,7 +16,7 @@ namespace app
 {
 namespace main
 {
-namespace interface
+namespace gui
 {
 
 namespace JSException
@@ -26,7 +26,7 @@ void ReportJSException(CefRefPtr<CefProcessMessage> message);
 
 } /* namespace JSException */
 
-} /* interface */
+} /* gui */
 } /* main */
 } /* app */
 } /* chromium */

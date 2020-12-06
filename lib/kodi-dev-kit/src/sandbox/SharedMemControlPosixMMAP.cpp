@@ -23,8 +23,8 @@ namespace kodi
 namespace sandbox
 {
 
-CSharedMemControlPosix::CSharedMemControlPosix(const std::string& identifier, size_t size/* = SHARED_DEFAULT_MEM_SIZE*/)
-  : CSharedMemControl(identifier, size)
+CSharedMemControlPosix::CSharedMemControlPosix(bool child, const std::string& identifier, size_t size/* = SHARED_DEFAULT_MEM_SIZE*/)
+  : CSharedMemControl(child, identifier, size)
 {
 }
 
@@ -35,6 +35,8 @@ CSharedMemControlPosix::~CSharedMemControlPosix()
 bool CSharedMemControlPosix::Create(bool initial)
 {
   m_creator = initial;
+
+  fprintf(stderr, "...............: %s - %i - %i - %s\n", __PRETTY_FUNCTION__, initial, IsChild(), GetIdentifier().c_str());
 
   int fd = shm_open(GetIdentifier().c_str(), initial ? O_CREAT | O_TRUNC | O_RDWR : O_RDWR, 0666);
   if (fd == -1)

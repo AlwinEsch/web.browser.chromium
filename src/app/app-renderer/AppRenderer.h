@@ -1,15 +1,22 @@
 /*
- *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi)
- *  This file is part of Kodi - https://kodi.tv
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi) <https://kodi.tv>
  *
- *  SPDX-License-Identifier: GPL-3.0-or-later
+ *  SPDX-License-Identifier: GPL-2.0-or-later
  *  See LICENSES/README.md for more information.
  */
 
 #pragma once
 
+// CEF
 #include "include/cef_app.h"
 #include "include/wrapper/cef_message_router.h"
+
+namespace chromium
+{
+namespace app
+{
+namespace renderer
+{
 
 // Client app implementation for other process types.
 class CWebAppRenderer : public CefApp, public CefRenderProcessHandler
@@ -43,8 +50,6 @@ private:
 
   CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override { return this; }
 
-  void InitWebToKodiInterface();
-
   CefRefPtr<CefMessageRouterRendererSide> m_messageRouter;
   bool m_lastNodeIsEditable = false;
   CefRefPtr<CefBrowser> m_browser;
@@ -57,3 +62,7 @@ private:
   IMPLEMENT_REFCOUNTING(CWebAppRenderer);
   DISALLOW_COPY_AND_ASSIGN(CWebAppRenderer);
 };
+
+} /* namespace renderer */
+} /* namespace app */
+} /* namespace chromium */

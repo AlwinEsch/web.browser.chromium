@@ -18,13 +18,16 @@ CShareProcessReceiver::CShareProcessReceiver(const std::string& identifier, std:
   : m_child(child),
     m_mainTransmitter(mainTransmitter)
 {
-  m_memControl = std::make_shared<CSharedMemControlPosix>(identifier, size);
+  m_memControl = std::make_shared<CSharedMemControlPosix>(child, identifier, size);
 }
 
 bool CShareProcessReceiver::Create(bool initial, bool useThread)
 {
   if (!m_memControl->Create(initial))
+  {
+    fprintf(stderr, "Failed to reciever, error '%s'\n", m_memControl->GetLastErrorText().c_str());
     return false;
+  }
 
   m_running = true;
   if (useThread)

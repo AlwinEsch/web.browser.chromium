@@ -23,8 +23,8 @@ namespace kodi
 namespace sandbox
 {
 
-CSharedMemControlPosix::CSharedMemControlPosix(const std::string& identifier, size_t size/* = SHARED_DEFAULT_MEM_SIZE*/)
-  : CSharedMemControl(identifier, size)
+CSharedMemControlPosix::CSharedMemControlPosix(bool child, const std::string& identifier, size_t size/* = SHARED_DEFAULT_MEM_SIZE*/)
+  : CSharedMemControl(child, identifier, size)
 {
   fprintf(stderr, "-CSharedMemControlPosix----------------------- %s\n", GetIdentifier().c_str());
   m_filePath = "/tmp/" + GetIdentifier();

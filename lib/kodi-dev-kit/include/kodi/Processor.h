@@ -38,12 +38,12 @@ struct InterfaceStatic;
 class CChildProcessor
 {
 public:
-  CChildProcessor(const std::string& main_shared, bool viaMainThread);
+  CChildProcessor(const std::string& main_shared, bool viaMainThread, bool noReceive);
   virtual ~CChildProcessor();
 
   static CChildProcessor& GetActiveProcessor();
 
-  bool InitSubChild(const std::string& identifier);
+  std::string InitSubChild(const std::string& identifier);
 
   bool ProcessOutside();
 
@@ -58,6 +58,8 @@ protected:
                                        std::size_t offset);
 
 private:
+  static std::shared_ptr<kodi::sandbox::CShareProcessTransmitter> CreateNewProcessor();
+
   static InterfaceStatic* g_interface;
 
   const std::string m_mainShared;

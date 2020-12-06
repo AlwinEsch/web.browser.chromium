@@ -19,7 +19,7 @@ namespace sandbox
 class CSharedMemControl
 {
 public:
-  CSharedMemControl(const std::string& identifier, size_t size = SHARED_DEFAULT_MEM_SIZE);
+  CSharedMemControl(bool child, const std::string& identifier, size_t size = SHARED_DEFAULT_MEM_SIZE);
   virtual ~CSharedMemControl() = default;
 
   const std::string& GetIdentifier() const { return m_identifier; }
@@ -27,6 +27,7 @@ public:
   size_t GetSharedMemSize() const { return m_sharedMemSize; }
   const std::string& GetLastErrorText() const { return m_errorText; }
   bool IsActive() const { return m_active; }
+  bool IsChild() const { return m_child; }
 
   virtual bool Create(bool initial) = 0;
   virtual bool Destroy() = 0;
@@ -45,6 +46,7 @@ protected:
   std::string m_errorText;
 
 private:
+  const bool m_child;
   const std::string m_identifier;
   const size_t m_sharedMemSize;
   bool m_active{false};
