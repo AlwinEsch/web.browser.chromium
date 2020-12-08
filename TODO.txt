@@ -1,2 +1,7 @@
 Helper notes for me to forget not a part:
 - Allow new added libexpat to use in chromium libcef to prevent outside depend
+
+Audio stream:
+- Sync between audio and video not correct now
+  - Add way to synchronize chromiums video playback with PTS of Kodi's given audio
+- Check by current sandbox shared memory size match in all cases and if not add ways to pass more in several calls

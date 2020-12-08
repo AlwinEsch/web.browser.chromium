@@ -8,31 +8,46 @@
 
 #pragma once
 
-#include "WebBrowserClient.h"
-#include "WidevineControl.h"
-#include "audio/AudioHandler.h"
-#include "gui/GUIManager.h"
-#include "include/base/cef_thread_checker.h"
-#include "include/cef_app.h"
-#include "include/cef_client.h"
-#if defined(TARGET_DARWIN)
-#include "include/wrapper/cef_library_loader.h"
-#endif
-#include "include/wrapper/cef_message_router.h"
+#include "ViewRendererGL.h"
 
-#include <kodi/addon-instance/Web.h>
+// #include <kodi/addon-instance/Web.h>
+#include "Web.h"
+
+#include <memory>
 #include <mutex>
-#include <queue>
-#include <unordered_map>
 
-class CWebBrowserClient;
+namespace kodi
+{
+namespace sandbox
+{
+namespace parent
+{
+class CChildLauncher;
+class C_addoninstance_Web_h;
+} /* namespace parent */
+} /* namespace sandbox */
+} /* namespace kodi */
 
-class ATTRIBUTE_HIDDEN CWebBrowser : public kodi::addon::CAddonBase,
-                                     public kodi::addon::CInstanceWeb
+class ATTRIBUTE_HIDDEN CAddon : public kodi::addon::CAddonBase
 {
 public:
-  CWebBrowser() = default;
-  ~CWebBrowser() override = default;
+  CAddon();
+  ~CAddon() override;
+
+  ADDON_STATUS Create() override;
+
+  ADDON_STATUS CreateInstance(int instanceType,
+                              const std::string& instanceID,
+                              KODI_HANDLE instance,
+                              const std::string& version,
+                              KODI_HANDLE& addonInstance) override;
+};
+
+class ATTRIBUTE_HIDDEN CWebBrowser : public kodi::addon::CInstanceWebOwn
+{
+public:
+  CWebBrowser(KODI_HANDLE instance, const std::string& kodiVersion);
+  ~CWebBrowser() override;
 
   // ---------------------------------------------------------------------------
   // Kodi interface parts
@@ -44,44 +59,52 @@ public:
   void MainShutdown() override;
   void MainLoop() override;
 
+  void StartDone(uint64_t childHdl) override;
+
   void SetMute(bool mute) override;
-  bool SetLanguage(const char* language) override;
-  kodi::addon::CWebControl* CreateControl(const std::string& sourceName,
-                                          const std::string& startURL,
-                                          KODI_HANDLE handle) override;
-  bool DestroyControl(kodi::addon::CWebControl* control, bool complete) override;
+  bool SetLanguage(const std::string& language) override;
 
-  // ---------------------------------------------------------------------------
-  // Internal interface parts
-
-  CBrowserGUIManager& GetGUIManager() { return m_guiManager; }
-  CefRefPtr<CefApp> GetApp() { return m_app; }
-  CefRefPtr<CAudioHandler> GetAudioHandler() { return m_audioHandler; }
-
-  void InformDestroyed(int uniqueClientId);
+  uint64_t CreateControl(const std::string& sourceName,
+                         const std::string& startURL,
+                         WEB_CONTROL_HANDLE& handle,
+                         int& dataIdentifier) override;
+  bool DestroyControl(uint64_t control, bool complete) override;
 
 private:
-  static std::atomic_int m_iUniqueClientId;
+  uint64_t m_childHdl = 0;
+  kodi::sandbox::parent::CChildLauncher* m_launcher;
+  kodi::sandbox::parent::C_addoninstance_Web_h* m_hdl;
+};
 
-  CBrowserGUIManager m_guiManager{this};
-  CWidewineControl m_widewineControl{*this};
-  CefRefPtr<CefApp> m_app;
-  CefRefPtr<CAudioHandler> m_audioHandler;
+class ATTRIBUTE_HIDDEN CWebBrowserClient : public kodi::addon::CWebControlOwn
+{
+public:
+  CWebBrowserClient(WEB_CONTROL_HANDLE& hdlKodi,
+                    uint64_t hdlChild,
+                    int dataIdentifier,
+                    kodi::sandbox::parent::C_addoninstance_Web_h* hdlParent);
+  virtual ~CWebBrowserClient();
 
-  std::mutex m_mutex;
+  bool RenderInit(int width, int height) override;
+  void Render() override;
+  bool Dirty() override;
+  bool OnInit() override;
+  bool OnAction(const kodi::gui::input::CAction& action, int& nextItem) override;
+  bool OnMouseEvent(int id, double x, double y, double offsetX, double offsetY, int state) override;
+  bool OpenWebsite(const std::string& url) override;
+  bool GetHistory(std::vector<std::string>& historyWebsiteNames, bool behindCurrent) override;
+  void SearchText(const std::string& text, bool forward, bool matchCase, bool findNext) override;
+  void StopSearch(bool clearSelection) override;
+  void Reload() override;
+  void StopLoad() override;
+  void GoBack() override;
+  void GoForward() override;
+  void OpenOwnContextMenu() override;
+  void ScreenSizeChange(float x, float y, float width, float height, bool fullscreen) override;
 
-  CefSettings* m_cefSettings;
-  std::string m_browserSubprocessPath;
-  std::string m_frameworkDirPath;
-  std::string m_localesPath;
-  std::string m_resourcesPath;
-
-#if defined(TARGET_DARWIN)
-  CefScopedLibraryLoader m_cefLibraryLoader;
-#endif
-
-  std::unordered_map<int, CefRefPtr<CWebBrowserClient>> m_browserClients;
-  std::unordered_map<std::string, CefRefPtr<CWebBrowserClient>> m_browserClientsInactive;
-  std::set<int> m_browserClientsInDelete;
-  std::atomic_bool m_started{false};
+private:
+  kodi::sandbox::parent::C_addoninstance_Web_h* m_hdl;
+  uint64_t m_controlHdl = 0;
+  CViewRendererOpenGL* m_rendering = nullptr;
+  std::string m_clientIdentifier;
 };

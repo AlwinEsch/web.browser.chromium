@@ -1,42 +1,50 @@
-.build
-.cproject
-.deps
-.libs
-.project
+# build artifacts
+build/
+web.*/addon.xml
 
-.dummy
-.dummy.in
-.kdev4
+# Debian build files
+debian/changelog
+debian/files
+debian/*.log
+debian/*.substvars
+debian/.debhelper/
+debian/tmp/
+debian/kodi-web-*/
+obj-x86_64-linux-gnu/
+
+# commonly used editors
+# vim
+*.swp
+
+# Eclipse
+*.project
+*.cproject
+.classpath
+*.sublime-*
+.settings/
+
+# KDevelop 4
 *.kdev4
 
-web.*/addon.xml
-lib/cef/
+# gedit
+*~
 
-*.o
-*.a
-*.P
-*.lo
-*.la
-*.pvr
-*.zip
-*.patch
-*.orig
-*.diff
+# CLion
+/.idea
 
-*.idb
-*.tlog
-*.lastbuildstate
+# clion
+.idea/
 
-# Windows specific generated files
-*.exp
-*.lib
-*.pdb
-*.ilk
-*.suo
-*.sdf
-*.opensdf
-*.vcxproj.user
+# to prevent add after a "git format-patch VALUE" and "git add ." call
+/*.patch
 
-build/
+# Visual Studio Code
+.vscode
+
+# to prevent add if project code opened by Visual Studio over CMake file
 .vs/
-VS2013Kodi_AddonProject/
+
+# General MacOS
+.DS_Store
+.AppleDouble
+.LSOverride

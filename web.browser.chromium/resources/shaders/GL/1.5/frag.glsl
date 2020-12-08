@@ -1,19 +1,12 @@
 #version 150
 
-// uniforms
-uniform sampler2D u_sampler;
-uniform bool u_clearColor;
-uniform vec4 u_backgroundColor;
+out vec4 FragColor;
 
-// varyings
-in vec2 v_coord;
+in vec2 TexCoords;
 
-out vec4 fragColor;
+uniform sampler2D Texture1;
 
 void main()
 {
-  if (u_clearColor)
-    fragColor = u_backgroundColor;
-  else
-    fragColor = vec4(texture(u_sampler, v_coord));
+   FragColor = texture(Texture1, TexCoords);
 }

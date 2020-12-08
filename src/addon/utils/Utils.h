@@ -14,5 +14,3 @@
 #define TEST_BUILD 1
 
 void LOG_MESSAGE(const AddonLog loglevel, const char* format, ...);
-
-

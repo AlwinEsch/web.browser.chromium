@@ -15,12 +15,12 @@
     <provides>webbrowser</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary lang="en">Internet browser based upon Google Chromium project</summary>
-    <description lang="en">KODIChromiumBrowser web browser line based on the modern, cross-platform architecture provided by the Chromium project.
+    <summary lang="en_GB">Internet browser based upon Google Chromium project</summary>
+    <description lang="en_GB">KODIChromiumBrowser web browser line based on the modern, cross-platform architecture provided by the Chromium project.
 NOTE: This add-on is still in development and everything is currently possible (also add-on name) to become changed!</description>
-    <disclaimer lang="en">This is a open source web browser handler for Google Chromium and only be possible to use on Kodi</disclaimer>
+    <disclaimer lang="en_GB">This is a open source web browser handler for Google Chromium and only be possible to use on Kodi</disclaimer>
     <platform>all</platform>
-    <license>GNU GENERAL PUBLIC LICENSE. Version 3, June 2007</license>
+    <license>GPL-2.0-or-later</license>
     <forum></forum>
     <website>http://esmasol.de/open-source/kodi-add-on-s/chromium-web-browser/</website>
     <email></email>

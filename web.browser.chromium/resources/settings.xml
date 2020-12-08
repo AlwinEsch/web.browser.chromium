@@ -56,7 +56,7 @@
       </group>
       <group id="2" label="30023">
         <setting id="security.webaddon.access" type="integer" label="30024" help="30025">
-          <default>2</default>
+          <default>1</default>
           <constraints>
             <options>
               <option label="30026">0</option>
@@ -66,6 +66,10 @@
             </options>
           </constraints>
           <control type="spinner" format="integer" delayed="true"/>
+        </setting>
+        <setting id="security.allow_ssl_info_dialog" type="boolean" label="31020" help="31021">
+          <default>false</default>
+          <control type="toggle" />
         </setting>
       </group>
     </category>
@@ -83,6 +87,41 @@
         <setting id="downloads.askfolder" type="boolean" label="30010" help="-1">
           <default>true</default>
           <control type="toggle" />
+        </setting>
+      </group>
+    </category>
+    <category id="other" label="31050" help="31051">
+      <group id="1" label="31052">
+        <setting id="other.printsize" type="integer" label="31022" help="31023">
+          <default>0</default>
+          <constraints>
+            <options>
+              <option label="31024">0</option>
+              <option label="31025">1</option>
+              <option label="31026">2</option>
+              <option label="31027">3</option>
+              <option label="31028">4</option>
+              <option label="31029">5</option>
+              <option label="31030">6</option>
+              <option label="31031">7</option>
+              <option label="31032">8</option>
+              <option label="31033">9</option>
+              <option label="31034">10</option>
+              <option label="31035">11</option>
+              <option label="31036">12</option>
+              <option label="31037">13</option>
+              <option label="31038">14</option>
+              <option label="31039">15</option>
+              <option label="31040">16</option>
+              <option label="31041">17</option>
+              <option label="31042">18</option>
+              <option label="31043">19</option>
+              <option label="31044">20</option>
+              <option label="31045">21</option>
+              <option label="31046">22</option>
+            </options>
+          </constraints>
+          <control type="list" format="string" />
         </setting>
       </group>
     </category>

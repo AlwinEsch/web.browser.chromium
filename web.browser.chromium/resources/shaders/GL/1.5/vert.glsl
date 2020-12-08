@@ -1,17 +1,12 @@
 #version 150
 
-// uniforms
-uniform mat4 u_modelProjMatrix;
+in vec3 aPos;
+in vec2 aTexCoords;
 
-// attributes
-in vec4 a_position;
-in vec2 a_coord;
-
-// varyings
-out vec2 v_coord;
+out vec2 TexCoords;
 
 void main()
 {
-  gl_Position = u_modelProjMatrix * a_position;
-  v_coord = a_coord;
+   TexCoords = aTexCoords;
+   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
 }

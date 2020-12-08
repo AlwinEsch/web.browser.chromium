@@ -1,0 +1,24 @@
+Source: kodi-web-browser-chromium
+Priority: extra
+Maintainer: Nobody <nobody@kodi.tv>
+Build-Depends: debhelper (>= 9.0.0), cmake, kodi-addon-dev,
+               libgles2-mesa-dev [arm64 armhf], libgl1-mesa-dev [i386 amd64],
+               libglm-dev
+Standards-Version: 4.1.2
+Section: libs
+Homepage: https://kodi.tv
+
+Package: kodi-web-browser-chromium
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Internet browser based upon Google Chromium project
+ Internet browser based upon Google Chromium project
+
+Package: kodi-web-browser-chromium-dbg
+Section: debug
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: debug symbols internet browser based upon Google Chromium project
+ debug symbols for internet browser based upon Google Chromium project
+
