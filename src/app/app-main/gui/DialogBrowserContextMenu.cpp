@@ -51,6 +51,21 @@ enum client_menu_ids {
   CLIENT_ID_SHOW_SSL_INFO,
 };
 
+namespace
+{
+static std::atomic_int m_ctorcount{0}; // For debug purposes and to see destructs done
+}
+
+CBrowerDialogContextMenu::CBrowerDialogContextMenu(CefRefPtr<CWebBrowserClient> client) : m_client(client)
+{
+  fprintf(stderr, "CBrowerDialogContextMenu START (%p) count open %i\n", this, ++m_ctorcount);
+}
+
+CBrowerDialogContextMenu::~CBrowerDialogContextMenu()
+{
+  fprintf(stderr, "CBrowerDialogContextMenu STOP (%p) count open %i\n", this, --m_ctorcount);
+}
+
 void CBrowerDialogContextMenu::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
                                                    CefRefPtr<CefFrame> frame,
                                                    CefRefPtr<CefContextMenuParams> params,

@@ -6,13 +6,19 @@
  */
 
 #include "AppRenderer.h"
-#include "DOMVisitor.h"
-#include "v8/V8Handler.h"
 
+// Own
 #include "../MessageIds.h"
 #include "../common/Scheme.h"
+#include "v8/V8Handler.h"
 
+// Dev kit
 #include "../../../lib/kodi-dev-kit/include/kodi/General.h"
+
+// Global
+#include <atomic>
+
+#define KODI_TO_CHROMIUM_LANGUAGE_START 50000
 
 namespace chromium
 {
@@ -21,144 +27,71 @@ namespace app
 namespace renderer
 {
 
-class CLauncherAccessor : public CefV8Accessor
-{
-public:
-  CLauncherAccessor()
-  {
-    fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
-  }
-
-  ~CLauncherAccessor()
-  {
-    fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
-  }
-
-  bool Get(
-    const CefString& name,
-    const CefRefPtr<CefV8Value> object,
-    CefRefPtr<CefV8Value>& retval,
-    CefString& exception) override
-  {
-
-    fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
-    return false;
-  }
-
-  bool Set(
-    const CefString& name,
-    const CefRefPtr<CefV8Value> object,
-    const CefRefPtr<CefV8Value> value,
-    CefString& exception) override
-  {
-
-    fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
-    return false;
-  }
-
-private:
-  IMPLEMENT_REFCOUNTING(CLauncherAccessor);
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //TODO Make allowed interface URL's more editable by user (To add own)
-std::vector<std::string> CWebAppRenderer::m_allowedInterfaceURLs =
+std::vector<std::string> CWebAppRenderer::m_allowedInterfaceURLs = {"file://", "https://kodi.tv",
+                                                                    "https://forum.kodi.tv/"};
+
+namespace
 {
-  "file://",
-  "https://kodi.tv",
-  "https://forum.kodi.tv/"
-};
+static std::atomic_int m_ctorcount{0}; // For debug purposes and to see destructs done
+}
 
 CWebAppRenderer::CWebAppRenderer()
 {
-  fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
+  fprintf(stderr, "CWebAppRenderer START (%p) count open %i\n", this, ++m_ctorcount);
 }
 
 CWebAppRenderer::~CWebAppRenderer()
 {
-  fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
+  fprintf(stderr, "CWebAppRenderer STOP (%p) count open %i\n", this, --m_ctorcount);
 }
 
-// void CWebAppRenderer::OnRenderThreadCreated(CefRefPtr<CefListValue> extra_info)
-// {
-//   CefRefPtr<CefDictionaryValue> addon_settings = extra_info->GetDictionary(0);
-//   m_securityWebaddonAccess = addon_settings->GetInt(SettingValues::security_webaddon_access);
-// }
-
+/// CefApp
+//@{
 void CWebAppRenderer::OnBeforeCommandLineProcessing(const CefString& process_type,
-                                     CefRefPtr<CefCommandLine> command_line)
+                                                    CefRefPtr<CefCommandLine> command_line)
 {
-  m_mainShared = command_line->GetSwitchValue("main-shared");
-  fprintf(stderr, "---------> %s %s\n", __func__, m_mainShared.c_str());
-
 }
 
 void CWebAppRenderer::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {
-  fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
   chromium::app::common::RegisterCustomSchemes(registrar);
 }
+//@}
 
+/// CefRenderProcessHandler
+//@{
 void CWebAppRenderer::OnWebKitInitialized()
 {
-  fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
   CefMessageRouterConfig config;
   config.js_query_function = "kodiQuery";
   config.js_cancel_function = "kodiQueryCancel";
   m_messageRouter = CefMessageRouterRendererSide::Create(config);
 }
 
-void CWebAppRenderer::OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDictionaryValue> extra_info)
+void CWebAppRenderer::OnBrowserCreated(CefRefPtr<CefBrowser> browser,
+                                       CefRefPtr<CefDictionaryValue> extra_info)
 {
   m_securityWebaddonAccess = extra_info->GetInt(SettingValues::security_webaddon_access);
   m_browser = browser;
-
-  fprintf(stderr, "---------> %p %s %i\n", this, __PRETTY_FUNCTION__, m_securityWebaddonAccess);
-//   if (!m_v8Inited)
-//   {
-//     fprintf(stderr, "-xxxxxxxxxx--------> %s\n", __func__);
-//     CV8Handler::OnWebKitInitialized(this);
-//     m_v8Inited = true;
-//   }
 }
 
 void CWebAppRenderer::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser)
 {
-  fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
   m_browser = nullptr;
 }
 
 CefRefPtr<CefLoadHandler> CWebAppRenderer::GetLoadHandler()
 {
-  fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
+  // Load handler seems not needed on render process, used currently browser
+  // process only.
   return nullptr;
 }
 
-void CWebAppRenderer::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context)
+void CWebAppRenderer::OnContextCreated(CefRefPtr<CefBrowser> browser,
+                                       CefRefPtr<CefFrame> frame,
+                                       CefRefPtr<CefV8Context> context)
 {
-  fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
   std::string url = frame->GetURL().ToString();
   m_interfaceAllowed = false;
 
@@ -190,7 +123,7 @@ void CWebAppRenderer::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<
 
     case SettingValues::webaddonAccess_Everyone:
       m_interfaceAllowed = true;
-    break;
+      break;
 
     case SettingValues::webaddonAccess_Off:
     default:
@@ -200,6 +133,7 @@ void CWebAppRenderer::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<
 
   if (m_interfaceAllowed)
   {
+    // Becomes strored on init by "CefBrowser"
     CefRefPtr<v8::CV8Handler> handler = new v8::CV8Handler(*this);
     handler->InitKodiAPI(browser, frame, context);
 
@@ -207,17 +141,19 @@ void CWebAppRenderer::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<
   }
 }
 
-void CWebAppRenderer::OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context)
+void CWebAppRenderer::OnContextReleased(CefRefPtr<CefBrowser> browser,
+                                        CefRefPtr<CefFrame> frame,
+                                        CefRefPtr<CefV8Context> context)
 {
-  fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
-//   if (m_interfaceAllowed)
-    m_messageRouter->OnContextReleased(browser, frame, context);
+  m_messageRouter->OnContextReleased(browser, frame, context);
 }
 
-void CWebAppRenderer::OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context,
-                                          CefRefPtr<CefV8Exception> exception, CefRefPtr<CefV8StackTrace> stackTrace)
+void CWebAppRenderer::OnUncaughtException(CefRefPtr<CefBrowser> browser,
+                                          CefRefPtr<CefFrame> frame,
+                                          CefRefPtr<CefV8Context> context,
+                                          CefRefPtr<CefV8Exception> exception,
+                                          CefRefPtr<CefV8StackTrace> stackTrace)
 {
-  fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
   auto message = CefProcessMessage::Create(RendererMessage::OnUncaughtException);
   auto list = message->GetArgumentList();
 
@@ -248,9 +184,10 @@ void CWebAppRenderer::OnUncaughtException(CefRefPtr<CefBrowser> browser, CefRefP
   browser->GetMainFrame()->SendProcessMessage(CefProcessId::PID_BROWSER, message);
 }
 
-void CWebAppRenderer::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefDOMNode> node)
+void CWebAppRenderer::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser,
+                                           CefRefPtr<CefFrame> frame,
+                                           CefRefPtr<CefDOMNode> node)
 {
-  fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
   bool is_editable = (node.get() && node->IsEditable());
   if (is_editable != m_lastNodeIsEditable)
   {
@@ -260,17 +197,53 @@ void CWebAppRenderer::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser, CefRef
     message->GetArgumentList()->SetBool(0, is_editable);
     browser->GetMainFrame()->SendProcessMessage(CefProcessId::PID_BROWSER, message);
   }
-
 }
 
-bool CWebAppRenderer::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
+bool CWebAppRenderer::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                               CefRefPtr<CefFrame> frame,
+                                               CefProcessId source_process,
+                                               CefRefPtr<CefProcessMessage> message)
 {
-  fprintf(stderr, "---------> %p %s\n", this, __PRETTY_FUNCTION__);
   if (m_messageRouter->OnProcessMessageReceived(browser, frame, source_process, message))
     return true;
 
   return false;
 }
+//@}
+
+/// CefResourceBundleHandler
+//@{
+bool CWebAppRenderer::GetLocalizedString(int string_id, CefString& str)
+{
+/*
+  // Is really a much on render process ;-)
+  str = kodi::GetLocalizedString(string_id + KODI_TO_CHROMIUM_LANGUAGE_START);
+  if (str.empty())
+  {
+    kodi::Log(ADDON_LOG_DEBUG,
+              "%s: Currently not on addon itself supported Chromium string id %i <------------",
+              __func__, string_id);
+    return false;
+  }
+  return true;
+*/
+  return false;
+}
+
+bool CWebAppRenderer::GetDataResource(int resource_id, void*& data, size_t& data_size)
+{
+  return GetDataResourceForScale(resource_id, SCALE_FACTOR_NONE, data, data_size);
+}
+
+bool CWebAppRenderer::GetDataResourceForScale(int resource_id,
+                                              ScaleFactor scale_factor,
+                                              void*& data,
+                                              size_t& data_size)
+{
+  //TODO is useful?
+  return false;
+}
+//@}
 
 } /* namespace renderer */
 } /* namespace app */

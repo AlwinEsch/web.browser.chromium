@@ -26,6 +26,21 @@ namespace app
 namespace utils
 {
 
+bool UnsuedBlacklistedChromiumString(int stringId)
+{
+  static constexpr const int blackListed[] =
+  {
+    10102, 10107
+  };
+
+  for (unsigned int i = 0; i < sizeof(blackListed)/sizeof(int); ++i)
+  {
+    if (stringId == blackListed[i])
+      return true;
+  }
+  return false;
+}
+
 void PrintCEFInfos(int argc, char* argv[], bool isChild)
 {
   bool ret;

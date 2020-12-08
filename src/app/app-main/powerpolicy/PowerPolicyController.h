@@ -31,6 +31,7 @@ class CPowerPolicyController : public CefPowerPolicyController
 {
 public:
   CPowerPolicyController(std::shared_ptr<CMainCEFProcess> addonMain);
+  ~CPowerPolicyController();
 
   /// CefPowerPolicyController
   //@{

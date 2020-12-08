@@ -26,6 +26,22 @@ namespace main
 namespace audio
 {
 
+namespace
+{
+static std::atomic_int m_ctorcount{0}; // For debug purposes and to see destructs done
+}
+
+CAudioHandler::CAudioHandler(CMainCEFProcess& addonMain, bool mute)
+  : m_addonMain(addonMain), m_mute(mute)
+{
+  fprintf(stderr, "CAudioHandler START (%p) count open %i\n", this, ++m_ctorcount);
+}
+
+CAudioHandler::~CAudioHandler()
+{
+  fprintf(stderr, "CAudioHandler STOP (%p) count open %i\n", this, --m_ctorcount);
+}
+
 bool CAudioHandler::GetAudioParameters(CefRefPtr<CefBrowser> browser, CefAudioParameters& params)
 {
   kodi::audioengine::AudioEngineFormat format;

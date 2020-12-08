@@ -33,10 +33,8 @@ namespace audio
 class CAudioHandler : public CefAudioHandler
 {
 public:
-  CAudioHandler(CMainCEFProcess& addonMain, bool mute)
-    : m_addonMain(addonMain), m_mute(mute)
-  {
-  }
+  CAudioHandler(CMainCEFProcess& addonMain, bool mute);
+  ~CAudioHandler();
 
   /// CefAudioHandler methods
   //@{

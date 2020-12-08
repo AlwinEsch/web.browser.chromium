@@ -9,7 +9,6 @@
 #include "MessageIds.h"
 
 const std::string RendererMessage::FocusedNodeChanged = "ClientRenderer.FocusedNodeChanged";
-const std::string RendererMessage::V8AddonCall = "ClientRenderer.V8AddonCall";
 const std::string RendererMessage::OnUncaughtException = "ClientRenderer.OnUncaughtException";
 
 const std::string BrowserMessage::dummy = "ClientBrowser.dummy";

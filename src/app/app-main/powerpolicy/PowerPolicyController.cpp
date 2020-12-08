@@ -28,9 +28,20 @@ namespace main
 namespace powerpolicy
 {
 
+namespace
+{
+static std::atomic_int m_ctorcount{0}; // For debug purposes and to see destructs done
+}
+
 CPowerPolicyController::CPowerPolicyController(std::shared_ptr<CMainCEFProcess> addonMain)
   : m_addonMain(addonMain)
 {
+  fprintf(stderr, "CPowerPolicyController START (%p) count open %i\n", this, ++m_ctorcount);
+}
+
+CPowerPolicyController::~CPowerPolicyController()
+{
+  fprintf(stderr, "CPowerPolicyController¸ STOP (%p) count open %i\n", this, --m_ctorcount);
 }
 
 /*

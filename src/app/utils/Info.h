@@ -17,6 +17,7 @@ namespace app
 namespace utils
 {
 
+bool UnsuedBlacklistedChromiumString(int stringId);
 void PrintCEFInfos(int argc, char* argv[], bool isChild);
 bool IsImageURL(std::string url);
 

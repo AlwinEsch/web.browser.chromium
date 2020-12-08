@@ -1,8 +1,8 @@
 /*
- *  Copyright (C) 2020 Team Kodi (https://kodi.tv)
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi) <https://kodi.tv>
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
- *  See LICENSE.md for more information.
+ *  See LICENSES/README.md for more information.
  */
 
 #include "WebBrowserClient.h"
@@ -15,7 +15,6 @@
 #include "gui/DialogJSException.h"
 #include "gui/DialogJSHandler.h"
 #include "interface/MessageJSHandler.h"
-#include "interface/v8/v8-kodi.h"
 #include "../utils/ExtensionUtils.h"
 #include "../utils/SystemTranslator.h"
 #include "../MessageIds.h"
@@ -75,7 +74,6 @@ CWebBrowserClient::CWebBrowserClient(const WEB_ADDON_GUI_PROPS& properties,
   // Create the browser-side router for query handling.
   m_dialogContextMenu = new gui::CBrowerDialogContextMenu(this);
   m_jsDialogHandler = new gui::CJSDialogHandler(this);
-  m_v8Kodi = new interface::v8::CV8Kodi(this);
   m_renderer = new renderer::CRendererClient(this);
   m_renderer->Initialize(GetWidth(), GetHeight());
 
@@ -153,7 +151,6 @@ void CWebBrowserClient::CloseComplete()
   m_resourceManager = nullptr;
   m_jsDialogHandler = nullptr;
   m_dialogContextMenu = nullptr;
-  m_v8Kodi = nullptr;
 }
 
 int CWebBrowserClient::ZoomLevelToPercentage(double zoomlevel)
@@ -673,11 +670,6 @@ bool CWebBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
     m_focusOnEditableField = message->GetArgumentList()->GetBool(0);
     return true;
   }
-  else if (message_name == RendererMessage::V8AddonCall)
-  {
-    m_v8Kodi->OnProcessMessageReceived(browser, source_process, message);
-    return true;
-  }
   else if (message_name == RendererMessage::OnUncaughtException)
   {
     gui::JSException::ReportJSException(message);
@@ -779,6 +771,16 @@ bool CWebBrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
                                          int line)
 {
   return true;
+}
+
+bool CWebBrowserClient::OnAutoResize(CefRefPtr<CefBrowser> browser, const CefSize& new_size)
+{
+  return false;
+}
+
+void CWebBrowserClient::OnLoadingProgressChange(CefRefPtr<CefBrowser> browser, double progress)
+{
+
 }
 //@}
 

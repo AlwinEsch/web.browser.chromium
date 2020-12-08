@@ -29,9 +29,8 @@ namespace gui
 class CBrowerDialogContextMenu : public CefContextMenuHandler
 {
 public:
-  CBrowerDialogContextMenu(CefRefPtr<CWebBrowserClient> client) : m_client(client)
-  {
-  }
+  CBrowerDialogContextMenu(CefRefPtr<CWebBrowserClient> client);
+  ~CBrowerDialogContextMenu();
 
   void OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
                            CefRefPtr<CefFrame> frame,

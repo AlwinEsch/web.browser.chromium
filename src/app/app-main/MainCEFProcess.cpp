@@ -1,12 +1,13 @@
 /*
- *  Copyright (C) 2020 Team Kodi (https://kodi.tv)
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi) <https://kodi.tv>
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
- *  See LICENSE.md for more information.
+ *  See LICENSES/README.md for more information.
  */
 
 #include "MainCEFProcess.h"
 
+// Own
 #include "RequestContextHandler.h"
 #include "WebBrowserClient.h"
 #include "renderer/OffscreenBasePosix.h"
@@ -202,8 +203,6 @@ void CMainCEFProcess::MainLoop()
   if (!m_started)
     return;
 
-//   fprintf(stderr, "CHILD--------- %s\n", __PRETTY_FUNCTION__);
-
   // Do CEF's message loop work
   PerformMessageLoopWork();
 }
@@ -233,13 +232,17 @@ bool CMainCEFProcess::PerformMessageLoopWork()
 
 void CMainCEFProcess::SetMute(bool mute)
 {
-  fprintf(stderr, "CHILD--------- %s\n", __PRETTY_FUNCTION__);
+  if (m_audioHandler && m_started)
+    m_audioHandler->SetMute(mute);
 }
 
 bool CMainCEFProcess::SetLanguage(const std::string& language)
 {
-  fprintf(stderr, "CHILD--------- %s\n", __PRETTY_FUNCTION__);
-  return false;
+  if (!m_started)
+    return false;
+
+  kodi::Log(ADDON_LOG_DEBUG, "CWebBrowser::%s: Web browser language set to '%s'", __func__, language.c_str());
+  return true;
 }
 
 kodi::addon::CWebControl* CMainCEFProcess::CreateControl(const WEB_ADDON_GUI_PROPS& properties,

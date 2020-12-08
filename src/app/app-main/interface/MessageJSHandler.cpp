@@ -15,6 +15,7 @@
 
 // DevKit
 #include "../../../../lib/kodi-dev-kit/include/kodi/gui/dialogs/OK.h"
+#include "../../../../lib/kodi-dev-kit/include/kodi/gui/dialogs/TextViewer.h"
 #include "../../../../lib/kodi-dev-kit/include/kodi/gui/dialogs/YesNo.h"
 #include "../../../../lib/kodi-dev-kit/include/kodi/tools/StringUtils.h"
 
@@ -67,13 +68,19 @@ bool CMessageJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFram
       {
         CefRefPtr<CefDictionaryValue> params = dict->GetDictionary("params");
 
-        if (func == "kodi.gui.dialog.OK.ShowAndGetInput")
+        if (func == "kodi.gui.dialogs.OK.ShowAndGetInput")
         {
           kodi::gui::dialogs::OK::ShowAndGetInput(params->GetString("heading"), params->GetString("text"));
           callback->Success(CefString());
           return;
         }
-        if (func == "kodi.gui.dialog.YesNo.ShowAndGetInput")
+        if (func == "kodi.gui.dialogs.TextViewer.Show")
+        {
+          kodi::gui::dialogs::TextViewer::Show(params->GetString("heading"), params->GetString("text"));
+          callback->Success(CefString());
+          return;
+        }
+        if (func == "kodi.gui.dialogs.YesNo.ShowAndGetInput")
         {
           bool canceled = false;
           const bool ret = kodi::gui::dialogs::YesNo::ShowAndGetInput(params->GetString("heading"), params->GetString("text"), canceled, params->GetString("no"), params->GetString("yes"));

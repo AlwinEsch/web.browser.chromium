@@ -12,6 +12,7 @@
 #include "../AppRenderer.h"
 #include "kodi/General.h"
 #include "kodi/gui/dialogs/OK.h"
+#include "kodi/gui/dialogs/TextViewer.h"
 #include "kodi/gui/dialogs/YesNo.h"
 
 // Dev kit
@@ -62,6 +63,8 @@ bool CV8Handler::InitKodiAPI(CefRefPtr<CefBrowser> browser,
 
   m_subParts.emplace_back(std::make_shared<v8::kodi::CGeneral>(objKodi, object, this));
   m_subParts.emplace_back(std::make_shared<v8::kodi::gui::dialogs::COK>(
+      CefV8Value::CreateObject(nullptr, nullptr), objKodiGUIDialogs, this));
+  m_subParts.emplace_back(std::make_shared<v8::kodi::gui::dialogs::CTextViewer>(
       CefV8Value::CreateObject(nullptr, nullptr), objKodiGUIDialogs, this));
   m_subParts.emplace_back(std::make_shared<v8::kodi::gui::dialogs::CYesNo>(
       CefV8Value::CreateObject(nullptr, nullptr), objKodiGUIDialogs, this));

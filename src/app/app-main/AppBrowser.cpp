@@ -1,23 +1,23 @@
 /*
- *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi)
- *  This file is part of Kodi - https://kodi.tv
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi) <https://kodi.tv>
  *
- *  SPDX-License-Identifier: GPL-3.0-or-later
+ *  SPDX-License-Identifier: GPL-2.0-or-later
  *  See LICENSES/README.md for more information.
  */
 
 #include "AppBrowser.h"
 
 // Own
+#include "../common/Scheme.h"
+#include "../utils/Info.h"
+#include "MainCEFProcess.h"
 #include "powerpolicy/PowerPolicyController.h"
+#include "print/PrintHandler.h"
 
+// Dev kit
 #include "../../../lib/kodi-dev-kit/include/kodi/General.h"
 #include "../../../lib/kodi-dev-kit/include/kodi/Processor.h"
-#include "MainCEFProcess.h"
-#include "print/PrintHandler.h"
-#include "../common/Scheme.h"
-
-#include <kodi/tools/StringUtils.h>
+#include "../../../lib/kodi-dev-kit/include/kodi/tools/StringUtils.h"
 
 using kodi::tools::StringUtils;
 
@@ -48,7 +48,12 @@ bool CClientAppBrowser::GetLocalizedString(int string_id, CefString& str)
   str = kodi::GetLocalizedString(string_id + KODI_TO_CHROMIUM_LANGUAGE_START);
   if (str.empty())
   {
-    kodi::Log(ADDON_LOG_DEBUG, "%s: Currently not on addon itself supported Chromium string id %i <------------", __func__, string_id);
+    if (!utils::UnsuedBlacklistedChromiumString(string_id))
+    {
+      kodi::Log(ADDON_LOG_DEBUG,
+                "%s: Currently not on addon itself supported Chromium string id %i <------------",
+              __func__, string_id);
+    }
     return false;
   }
   return true;
@@ -85,7 +90,6 @@ void CClientAppBrowser::GetCookieableSchemes(std::vector<CefString>& schemes,
 void CClientAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_type,
                                                       CefRefPtr<CefCommandLine> command_line)
 {
-//   command_line->AppendSwitch("kodi-addon-path=" + kodi::GetAddonPath());
 #ifdef WIN32
   command_line->AppendSwitch("disable-gpu-shader-disk-cache");
   command_line->AppendSwitchWithValue("use-angle", "d3d11");
@@ -109,12 +113,11 @@ void CClientAppBrowser::OnContextInitialized()
 
 void CClientAppBrowser::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line)
 {
-  const std::string id = m_addonMain->GetMainShared() + "-childProcess-" + std::to_string(m_nextChildProcessIdentifier++);
+  const std::string id = m_addonMain->GetMainShared() + "-childProcess-" +
+                         std::to_string(m_nextChildProcessIdentifier++);
 
   kodi::sandbox::CChildProcessor& proc = kodi::sandbox::CChildProcessor::GetActiveProcessor();
   std::string useId = proc.InitSubChild(id);
-
-  fprintf(stderr, "------ '%s' '%s'\n", id.c_str(), useId.c_str());
 
   command_line->AppendSwitchWithValue("main-shared", useId);
 }
@@ -135,7 +138,6 @@ void CClientAppBrowser::OnScheduleMessagePumpWork(int64 delay_ms)
 }
 
 //@}
-
 
 } /* namespace main */
 } /* namespace app */

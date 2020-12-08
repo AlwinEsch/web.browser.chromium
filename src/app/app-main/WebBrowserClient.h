@@ -1,8 +1,8 @@
 /*
- *  Copyright (C) 2020 Team Kodi (https://kodi.tv)
+ *  Copyright (C) 2015-2020 Alwin Esch (Team Kodi) <https://kodi.tv>
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
- *  See LICENSE.md for more information.
+ *  See LICENSES/README.md for more information.
  */
 
 #pragma once
@@ -35,14 +35,6 @@ class CJSDialogHandler;
 } /* namespace */
 
 class CMainCEFProcess;
-
-namespace interface
-{
-namespace v8
-{
-class CV8Kodi;
-} /* namespace v8 */
-} /* namespace interface */
 
 class CWebBrowserClient : public kodi::addon::CWebControl,
                           public CefClient,
@@ -134,6 +126,9 @@ public:
                         const CefString& message,
                         const CefString& source,
                         int line) override;
+  bool OnAutoResize(CefRefPtr<CefBrowser> browser, const CefSize& new_size) override;
+  void OnLoadingProgressChange(CefRefPtr<CefBrowser> browser, double progress) override;
+
   //@}
 
   // CefDragHandler methods
@@ -249,7 +244,6 @@ private:
   CefRefPtr<chromium::app::main::gui::CBrowerDialogContextMenu> m_dialogContextMenu;
   CefRefPtr<chromium::app::main::gui::CJSDialogHandler> m_jsDialogHandler;
   CefRefPtr<chromium::app::main::renderer::CRendererClient> m_renderer;
-  CefRefPtr<interface::v8::CV8Kodi> m_v8Kodi;
 
   std::string m_clientIdentifier;
   int m_browserId{-1};
